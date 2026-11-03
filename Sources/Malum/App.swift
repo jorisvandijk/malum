@@ -17,12 +17,12 @@ func runApp() -> Never {
     }
     terminal.report(Message(.info, "\(Project.name) \(Project.version) is running"))
     let menuBar = MenuBar()
-    let hangup = HangupWatcher {
-        // TODO: reload the config and the modules once there are any.
-        terminal.report(Message(.info, "reloading"))
-    }
+    // TODO: the schema of each module, once there are any.
+    let config = LiveConfig(reloader: ConfigReloader(files: files, paths: paths, schemas: [:]))
+    config.reload(force: true)
+    let hangup = HangupWatcher { config.reload(force: true) }
     let app = NSApplication.shared
     app.setActivationPolicy(.accessory)
-    withExtendedLifetime((menuBar, hangup)) { app.run() }
+    withExtendedLifetime((menuBar, config, hangup)) { app.run() }
     exit(EXIT_SUCCESS)
 }

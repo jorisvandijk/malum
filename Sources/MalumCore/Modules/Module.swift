@@ -1,5 +1,4 @@
 import Observation
-import TOMLKit
 
 /// One part of Malum, such as the window manager or the launcher.
 ///
@@ -11,6 +10,8 @@ public protocol Module: AnyObject, Observable {
     var id: String { get }
     /// The permissions the module needs before it can run.
     var permissions: Set<Permission> { get }
+    /// The settings the module takes in its table in `malum.toml`.
+    var schema: ConfigSchema { get }
     /// Where the module is now, observed by the menu bar.
     var status: ModuleStatus { get }
 
@@ -18,8 +19,9 @@ public protocol Module: AnyObject, Observable {
 
     /// Starts the module with the settings it was last given.
     func start() async throws
-    /// Takes new settings from the module's table in `malum.toml`, without a restart.
-    func apply(_ config: TOMLTable) throws
+    /// Takes new settings from the module's table in `malum.toml`, without a restart. The table has
+    /// already been checked against `schema`.
+    func apply(_ config: ConfigTable) throws
     /// Stops the module and undoes whatever it changed system-wide.
     func stop() async
 }

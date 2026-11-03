@@ -18,6 +18,10 @@ struct PathsTests {
         #expect(paths.stateDirectory == "/Users/joris/Library/Application Support/com.jorisvandijk.malum")
     }
 
+    @Test func configTOMLIsAtTheTopOfDots() {
+        #expect(paths.configTOML(in: "/Users/joris/Git/dots") == "/Users/joris/Git/dots/malum.toml")
+    }
+
     @Test func tildeExpandsToHome() {
         #expect(paths.resolve("~/git/dots", relativeTo: "/tmp") == "/Users/joris/git/dots")
         #expect(paths.resolve("~", relativeTo: "/tmp") == "/Users/joris")

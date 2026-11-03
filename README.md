@@ -48,6 +48,21 @@ malum init <path to dots>
 
 This saves the path in `~/.config/malum/config`, the only file Malum keeps outside dots, and points `~/.local/bin/malum` at the app again, for example after the app has moved. Run it again whenever dots moves.
 
+## Config
+
+Malum's settings live in `malum.toml`, at the top of your dots folder. Each module has its own table in it, named after the module, such as `[window_manager]`.
+
+When the app starts, it reads `malum.toml`. While it runs, saving the file is enough: the app sees the change and reads the file again. Saving without changing anything does nothing. `malum reload` makes the app read the file again even when nothing changed.
+
+Every problem in the file is reported at once, each with the line it's on:
+
+```
+[error] malum.toml line 3: window_manager.gap should be a whole number
+[warn] window_manager keeps its last good settings
+```
+
+A problem in one module's table affects only that module. It keeps the settings it had before, and the other modules take their new settings as normal. When the file isn't valid TOML at all, every module keeps its settings until the file is fixed.
+
 ## Use
 
 Malum runs as the menu bar app when you open `Malum.app`, from Finder or with `open`, and as a command when you run `malum` in a terminal. Both are the same program.
