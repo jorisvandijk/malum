@@ -1,0 +1,97 @@
+name: attribution
+
+# Fails when a commit, the pull request text, the branch name, a file path or a changed line
+# names an AI tool, or when a commit is authored by anyone else. Runs on every change, docs
+# included, because it takes seconds. This file is the only path it skips, since it has to
+# spell out the words it looks for.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+  push:
+    branches: ["**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: attribution-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    env:
+      WORDS: "claude|anthropic"
+      GENERATED: "generated with"
+      AUTHOR: "Joris van Dijk <joris@jorisvandijk.com>"
+      SELF: ".github/workflows/attribution.yml"
+      EVENT: ${{ github.event_name }}
+      PR_TITLE: ${{ github.event.pull_request.title }}
+      PR_BODY: ${{ github.event.pull_request.body }}
+      PR_BRANCH: ${{ github.event.pull_request.head.ref }}
+      PR_BASE: ${{ github.event.pull_request.base.sha }}
+      PR_HEAD: ${{ github.event.pull_request.head.sha }}
+      PUSH_BRANCH: ${{ github.ref_name }}
+      PUSH_BEFORE: ${{ github.event.before }}
+      PUSH_AFTER: ${{ github.event.after }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check
+        run: |
+          problems=0
+          fail() {
+            echo "::error::$1"
+            problems=$((problems + 1))
+          }
+          has_word() { grep -qiE "$WORDS"; }
+          has_generated() { grep -qiF "$GENERATED"; }
+
+          if [ "$EVENT" = "pull_request" ]; then
+            branch="$PR_BRANCH"
+            head="$PR_HEAD"
+            base="$(git merge-base "$PR_BASE" "$PR_HEAD")"
+            commits="$(git rev-list "$PR_BASE..$PR_HEAD")"
+            printf '%s\n%s\n' "$PR_TITLE" "$PR_BODY" | has_word && fail "the pull request title or description names an AI tool"
+            printf '%s\n' "$PR_BODY" | has_generated && fail "the pull request description says \"Generated with\""
+          else
+            branch="$PUSH_BRANCH"
+            head="$PUSH_AFTER"
+            if [ "$PUSH_BEFORE" = "0000000000000000000000000000000000000000" ]; then
+              # A new branch: check every commit no other branch has, and diff against the
+              # empty tree when the branch shares nothing with the others.
+              others="$(git for-each-ref --format='%(refname)' refs/remotes/origin | grep -vx "refs/remotes/origin/$branch" || true)"
+              commits="$(git rev-list "$head" --not $others)"
+              base="$(git merge-base "$head" $others 2>/dev/null | head -n 1 || true)"
+              [ -n "$base" ] || base="$(git hash-object -t tree /dev/null)"
+            else
+              base="$PUSH_BEFORE"
+              commits="$(git rev-list "$PUSH_BEFORE..$PUSH_AFTER")"
+            fi
+          fi
+
+          printf '%s\n' "$branch" | has_word && fail "the branch name names an AI tool: $branch"
+
+          for commit in $commits; do
+            short="$(git rev-parse --short "$commit")"
+            git log -1 --format=%B "$commit" | has_word && fail "commit $short: the message names an AI tool"
+            git log -1 --format=%B "$commit" | has_generated && fail "commit $short: the message says \"Generated with\""
+            git log -1 --format='%an %ae %cn %ce' "$commit" | has_word && fail "commit $short: the author or committer names an AI tool"
+            author="$(git log -1 --format='%an <%ae>' "$commit")"
+            [ "$author" = "$AUTHOR" ] || fail "commit $short: authored by $author, not $AUTHOR"
+          done
+
+          paths="$(git diff --name-only --diff-filter=ACMR "$base" "$head" | grep -vxF "$SELF" || true)"
+          printf '%s\n' "$paths" | has_word && fail "a file path names an AI tool: $(printf '%s\n' "$paths" | grep -iE "$WORDS" | head -n 5 | tr '\n' ' ')"
+
+          lines="$(git diff --unified=0 "$base" "$head" -- . ":(exclude)$SELF" | grep -E '^\+' | grep -vE '^\+\+\+ ' || true)"
+          printf '%s\n' "$lines" | has_word && fail "a changed line names an AI tool"
+
+          if [ "$problems" -gt 0 ]; then
+            echo "[error] $problems attribution problem(s) found"
+            exit 1
+          fi
+          echo "[info] no attribution problems"
