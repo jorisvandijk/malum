@@ -47,3 +47,19 @@ malum init <path to dots>
 ```
 
 This saves the path in `~/.config/malum/config`, the only file Malum keeps outside dots, and points `~/.local/bin/malum` at the app again, for example after the app has moved. Run it again whenever dots moves.
+
+## Use
+
+Malum runs as the menu bar app when you open `Malum.app`, from Finder or with `open`, and as a command when you run `malum` in a terminal. Both are the same program.
+
+Only one app runs at a time. Opening `Malum.app` again while it runs does nothing, and the second copy quits straight away.
+
+To make the running app reload, run:
+
+```sh
+malum reload
+```
+
+If the app isn't running, `malum reload` says so and exits with an error.
+
+The app and the command keep their shared state in `~/Library/Application Support/com.jorisvandijk.malum`. Quit the app from its menu in the menu bar.
