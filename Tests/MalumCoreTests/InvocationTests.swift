@@ -37,4 +37,12 @@ struct InvocationTests {
     @Test func initWithExtraArgumentIsReported() {
         #expect(Invocation(arguments: ["init", "~/git/dots", "extra"]) == .unknown("extra"))
     }
+
+    @Test func reloadAsksTheApp() {
+        #expect(Invocation(arguments: ["reload"]) == .reload)
+    }
+
+    @Test func reloadWithExtraArgumentIsReported() {
+        #expect(Invocation(arguments: ["reload", "now"]) == .unknown("now"))
+    }
 }

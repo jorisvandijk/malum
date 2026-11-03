@@ -6,6 +6,8 @@ public enum Invocation: Equatable, Sendable {
     case help
     /// Record where dots is and link the command, with the path to dots as given.
     case initialize(dots: String)
+    /// Ask the running app to reload.
+    case reload
     /// A command that's missing an argument, with what it needs.
     case incomplete(command: String, needs: String)
     /// An argument Malum doesn't know.
@@ -15,8 +17,10 @@ public enum Invocation: Equatable, Sendable {
     public static let usage = """
         usage: \(Project.command) [--version | --help]
                \(Project.command) init <path to dots>
+               \(Project.command) reload
 
           init       record where dots is checked out and link ~/.local/bin/\(Project.command)
+          reload     ask the running app to reload
           --version  show the version
           --help     show this help
         """
@@ -35,6 +39,8 @@ public enum Invocation: Equatable, Sendable {
             self = .help
         case "init":
             self = Self.initialize(rest)
+        case "reload":
+            self = rest.first.map(Self.unknown) ?? .reload
         default:
             self = .unknown(first)
         }

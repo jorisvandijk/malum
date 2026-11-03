@@ -11,6 +11,8 @@ public struct Paths: Equatable, Sendable {
     private static let configName = "config"
     /// The folder for the user's commands, relative to home. Getting it on `PATH` is dots' job.
     private static let binRoot = ".local/bin"
+    /// The folder for apps' own data, relative to home.
+    private static let applicationSupportRoot = "Library/Application Support"
 
     /// Creates the paths under `home`.
     public init(home: String) {
@@ -25,6 +27,8 @@ public struct Paths: Equatable, Sendable {
     public var binDirectory: String { "\(home)/\(Self.binRoot)" }
     /// `~/.local/bin/malum`, the link to Malum's executable.
     public var commandLink: String { "\(binDirectory)/\(Project.command)" }
+    /// `~/Library/Application Support/<bundle ID>`, the state folder the app and the command share.
+    public var stateDirectory: String { "\(home)/\(Self.applicationSupportRoot)/\(Project.bundleID)" }
 
     /// Turns `path` into an absolute, clean path, expanding `~` and reading it relative to `base`.
     public func resolve(_ path: String, relativeTo base: String) -> String {

@@ -14,6 +14,10 @@ struct PathsTests {
         #expect(paths.commandLink == "/Users/joris/.local/bin/malum")
     }
 
+    @Test func stateDirectoryIsNamedAfterBundleID() {
+        #expect(paths.stateDirectory == "/Users/joris/Library/Application Support/com.jorisvandijk.malum")
+    }
+
     @Test func tildeExpandsToHome() {
         #expect(paths.resolve("~/git/dots", relativeTo: "/tmp") == "/Users/joris/git/dots")
         #expect(paths.resolve("~", relativeTo: "/tmp") == "/Users/joris")
