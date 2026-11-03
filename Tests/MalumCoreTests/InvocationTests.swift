@@ -25,4 +25,16 @@ struct InvocationTests {
     @Test func usageNamesTheCommand() {
         #expect(Invocation.usage.hasPrefix("usage: \(Project.command) "))
     }
+
+    @Test func initTakesThePathToDots() {
+        #expect(Invocation(arguments: ["init", "~/git/dots"]) == .initialize(dots: "~/git/dots"))
+    }
+
+    @Test func initWithoutPathIsIncomplete() {
+        #expect(Invocation(arguments: ["init"]) == .incomplete(command: "init", needs: "the path to dots"))
+    }
+
+    @Test func initWithExtraArgumentIsReported() {
+        #expect(Invocation(arguments: ["init", "~/git/dots", "extra"]) == .unknown("extra"))
+    }
 }

@@ -35,3 +35,15 @@ It runs on macOS Tahoe, on Apple silicon.
    ```sh
    ~/Applications/Malum.app/Contents/MacOS/Malum --version
    ```
+
+   The first start links `~/.local/bin/malum` to the app, so from then on `malum` works as a command, as long as `~/.local/bin` is on your `PATH`. If something else is already at that path, Malum leaves it alone and `malum init` reports it.
+
+## Set up
+
+Malum reads its config from your dots checkout. Tell it where that is:
+
+```sh
+malum init <path to dots>
+```
+
+This saves the path in `~/.config/malum/config`, the only file Malum keeps outside dots, and points `~/.local/bin/malum` at the app again, for example after the app has moved. Run it again whenever dots moves.
