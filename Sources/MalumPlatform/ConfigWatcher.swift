@@ -14,15 +14,16 @@ public final class ConfigWatcher {
     /// A watch on one file or folder.
     private typealias Source = any DispatchSourceFileSystemObject
 
-    /// How long a save takes to settle, since editors touch the file and the folder several times.
-    private static let settle = Duration.milliseconds(200)
+    /// How many milliseconds a save takes to settle, since editors touch the file and the folder
+    /// several times.
+    private static let settleMilliseconds = 200
 
     /// The file being watched.
     public let path: String
     /// What to call once a change has settled.
     private let onChange: @MainActor () -> Void
     /// Waits for a save to settle.
-    private let debouncer = Debouncer(delay: settle)
+    private let debouncer = Debouncer(delay: .milliseconds(settleMilliseconds))
     /// The watch on the folder that holds the file.
     private var folderSource: Source?
     /// The watch on the file itself.
