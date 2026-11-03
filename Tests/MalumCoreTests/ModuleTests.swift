@@ -1,5 +1,4 @@
 import Observation
-import TOMLKit
 import Testing
 
 @testable import MalumCore
@@ -19,7 +18,7 @@ struct ModuleTests {
     @Test func badConfigFailsOnlyThatCall() async throws {
         let module = FakeModule()
         try await module.start()
-        let table = try TOMLReader.table(from: "enabled = \"yes\"")
+        let table: ConfigTable = ["enabled": .string("yes")]
         #expect(throws: FakeModule.FakeError.self) { try module.apply(table) }
         #expect(module.status == .degraded(reason: "enabled is not a boolean"))
     }
@@ -51,12 +50,13 @@ private final class FakeModule: Module {
 
     let id = "fake"
     let permissions: Set<Permission> = [.accessibility]
+    let schema = ConfigSchema(["enabled": .boolean])
     private(set) var status = ModuleStatus.off
 
     func start() async throws { status = .running }
 
-    func apply(_ config: TOMLTable) throws {
-        guard config["enabled"]?.bool != nil else {
+    func apply(_ config: ConfigTable) throws {
+        guard case .boolean = config["enabled"] else {
             status = .degraded(reason: "enabled is not a boolean")
             throw FakeError.notBoolean
         }
