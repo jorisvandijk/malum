@@ -1,0 +1,110 @@
+# SwiftLint checks the code rules; swift-format owns formatting (see .swift-format).
+# Run with --strict, so every warning fails.
+
+included:
+  - Package.swift
+  - Sources
+  - Tests
+
+excluded:
+  - .build
+
+# Formatting is swift-format's job.
+disabled_rules:
+  - todo
+  - line_length
+  - trailing_whitespace
+  - trailing_comma
+  - trailing_newline
+  - leading_whitespace
+  - vertical_whitespace
+  - opening_brace
+  - closing_brace
+  - colon
+  - comma
+  - statement_position
+  - return_arrow_whitespace
+  - operator_whitespace
+  - closure_parameter_position
+  - comment_spacing
+  - vertical_parameter_alignment
+
+opt_in_rules:
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - missing_docs
+  - no_magic_numbers
+  - file_name
+
+force_cast: error
+force_try: error
+
+missing_docs:
+  warning: [open, public, internal]
+  excludes_extensions: true
+  excludes_inherited_types: true
+
+identifier_name:
+  min_length: 2
+
+file_length:
+  warning: 400
+  error: 600
+
+type_body_length: 250
+function_body_length: 40
+cyclomatic_complexity: 10
+
+custom_rules:
+  no_else_if:
+    name: "No else if"
+    regex: '\}\s*else\s+if\b'
+    excluded_match_kinds: [comment, doccomment, string]
+    message: "Use switch when there are more than two branches."
+    severity: error
+
+  final_class:
+    name: "Final classes"
+    regex: '(?<!final )\bclass(?=\s+[A-Z])'
+    excluded_match_kinds: [comment, doccomment, string]
+    message: "Classes are final."
+    severity: error
+
+  no_crash:
+    name: "No crashes"
+    regex: '\b(fatalError|precondition|preconditionFailure)\s*\(|\bunowned\b'
+    excluded_match_kinds: [comment, doccomment, string]
+    excluded: '/Tests/'
+    message: "Malum runs every module in one process; throw an error instead."
+    severity: error
+
+  safety_comment:
+    name: "SAFETY comment"
+    excluded_match_kinds: [comment, doccomment, string]
+    regex: '(@unchecked\s+Sendable|nonisolated\(unsafe\)|Task\.detached)(?!.*//\s*SAFETY:)'
+    message: "Explain why this is safe in a // SAFETY: comment on the same line."
+    severity: error
+
+  commands_folder:
+    name: "Commands folder"
+    regex: '\b(Process\s*\(|NSTask\b|posix_spawn|system\s*\(|popen\s*\(|NSAppleScript\b)'
+    excluded_match_kinds: [comment, doccomment, string]
+    excluded: '/Sources/MalumCore/Commands/'
+    message: "Outside commands run only from their file in Sources/MalumCore/Commands."
+    severity: error
+
+  no_print:
+    name: "No print"
+    regex: '\b(print|debugPrint|dump)\s*\('
+    excluded_match_kinds: [comment, doccomment, string]
+    excluded: '/Sources/MalumCore/Terminal\.swift$'
+    message: "Write to the terminal through Terminal, and log through the log wrapper."
+    severity: error
+
+  no_direct_logging:
+    name: "No direct logging"
+    regex: '\b(Logger\s*\(|NSLog\s*\(|os_log\s*\()'
+    excluded_match_kinds: [comment, doccomment, string]
+    excluded: '/Sources/MalumPlatform/Logging/'
+    message: "Log through the log wrapper."
+    severity: error
