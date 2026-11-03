@@ -15,7 +15,10 @@ public struct InitCommand: Sendable {
     ///
     /// `executable` is Malum's executable inside Malum.app, or nil when Malum runs from elsewhere.
     public func run(dots: String, workingDirectory: String, executable: String?) -> [Message] {
-        [recordDots(paths.resolve(dots, relativeTo: workingDirectory)), linkCommand(to: executable)]
+        [
+            recordDots(files.canonicalPath(paths.resolve(dots, relativeTo: workingDirectory))),
+            linkCommand(to: executable),
+        ]
     }
 
     /// Saves where dots is.

@@ -17,6 +17,13 @@ public struct LocalFileSystem: FileSystem {
         return isDirectory.boolValue ? .directory : .file
     }
 
+    /// Asks `realpath`, which on macOS also returns each name in the case it has on disk.
+    public func canonicalPath(_ path: String) -> String {
+        guard let resolved = realpath(path, nil) else { return path }
+        defer { free(resolved) }
+        return String(cString: resolved)
+    }
+
     /// The text of the file at `path`.
     public func read(_ path: String) throws(FileSystemError) -> String {
         do {

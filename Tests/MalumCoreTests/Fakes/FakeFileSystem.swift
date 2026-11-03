@@ -10,13 +10,23 @@ final class FakeFileSystem: FileSystem {
     private let texts: Mutex<[String: String]>
     /// Paths whose writes fail.
     let failing: Set<String>
+    /// Paths spelled differently from how they are on disk, with their spelling on disk.
+    let spellings: [String: String]
 
-    init(items: [String: FileItem] = [:], texts: [String: String] = [:], failing: Set<String> = []) {
+    init(
+        items: [String: FileItem] = [:], texts: [String: String] = [:], failing: Set<String> = [],
+        spellings: [String: String] = [:]
+    ) {
         var all = items
         for path in texts.keys { all[path] = .file }
         self.items = Mutex(all)
         self.texts = Mutex(texts)
         self.failing = failing
+        self.spellings = spellings
+    }
+
+    func canonicalPath(_ path: String) -> String {
+        spellings[path] ?? path
     }
 
     func item(at path: String) -> FileItem? {

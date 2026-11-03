@@ -41,6 +41,16 @@ struct InitCommandTests {
             ])
     }
 
+    @Test func dotsIsComparedAsSpelledOnDisk() {
+        let onDisk = "/Users/joris/Git/dots"
+        let files = FakeFileSystem(
+            items: [onDisk: .directory, paths.commandLink: .link(to: executable)],
+            texts: [paths.configFile: onDisk + "\n"],
+            spellings: [dots: onDisk])
+        #expect(run(files).first == Message(.info, "dots is already at \(onDisk)"))
+        #expect(files.text(at: paths.configFile) == onDisk + "\n")
+    }
+
     @Test func movedDotsIsRecorded() {
         let files = FakeFileSystem(items: [dots: .directory], texts: [paths.configFile: "/old/dots\n"])
         #expect(run(files).first == Message(.info, "dots moved from /old/dots to \(dots)"))

@@ -2,6 +2,9 @@
 public protocol FileSystem: Sendable {
     /// What sits at `path`, or nil when nothing does. A link is reported as a link, not followed.
     func item(at path: String) -> FileItem?
+    /// The path as it's spelled on disk, with links resolved, so `~/git` and `~/Git` on a
+    /// case-insensitive disk give the same answer. A path that doesn't exist comes back unchanged.
+    func canonicalPath(_ path: String) -> String
     /// The text of the file at `path`.
     func read(_ path: String) throws(FileSystemError) -> String
     /// Replaces the file at `path` with `text` in one step.
