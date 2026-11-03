@@ -1,0 +1,60 @@
+name: release
+
+# Pushing a version tag (v0.1.0) runs the macOS tests, builds the app and publishes it as a
+# GitHub release with a .sha256 file. The app is signed ad hoc, with no certificates or secrets
+# here: Malum signs its own copy with its local certificate when it installs it.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stamp the version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          project=Sources/MalumCore/Project.swift
+          sed -i '' -E "s/^( *public static let version = )\".*\"$/\1\"$version\"/" "$project"
+          grep -qE "^ *public static let version = \"$version\"$" "$project"
+
+      - name: Test
+        run: swift test
+
+      - name: Build the app
+        run: scripts/bundle.sh
+
+      - name: Check the app
+        run: |
+          app="$(ls -d build/*.app)"
+          executable="$(plutil -extract CFBundleExecutable raw "$app/Contents/Info.plist")"
+          codesign --verify --strict --verbose=2 "$app"
+          test "$("$app/Contents/MacOS/$executable" --version)" = "${GITHUB_REF_NAME#v}"
+          test "$(plutil -extract CFBundleShortVersionString raw "$app/Contents/Info.plist")" = "${GITHUB_REF_NAME#v}"
+
+      - name: Package
+        run: |
+          app="$(ls -d build/*.app)"
+          name="$(basename "$app" .app)"
+          zip="$name-macos-arm64.zip"
+          (cd build && ditto -c -k --sequesterRsrc --keepParent "$name.app" "$zip")
+          (cd build && shasum -a 256 "$zip" > "$zip.sha256")
+          echo "ZIP=build/$zip" >> "$GITHUB_ENV"
+          echo "NAME=$name" >> "$GITHUB_ENV"
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$ZIP" "$ZIP.sha256" \
+            --title "$NAME $GITHUB_REF_NAME" --generate-notes --verify-tag
