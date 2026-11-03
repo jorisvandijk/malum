@@ -1,0 +1,66 @@
+name: test
+
+# Lint and the Linux tests, on pull requests that change code. The macOS-only targets are
+# behind #if os(macOS) in Package.swift; run the "test-macos" workflow by hand when a change
+# touches them.
+on:
+  pull_request:
+    paths:
+      - "Sources/**"
+      - "Tests/**"
+      - "Package.swift"
+      - "Package.resolved"
+      - ".swift-format"
+      - "**/.swiftlint.yml"
+      - ".github/workflows/test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  SWIFTLINT_VERSION: "0.65.1"
+
+jobs:
+  lint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    container: swift:6.2-noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: swift-format
+        run: swift format lint --strict --recursive Package.swift Sources Tests
+      - name: Install SwiftLint
+        run: |
+          apt-get -qq update && apt-get -qq install -y unzip curl > /dev/null
+          curl -fsSL -o swiftlint.zip \
+            "https://github.com/realm/SwiftLint/releases/download/$SWIFTLINT_VERSION/swiftlint_linux_amd64.zip"
+          unzip -q swiftlint.zip -d /usr/local/bin
+          rm swiftlint.zip
+          swiftlint version
+      - name: SwiftLint
+        env:
+          # SwiftLint's Linux build loads SourceKit from the toolchain for the rules that need it.
+          LINUX_SOURCEKIT_LIB_PATH: /usr/lib
+        run: swiftlint lint --strict --quiet
+
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    container: swift:6.2-noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache .build
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: swift-linux-${{ hashFiles('Package.resolved', 'Package.swift') }}
+          restore-keys: swift-linux-
+      - name: Build
+        run: swift build --build-tests
+      - name: Test
+        run: swift test --skip-build

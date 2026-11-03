@@ -1,0 +1,28 @@
+name: test-macos
+
+# macOS runners bill at 10x, so this runs only when started by hand
+# (Actions tab, or `gh workflow run test-macos --ref <branch>`).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-26
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test
+        run: swift test
+      - name: Build Malum.app
+        run: scripts/bundle.sh
+      - name: Check the app
+        run: |
+          codesign --verify --strict --verbose=2 build/Malum.app
+          build/Malum.app/Contents/MacOS/Malum --version
