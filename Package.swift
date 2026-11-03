@@ -27,7 +27,8 @@ var targets: [Target] = [
 /// The Malum package.
 let package = Package(
     name: "Malum",
-    platforms: [.macOS(.v26)],
+    // macOS 15, so the tests run on GitHub's macos-15 runners. Info.plist keeps Malum.app on Tahoe.
+    platforms: [.macOS(.v15)],
     dependencies: [
         // Reports TOML syntax errors with their line and column as numbers, not inside a message.
         .package(url: "https://github.com/LebJe/TOMLKit", exact: "0.6.0")
