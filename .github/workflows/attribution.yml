@@ -60,9 +60,10 @@ jobs:
           else
             branch="$PUSH_BRANCH"
             head="$PUSH_AFTER"
-            if [ "$PUSH_BEFORE" = "0000000000000000000000000000000000000000" ]; then
-              # A new branch: check every commit no other branch has, and diff against the
-              # empty tree when the branch shares nothing with the others.
+            if ! git cat-file -e "$PUSH_BEFORE^{commit}" 2>/dev/null; then
+              # A new branch, or a force push whose old head is gone: check every commit no
+              # other branch has, and diff against the empty tree when the branch shares
+              # nothing with the others.
               others="$(git for-each-ref --format='%(refname)' refs/remotes/origin | grep -vx "refs/remotes/origin/$branch" || true)"
               commits="$(git rev-list "$head" --not $others)"
               base="$(git merge-base "$head" $others 2>/dev/null | head -n 1 || true)"
