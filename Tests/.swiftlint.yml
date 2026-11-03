@@ -1,0 +1,8 @@
+# Tests may crash on purpose and use literal values.
+disabled_rules:
+  - force_unwrapping
+  - force_try
+  - force_cast
+  - implicitly_unwrapped_optional
+  - no_magic_numbers
+  - missing_docs

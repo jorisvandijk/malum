@@ -1,6 +1,7 @@
 import Foundation
 import MalumCore
 
+/// Where the CLI writes its output and messages.
 let terminal = Terminal()
 
 switch Invocation(arguments: Array(CommandLine.arguments.dropFirst())) {
