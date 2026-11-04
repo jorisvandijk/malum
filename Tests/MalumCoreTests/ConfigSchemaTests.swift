@@ -27,4 +27,15 @@ struct ConfigSchemaTests {
                 "colour": "unknown setting window_manager.colour",
             ])
     }
+
+    @Test func everyModuleTakesEnabled() {
+        #expect(
+            schema.settings["enabled"] == Setting(.boolean, ConfigSchema.switchSetting.about, default: .boolean(false)))
+        #expect(schema.problems(in: ["enabled": .boolean(true)], module: "window_manager").isEmpty)
+    }
+
+    @Test func moduleCantReplaceEnabled() {
+        let schema = ConfigSchema(about: "Opens apps.", settings: ["enabled": Setting(.string, "Its own.")])
+        #expect(schema.settings["enabled"]?.kind == .boolean)
+    }
 }

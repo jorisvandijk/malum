@@ -21,6 +21,8 @@ public final class ConfigReloader {
 
     /// Each module's last good settings, by the module's id.
     public var settings: [String: ConfigTable] { config.settings }
+    /// The modules switched on, by their last good table.
+    public var enabled: Set<String> { config.enabled }
 
     /// Reads `malum.toml` again and checks it.
     ///

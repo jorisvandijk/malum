@@ -10,8 +10,8 @@ struct ConfigDocsTests {
         # Config reference
 
         Every setting `malum.toml` takes, by module. Each module's settings go in a table named after \
-        the module, such as `[window_manager]`. A setting that's left out takes its default, when it \
-        has one.
+        the module, such as `[window_manager]`. A module is off until its table sets `enabled = true`. \
+        A setting that's left out takes its default, when it has one.
 
         """
 
@@ -30,32 +30,48 @@ struct ConfigDocsTests {
                 ]),
             "launcher": ConfigSchema(about: "Opens apps.", settings: [:]),
         ]
-        #expect(
-            ConfigDocs.page(for: schemas) == header + """
-
-                ## `launcher`
-
-                Opens apps.
-
-                ## `window_manager`
-
-                Tiles windows.
-
-                ### `window_manager.floating`
-
-                Apps left alone.
-
-                - Value: a list of text
-
-                ### `window_manager.gap`
-
-                Space between windows.
-
-                - Value: a whole number
-                - Default: `4`
-
-                """)
+        #expect(ConfigDocs.page(for: schemas) == header + sortedModules)
     }
+
+    /// The page's modules for `modulesAndSettingsAreSortedByName`.
+    private let sortedModules = """
+
+        ## `launcher`
+
+        Opens apps.
+
+        ### `launcher.enabled`
+
+        Switches the module on. The module stays off until this is set to true.
+
+        - Value: true or false
+        - Default: `false`
+
+        ## `window_manager`
+
+        Tiles windows.
+
+        ### `window_manager.enabled`
+
+        Switches the module on. The module stays off until this is set to true.
+
+        - Value: true or false
+        - Default: `false`
+
+        ### `window_manager.floating`
+
+        Apps left alone.
+
+        - Value: a list of text
+
+        ### `window_manager.gap`
+
+        Space between windows.
+
+        - Value: a whole number
+        - Default: `4`
+
+        """
 
     @Test func oddNamesAreQuoted() {
         let schemas = ["dock": ConfigSchema(about: "The Dock.", settings: ["app name": Setting(.string, "An app.")])]

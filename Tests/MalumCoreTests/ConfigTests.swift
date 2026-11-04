@@ -66,4 +66,29 @@ struct ConfigTests {
         let report = config.load("# a comment\n[launcher]\nsize = 1\n", from: path)
         #expect(report.changed.isEmpty)
     }
+
+    @Test func enabledSwitchesAModuleOn() {
+        var config = config()
+        let report = config.load("[window_manager]\nenabled = true\ngap = 4\n[launcher]\nenabled = false\n", from: path)
+        #expect(report.problems.isEmpty)
+        #expect(config.enabled == ["window_manager"])
+        #expect(config.settings == ["window_manager": ["gap": .integer(4)], "launcher": [:]])
+    }
+
+    @Test func moduleIsOffWithoutEnabled() {
+        var config = config()
+        _ = config.load("[window_manager]\nenabled = true\n", from: path)
+        let report = config.load("[window_manager]\n", from: path)
+        #expect(config.enabled.isEmpty)
+        #expect(report.changed.isEmpty)
+    }
+
+    @Test func enabledThatIsntTrueOrFalseKeepsTheLastSwitch() {
+        var config = config()
+        _ = config.load("[launcher]\nenabled = true\n", from: path)
+        let report = config.load("[launcher]\nenabled = \"yes\"\n", from: path)
+        #expect(report.problems == [ConfigProblem(.error, line: 2, "launcher.enabled should be true or false")])
+        #expect(report.kept == ["launcher"])
+        #expect(config.enabled == ["launcher"])
+    }
 }
