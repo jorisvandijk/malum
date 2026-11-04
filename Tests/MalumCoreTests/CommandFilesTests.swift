@@ -24,6 +24,18 @@ struct CommandFilesTests {
                     onTerminal: true))
     }
 
+    @Test func dittoUnzipsIntoAFolder() {
+        #expect(
+            Ditto.unzip("/tmp/a.zip", into: "/tmp/out")
+                == Command("/usr/bin/ditto", ["-x", "-k", "/tmp/a.zip", "/tmp/out"], timeoutSeconds: 300))
+    }
+
+    @Test func tarUnpacksIntoAFolder() {
+        #expect(
+            Tar.unpack("/tmp/a.tar.gz", into: "/tmp/out")
+                == Command("/usr/bin/tar", ["-x", "-f", "/tmp/a.tar.gz", "-C", "/tmp/out"], timeoutSeconds: 300))
+    }
+
     @Test func masListGivesTheIds() {
         let output = "497799835  Xcode  (26.0)\n 937984704  Amphetamine  (5.3.2)\nNo installed apps found\n"
         #expect(Mas.ids(in: output) == [497_799_835, 937_984_704])
