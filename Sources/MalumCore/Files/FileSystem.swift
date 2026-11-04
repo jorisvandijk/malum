@@ -13,4 +13,10 @@ public protocol FileSystem: Sendable {
     func createDirectory(_ path: String) throws(FileSystemError)
     /// Makes `path` a symbolic link to `destination`, replacing a link that's already there.
     func link(_ path: String, to destination: String) throws(FileSystemError)
+    /// Copies the file or folder at `source` to `destination`, which must not exist yet.
+    func copy(_ source: String, to destination: String) throws(FileSystemError)
+    /// Swaps what's at `path` with what's at `other` in one step. Both must exist.
+    func exchange(_ path: String, _ other: String) throws(FileSystemError)
+    /// Removes the file or folder at `path`, with everything in it.
+    func remove(_ path: String) throws(FileSystemError)
 }

@@ -22,6 +22,13 @@ struct StatusMenuTests {
         #expect(!menu.needsAttention)
     }
 
+    @Test func signingProblemTopsTheMenu() {
+        let menu = StatusMenu(
+            modules: [], report: report([]), configPath: path, configExists: true, signingProblem: "not signed")
+        #expect(Array(menu.items.prefix(4)) == [.text("Malum dev"), .separator, .text("not signed"), .separator])
+        #expect(menu.needsAttention)
+    }
+
     @Test func configProblemsAreListedWithTheirTags() {
         let problems = [ConfigProblem(.warn, line: 1, "unknown module samba")]
         let menu = StatusMenu(modules: [], report: report(problems), configPath: path, configExists: true)

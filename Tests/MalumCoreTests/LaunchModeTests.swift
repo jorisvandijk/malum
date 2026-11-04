@@ -30,4 +30,10 @@ struct LaunchModeTests {
     @Test func noServiceNameRunsTheCommand() {
         #expect(LaunchMode(environment: [:]) == .command)
     }
+
+    @Test func onlyTheAgentsServiceIsTheLoginAgent() {
+        #expect(LaunchMode.isLoginAgent(environment: ["XPC_SERVICE_NAME": Project.bundleID]))
+        #expect(!LaunchMode.isLoginAgent(environment: ["XPC_SERVICE_NAME": "application.\(Project.bundleID).1.2"]))
+        #expect(!LaunchMode.isLoginAgent(environment: [:]))
+    }
 }

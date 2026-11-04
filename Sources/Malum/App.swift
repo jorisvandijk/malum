@@ -9,7 +9,10 @@ func runApp() -> Never {
     do {
         guard try instance.claim(processID: getpid()) else {
             announce(Message(.info, "\(Project.name) is already running"))
-            exit(EXIT_SUCCESS)
+            // launchd starts the login agent again after a failure, so a freshly signed app that
+            // launchd starts while the old one is still quitting gets another go once it's gone.
+            exit(
+                LaunchMode.isLoginAgent(environment: ProcessInfo.processInfo.environment) ? EXIT_FAILURE : EXIT_SUCCESS)
         }
     } catch {
         announce(Message(.error, error.text))
@@ -28,6 +31,7 @@ func runApp() -> Never {
         overrides: OverrideStore(state: state))
     let menu = MenuFeed(modules: modules, config: config)
     config.start()
+    Task { await startWhenSigned(config: config, menu: menu) }
     let hangup = HangupWatcher { config.reload(force: true) }
     let quit = NotificationCenter.default.addObserver(
         forName: NSApplication.willTerminateNotification, object: nil, queue: .main
@@ -36,6 +40,39 @@ func runApp() -> Never {
     app.setActivationPolicy(.accessory)
     withExtendedLifetime((menu, config, hangup, quit)) { app.run() }
     exit(EXIT_SUCCESS)
+}
+
+/// Lets the modules start once the installed app is signed with Malum's own certificate. A new
+/// install is signed in place first, and started again through launchd as the signed app.
+@MainActor
+private func startWhenSigned(config: LiveConfig, menu: MenuFeed) async {
+    let certificate = SigningCertificate(
+        runner: runner, files: files, paths: paths, temporaryDirectory: NSTemporaryDirectory())
+    let signing = SelfSigning(runner: runner, files: files, paths: paths, certificate: certificate)
+    switch await signing.check(executable: executable) {
+    case .signed:
+        config.allowModules()
+    case .resigned:
+        announce(
+            Message(.info, "signed \(Project.name) with the \"\(SigningCertificate.name)\" certificate, restarting"))
+        do {
+            try await signing.restart(userID: getuid())
+            exit(EXIT_SUCCESS)
+        } catch {
+            refuse(error.text, menu: menu)
+        }
+    case .notInstalled:
+        refuse("modules stay off: \(Project.name) isn't running from \(private: paths.installedBundle)", menu: menu)
+    case .failed(let error):
+        refuse(error.text, menu: menu)
+    }
+}
+
+/// Keeps the modules off because Malum isn't signed, and says why in the log and the menu.
+@MainActor
+private func refuse(_ problem: MessageText, menu: MenuFeed) {
+    announce(Message(.warn, problem))
+    menu.signingProblem = problem.description
 }
 
 /// Writes down this start, and turns safe mode on when Malum keeps starting, as it does when it

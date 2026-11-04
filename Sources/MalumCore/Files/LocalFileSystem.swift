@@ -63,4 +63,33 @@ public struct LocalFileSystem: FileSystem {
             throw .unlinkable(path: path, reason: error.localizedDescription)
         }
     }
+
+    /// Copies with `FileManager`, which keeps the files' attributes.
+    public func copy(_ source: String, to destination: String) throws(FileSystemError) {
+        do {
+            try FileManager.default.copyItem(atPath: source, toPath: destination)
+        } catch {
+            throw .uncopyable(path: source, reason: error.localizedDescription)
+        }
+    }
+
+    /// Swaps the two with `renamex_np`, so neither path is ever empty. Linux has no such call
+    /// that Swift can reach, and Malum never swaps there.
+    public func exchange(_ path: String, _ other: String) throws(FileSystemError) {
+        #if canImport(Darwin)
+            guard renamex_np(path, other, UInt32(RENAME_SWAP)) != 0 else { return }
+            throw .unswappable(path: path, other: other, reason: String(cString: strerror(errno)))
+        #else
+            throw .unswappable(path: path, other: other, reason: "not supported on this system")
+        #endif
+    }
+
+    /// Removes with `FileManager`.
+    public func remove(_ path: String) throws(FileSystemError) {
+        do {
+            try FileManager.default.removeItem(atPath: path)
+        } catch {
+            throw .unremovable(path: path, reason: error.localizedDescription)
+        }
+    }
 }

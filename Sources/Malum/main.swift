@@ -12,6 +12,8 @@ let files = LocalFileSystem()
 let locks = LocalFileLocks()
 /// Where Malum's own files go.
 let paths = Paths(home: FileManager.default.homeDirectoryForCurrentUser.path)
+/// Runs the outside tools.
+let runner = ProcessRunner(home: paths.home)
 /// Malum's executable inside Malum.app, or nil when it runs from elsewhere, such as a build folder.
 let executable = Bundle.main.executableURL.flatMap { AppBundle.executable(at: $0.resolvingSymlinksInPath().path) }
 
