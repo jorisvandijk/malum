@@ -15,6 +15,12 @@ public struct Paths: Equatable, Sendable {
     private static let tomlExtension = "toml"
     /// The folder for apps' own data, relative to home.
     private static let applicationSupportRoot = "Library/Application Support"
+    /// The folder Malum is installed in, relative to home.
+    private static let applicationsRoot = "Applications"
+    /// The folder of the user's login agents, relative to home.
+    private static let launchAgentsRoot = "Library/LaunchAgents"
+    /// The folder inside an app bundle that holds its executable.
+    private static let executableFolder = "Contents/MacOS"
 
     /// Creates the paths under `home`.
     public init(home: String) {
@@ -31,6 +37,14 @@ public struct Paths: Equatable, Sendable {
     public var commandLink: String { "\(binDirectory)/\(Project.command)" }
     /// `~/Library/Application Support/<bundle ID>`, the state folder the app and the command share.
     public var stateDirectory: String { "\(home)/\(Self.applicationSupportRoot)/\(Project.bundleID)" }
+    /// `~/Applications/Malum.app/Contents/MacOS/Malum`, the executable of the installed app.
+    public var installedExecutable: String {
+        "\(home)/\(Self.applicationsRoot)/\(Project.name).app/\(Self.executableFolder)/\(Project.name)"
+    }
+    /// `~/Library/LaunchAgents`, where the login agent goes.
+    public var launchAgentsDirectory: String { "\(home)/\(Self.launchAgentsRoot)" }
+    /// `~/Library/LaunchAgents/<bundle ID>.plist`, the agent that starts Malum at login.
+    public var loginAgent: String { "\(launchAgentsDirectory)/\(Project.bundleID).plist" }
 
     /// `malum.toml`, the name of the file in dots that holds Malum's settings.
     public static var configTOMLName: String { "\(Project.command).\(tomlExtension)" }

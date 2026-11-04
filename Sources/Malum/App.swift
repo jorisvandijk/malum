@@ -16,6 +16,7 @@ func runApp() -> Never {
         exit(EXIT_FAILURE)
     }
     announce(Message(.info, "\(Project.name) \(Project.version) is running"))
+    updateLoginAgent()
     // TODO: one list of the modules, whose schemas MalumDocs shares, once there are modules.
     let modules: [any Module] = []
     let schemas = Dictionary(modules.map { ($0.id, $0.schema) }) { first, _ in first }
@@ -28,4 +29,22 @@ func runApp() -> Never {
     app.setActivationPolicy(.accessory)
     withExtendedLifetime((menu, config, hangup)) { app.run() }
     exit(EXIT_SUCCESS)
+}
+
+/// Writes the login agent when the installed app starts and the agent is missing or differs.
+@MainActor
+private func updateLoginAgent() {
+    do {
+        switch try LoginAgent(files: files, paths: paths).update(executable: executable) {
+        case .written:
+            announce(Message(.info, "\(Project.name) starts at login, through \(private: paths.loginAgent)"))
+        case .unchanged:
+            break
+        case .notInstalled:
+            let installed = paths.installedExecutable
+            announce(Message(.info, "not starting at login: \(Project.name) isn't running from \(private: installed)"))
+        }
+    } catch {
+        announce(Message(.warn, error.text))
+    }
 }

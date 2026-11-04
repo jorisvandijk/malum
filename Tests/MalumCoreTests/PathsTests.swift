@@ -18,6 +18,14 @@ struct PathsTests {
         #expect(paths.stateDirectory == "/Users/joris/Library/Application Support/com.jorisvandijk.malum")
     }
 
+    @Test func installedExecutableIsInHomeApplications() {
+        #expect(paths.installedExecutable == "/Users/joris/Applications/Malum.app/Contents/MacOS/Malum")
+    }
+
+    @Test func loginAgentIsNamedAfterBundleID() {
+        #expect(paths.loginAgent == "/Users/joris/Library/LaunchAgents/com.jorisvandijk.malum.plist")
+    }
+
     @Test func configTOMLIsAtTheTopOfDots() {
         #expect(paths.configTOML(in: "/Users/joris/Git/dots") == "/Users/joris/Git/dots/malum.toml")
     }

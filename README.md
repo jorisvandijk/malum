@@ -84,3 +84,11 @@ The app writes what it does to the macOS log. The [log page](docs/log.md) shows 
 The app and the command keep their shared state in `~/Library/Application Support/com.jorisvandijk.malum`.
 
 The [menu bar page](docs/menu-bar.md) explains Malum's icon and its menu.
+
+## Start at login
+
+When the app starts from `~/Applications/Malum.app`, it makes sure `~/Library/LaunchAgents/com.jorisvandijk.malum.plist` is there, and from the next login on, macOS starts Malum when you log in. The first time, macOS shows a "Background Items Added" notification. The file is the same for every version of Malum, so updates don't bring the notification back. A copy of Malum running from anywhere else, such as a build folder, leaves the file alone.
+
+When Malum crashes, macOS starts it again after 10 seconds. Quitting it from the menu bar keeps it closed until the next login. This works for the copy that macOS started at login; a copy opened from Finder isn't restarted.
+
+To stop Malum from starting at login, switch it off under **System Settings > General > Login Items & Extensions**.
