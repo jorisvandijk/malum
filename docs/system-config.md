@@ -21,16 +21,23 @@ When the table is missing, sets `enabled = false`, or has a problem, `malum run`
 
 ## packages.toml
 
-What gets installed is listed in `packages.toml`, at the top of your dots folder, next to `malum.toml`. Each way of installing has its own table. For now that's `[homebrew]`, where each package is its name set to `"formula"` or `"cask"`:
+What gets installed is listed in `packages.toml`, at the top of your dots folder, next to `malum.toml`. Each way of installing has its own table: `[homebrew]` and `[app_store]`.
 
 ```toml
 [homebrew]
 bitwarden = "cask"
+mas = "formula"
 mole = "formula"
 "olets/tap/zsh-abbr" = "formula"
+
+[app_store]
+amphetamine = 937984704
+xcode = 497799835
 ```
 
-A package from a tap is written as `owner/tap/name`, in quotes. Homebrew adds the tap by itself, so taps aren't listed anywhere.
+In `[homebrew]`, each package is its name set to `"formula"` or `"cask"`. A package from a tap is written as `owner/tap/name`, in quotes. Homebrew adds the tap by itself, so taps aren't listed anywhere.
+
+In `[app_store]`, each app is a name of your choosing set to its App Store ID, the number at the end of its App Store link (`apps.apple.com/app/xcode/id497799835`). The name only shows up in messages.
 
 Every problem in the file is reported with its line, and `malum run` then installs nothing:
 
@@ -57,5 +64,22 @@ An install that fails is reported with the last line Homebrew wrote, and the res
 Homebrew itself has to be installed at `/opt/homebrew/bin/brew`. Packages that aren't listed are left alone, and taking a package out of the list doesn't uninstall it.
 
 A cask that runs an installer package needs your password, which `malum run` can't ask for yet, so its install fails.
+
+## App Store apps
+
+App Store apps are installed after the Homebrew packages, with [mas](https://github.com/mas-cli/mas). List `mas = "formula"` under `[homebrew]`, and the same run installs it first. You have to be signed in to the App Store. Free apps are got for your account; a paid app has to have been bought with it already.
+
+mas installs as root, so when an app is missing, `malum run` asks for your password once, in the terminal, and the rest of the run doesn't ask again. Outside a terminal it can't ask, and installs no App Store apps. What mas writes while it downloads shows up between Malum's own lines:
+
+```
+[info] every listed Homebrew formula is installed
+[info] asking for your password to install App Store apps
+[sudo] password for you:
+[info] installing App Store app xcode (497799835)
+[info] installed App Store app xcode
+[info] system_config is done
+```
+
+An app that's already installed is left alone, and so is everything that isn't listed. When mas can't install an app, the error it wrote stays above `[error] couldn't install App Store app xcode: exited with 1`, and the rest still go ahead.
 
 The messages also go to the macOS log, as the [log page](log.md) describes.

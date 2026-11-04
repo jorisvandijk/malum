@@ -17,9 +17,12 @@ struct RunCommandTests {
         var texts = [pointer: "/Users/joris/dots\n"]
         texts[file] = toml
         texts[packages] = list
-        let files = FakeFileSystem(items: ["/opt/homebrew/bin/brew": .file], texts: texts)
+        let files = FakeFileSystem(
+            items: ["/opt/homebrew/bin/brew": .file, "/opt/homebrew/bin/mas": .file], texts: texts)
         var messages: [Message] = []
-        let succeeded = await RunCommand(files: files, paths: paths, runner: runner).run { messages.append($0) }
+        let succeeded = await RunCommand(files: files, paths: paths, runner: runner, canAsk: true).run {
+            messages.append($0)
+        }
         return (succeeded, messages)
     }
 
@@ -91,5 +94,15 @@ struct RunCommandTests {
         let (succeeded, messages) = await run(switchedOn, packages: "[homebrew]\nkitty = \"cask\"\n", runner: runner)
         #expect(!succeeded)
         #expect(messages.last == Message(.error, "system_config finished with errors"))
+    }
+
+    @Test func appStoreAppsInstallAfterHomebrew() async {
+        let runner = FakeRunner()
+        let (succeeded, messages) = await run(
+            switchedOn, packages: "[app_store]\nxcode = 497799835\n\n[homebrew]\nmas = \"formula\"\n", runner: runner)
+        #expect(succeeded)
+        #expect(
+            runner.commands.map { $0.arguments.first ?? "" } == ["list", "install", "list", "-v", "-n"])
+        #expect(messages.last == Message(.info, "system_config is done"))
     }
 }

@@ -41,9 +41,39 @@ struct PackageListTests {
     }
 
     @Test func unknownTableIsOnlyAWarning() {
-        let reading = PackageList.read("[homebrew]\nbat = \"formula\"\n\n[app_store]\nxcode = 497799835\n")
+        let reading = PackageList.read("[homebrew]\nbat = \"formula\"\n\n[mystery]\nanswer = 42\n")
         #expect(reading.list == PackageList(homebrew: [.formula: ["bat"]]))
-        #expect(reading.problems.map(\.message) == [Message(.warn, "packages.toml line 4: unknown table app_store")])
+        #expect(reading.problems.map(\.message) == [Message(.warn, "packages.toml line 4: unknown table mystery")])
+    }
+
+    @Test func appStoreAppsAreSortedByName() {
+        let reading = PackageList.read("[app_store]\nxcode = 497799835\namphetamine = 937984704\n")
+        #expect(
+            reading.list
+                == PackageList(appStore: [
+                    AppStoreApp("amphetamine", id: 937_984_704), AppStoreApp("xcode", id: 497_799_835),
+                ])
+        )
+        #expect(reading.problems.isEmpty)
+    }
+
+    @Test func appStoreIdThatIsntAWholeNumberIsAnError() {
+        let reading = PackageList.read("[app_store]\nxcode = \"497799835\"\nbroken = 0\nfine = 1\n")
+        #expect(reading.list == nil)
+        #expect(
+            reading.problems.map(\.message) == [
+                Message(
+                    .error, "packages.toml line 2: app_store.xcode should be the app's App Store ID, a whole number"),
+                Message(
+                    .error, "packages.toml line 3: app_store.broken should be the app's App Store ID, a whole number"),
+            ])
+    }
+
+    @Test func appStoreThatIsntATableIsAnError() {
+        let reading = PackageList.read("app_store = 497799835\n")
+        #expect(reading.list == nil)
+        #expect(
+            reading.problems.map(\.message) == [Message(.error, "packages.toml line 1: app_store should be a table")])
     }
 
     @Test func syntaxErrorGivesLineAndColumn() {

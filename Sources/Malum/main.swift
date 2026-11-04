@@ -70,7 +70,8 @@ func runCommand(_ invocation: Invocation) {
 @MainActor
 func applySystemConfig() -> Never {
     Task {
-        let succeeded = await RunCommand(files: files, paths: paths, runner: runner).run { announce($0) }
+        let command = RunCommand(files: files, paths: paths, runner: runner, canAsk: isatty(STDIN_FILENO) == 1)
+        let succeeded = await command.run { announce($0) }
         exit(succeeded ? EXIT_SUCCESS : EXIT_FAILURE)
     }
     dispatchMain()
