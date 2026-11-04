@@ -1,7 +1,7 @@
 /// Every way Malum runs `launchctl`.
 public enum Launchctl {
     /// The tool.
-    private static let path = "/usr/bin/launchctl"
+    private static let path = "/bin/launchctl"
 
     /// The login session of the user with id `userID`, where login agents run.
     public static func domain(userID: UInt32) -> String { "gui/\(userID)" }

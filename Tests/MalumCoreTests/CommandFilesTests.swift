@@ -52,10 +52,10 @@ struct CommandFilesTests {
     @Test func launchctlNamesTheUsersSession() {
         let service = Launchctl.service("com.jorisvandijk.malum", userID: 501)
         #expect(service == "gui/501/com.jorisvandijk.malum")
-        #expect(Launchctl.describe(service) == Command("/usr/bin/launchctl", ["print", service]))
-        #expect(Launchctl.restart(service) == Command("/usr/bin/launchctl", ["kickstart", "-k", service]))
+        #expect(Launchctl.describe(service) == Command("/bin/launchctl", ["print", service]))
+        #expect(Launchctl.restart(service) == Command("/bin/launchctl", ["kickstart", "-k", service]))
         #expect(
             Launchctl.load("/a.plist", into: "gui/501")
-                == Command("/usr/bin/launchctl", ["bootstrap", "gui/501", "/a.plist"]))
+                == Command("/bin/launchctl", ["bootstrap", "gui/501", "/a.plist"]))
     }
 }
