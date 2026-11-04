@@ -82,4 +82,43 @@ struct PackageListTests {
         #expect(reading.problems.first?.line == 2)
         #expect(reading.problems.first?.file == "packages.toml")
     }
+
+    @Test func releasesAreReadWithTheirRepoAndAsset() {
+        let reading = PackageList.read(
+            """
+            [release.pagefind]
+            repo = "CloudCannon/pagefind"
+
+            [release.mpv]
+            repo = "mpv-player/mpv"
+            asset = "mpv-*-arm.zip"
+            """)
+        #expect(
+            reading.list
+                == PackageList(releases: [
+                    ReleaseEntry("mpv", repo: "mpv-player/mpv", asset: "mpv-*-arm.zip"),
+                    ReleaseEntry("pagefind", repo: "CloudCannon/pagefind"),
+                ]))
+        #expect(reading.problems.isEmpty)
+    }
+
+    @Test func badReleasesAreErrorsWithTheirLines() {
+        let reading = PackageList.read(
+            """
+            [release.mpv]
+            repo = "mpv"
+
+            [release.tool]
+            repo = "a/tool"
+            asset = 3
+            colour = "red"
+            """)
+        #expect(reading.list == nil)
+        #expect(
+            reading.problems.map(\.message) == [
+                Message(.error, "packages.toml line 1: release.mpv.repo should be the repository, as \"owner/name\""),
+                Message(.error, "packages.toml line 6: release.tool.asset should be text in quotes"),
+                Message(.error, "packages.toml line 7: unknown setting release.tool.colour"),
+            ])
+    }
 }

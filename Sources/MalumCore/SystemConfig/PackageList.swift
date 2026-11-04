@@ -7,16 +7,21 @@ public struct PackageList: Equatable, Sendable {
     private static let homebrewTable = "homebrew"
     /// The table that lists App Store apps.
     private static let appStoreTable = "app_store"
+    /// The table that lists GitHub releases, one table inside it for each.
+    static let releaseTable = "release"
 
     /// The Homebrew packages of each kind, by name, in alphabetical order.
     public let homebrew: [PackageKind: [String]]
     /// The App Store apps, in alphabetical order.
     public let appStore: [AppStoreApp]
+    /// The GitHub releases, in alphabetical order.
+    public let releases: [ReleaseEntry]
 
-    /// Creates a list from the Homebrew packages of each kind and the App Store apps.
-    public init(homebrew: [PackageKind: [String]] = [:], appStore: [AppStoreApp] = []) {
+    /// Creates a list from the Homebrew packages of each kind, the App Store apps and the releases.
+    public init(homebrew: [PackageKind: [String]] = [:], appStore: [AppStoreApp] = [], releases: [ReleaseEntry] = []) {
         self.homebrew = homebrew
         self.appStore = appStore
+        self.releases = releases
     }
 
     /// Reads `text`, the contents of `packages.toml`.
@@ -28,16 +33,17 @@ public struct PackageList: Equatable, Sendable {
             return (nil, [problem(error)])
         }
         let lines = TOMLLines(text)
-        let known = [homebrewTable, appStoreTable]
+        let known = [homebrewTable, appStoreTable, releaseTable]
         let unknown = document.keys.sorted().filter { !known.contains($0) }.map { key in
             ConfigProblem(.warn, file: Paths.packagesTOMLName, line: lines.line(of: [key]), "unknown table \(key)")
         }
         let (homebrew, homebrewProblems) = homebrewPackages(document[homebrewTable], lines: lines)
         let (appStore, appStoreProblems) = appStoreApps(document[appStoreTable], lines: lines)
-        let problems = homebrewProblems + appStoreProblems
+        let (releases, releaseProblems) = releaseEntries(document[releaseTable], lines: lines)
+        let problems = homebrewProblems + appStoreProblems + releaseProblems
         let all = (unknown + problems).sorted { ($0.line ?? Int.max) < ($1.line ?? Int.max) }
         guard problems.isEmpty else { return (nil, all) }
-        return (Self(homebrew: homebrew, appStore: appStore), all)
+        return (Self(homebrew: homebrew, appStore: appStore, releases: releases), all)
     }
 
     /// The packages in the `homebrew` table, each written as `name = "formula"` or `name = "cask"`,
@@ -73,6 +79,45 @@ public struct PackageList: Equatable, Sendable {
             apps.append(AppStoreApp(name, id: id))
         }
         return (apps, problems)
+    }
+
+    /// The releases in the `release` table, each a table with `repo` and maybe `asset`, and the
+    /// errors in them.
+    private static func releaseEntries(_ value: ConfigValue?, lines: TOMLLines) -> ([ReleaseEntry], [ConfigProblem]) {
+        let (entries, notATable) = entries(of: releaseTable, in: value, lines: lines)
+        var releases: [ReleaseEntry] = []
+        var problems = notATable
+        for (name, table) in entries {
+            let path = "\(releaseTable).\(ConfigValue.key(name))"
+            guard case .table(let fields) = table else {
+                problems.append(problem("\(path) should be a table", at: [releaseTable, name], lines: lines))
+                continue
+            }
+            for key in fields.keys.sorted() where !["repo", "asset"].contains(key) {
+                problems.append(problem("unknown setting \(path).\(key)", at: [releaseTable, name, key], lines: lines))
+            }
+            guard case .string(let repo) = fields["repo"], isRepository(repo) else {
+                let text = "\(path).repo should be the repository, as \"owner/name\""
+                problems.append(problem(text, at: [releaseTable, name], lines: lines))
+                continue
+            }
+            switch fields["asset"] {
+            case nil:
+                releases.append(ReleaseEntry(name, repo: repo))
+            case .string(let asset):
+                releases.append(ReleaseEntry(name, repo: repo, asset: asset))
+            default:
+                problems.append(
+                    problem("\(path).asset should be text in quotes", at: [releaseTable, name, "asset"], lines: lines))
+            }
+        }
+        return (releases, problems)
+    }
+
+    /// Whether `text` names a repository as `owner/name`.
+    private static func isRepository(_ text: String) -> Bool {
+        let parts = text.split(separator: "/", omittingEmptySubsequences: false)
+        return parts.count == ["owner", "name"].count && parts.allSatisfy { !$0.isEmpty && !$0.hasPrefix(".") }
     }
 
     /// The entries of the table `name`, sorted by key, or an error when `value` isn't a table.
