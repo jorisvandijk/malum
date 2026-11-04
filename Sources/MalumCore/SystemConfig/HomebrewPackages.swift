@@ -38,7 +38,7 @@ public struct HomebrewPackages {
         let installed = Set(listed.output.split(separator: "\n").map(String.init))
         let missing = names.filter { !installed.contains(Self.shortName($0)) }
         guard !missing.isEmpty else {
-            report(Message(.info, "every listed \(kind.rawValue) is installed"))
+            report(Message(.info, "every listed \(kind.label) is installed"))
             return true
         }
         var succeeded = true
@@ -51,16 +51,16 @@ public struct HomebrewPackages {
     /// Installs one package, and says whether it worked.
     private func install(_ name: String, kind: PackageKind, report: (Message) -> Void) async -> Bool {
         guard !name.hasPrefix("-") else {
-            report(Message(.error, "couldn't install \(kind.rawValue) \(name): it isn't a package name"))
+            report(Message(.error, "couldn't install \(kind.label) \(name): it isn't a package name"))
             return false
         }
-        report(Message(.info, "installing \(kind.rawValue) \(name)"))
+        report(Message(.info, "installing \(kind.label) \(name)"))
         let result = await runner.run(Brew.install(name, kind: kind))
         guard result.succeeded else {
-            report(Message(.error, "couldn't install \(kind.rawValue) \(name): \(result.reason)"))
+            report(Message(.error, "couldn't install \(kind.label) \(name): \(result.reason)"))
             return false
         }
-        report(Message(.info, "installed \(kind.rawValue) \(name)"))
+        report(Message(.info, "installed \(kind.label) \(name)"))
         return true
     }
 

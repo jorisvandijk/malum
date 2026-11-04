@@ -46,9 +46,9 @@ A table Malum doesn't know only gets a warning. Without a `packages.toml`, there
 `malum run` asks Homebrew which packages are installed, and installs each listed one that's missing, one at a time, formulae first:
 
 ```
-[info] installing formula mole
-[info] installed formula mole
-[info] every listed cask is installed
+[info] installing Homebrew formula mole
+[info] installed Homebrew formula mole
+[info] every listed Homebrew cask is installed
 [info] system_config is done
 ```
 

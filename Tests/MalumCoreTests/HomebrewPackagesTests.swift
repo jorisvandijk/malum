@@ -51,8 +51,9 @@ struct HomebrewPackagesTests {
             ])
         #expect(
             messages == [
-                Message(.info, "installing formula ripgrep"), Message(.info, "installed formula ripgrep"),
-                Message(.info, "installing cask kitty"), Message(.info, "installed cask kitty"),
+                Message(.info, "installing Homebrew formula ripgrep"),
+                Message(.info, "installed Homebrew formula ripgrep"),
+                Message(.info, "installing Homebrew cask kitty"), Message(.info, "installed Homebrew cask kitty"),
             ])
     }
 
@@ -61,7 +62,7 @@ struct HomebrewPackagesTests {
         let (succeeded, messages) = await run(
             [.formula: ["bat", "me/tap/ripgrep"]], runner: runner)
         #expect(succeeded)
-        #expect(messages == [Message(.info, "every listed formula is installed")])
+        #expect(messages == [Message(.info, "every listed Homebrew formula is installed")])
         #expect(runner.commands.count == 1)
     }
 
@@ -69,15 +70,16 @@ struct HomebrewPackagesTests {
         let runner = brew(failing: ["nope"])
         let (succeeded, messages) = await run([.formula: ["nope", "bat"]], runner: runner)
         #expect(!succeeded)
-        #expect(messages.contains(Message(.error, "couldn't install formula nope: Error: No available formula")))
-        #expect(messages.last == Message(.info, "installed formula bat"))
+        #expect(
+            messages.contains(Message(.error, "couldn't install Homebrew formula nope: Error: No available formula")))
+        #expect(messages.last == Message(.info, "installed Homebrew formula bat"))
     }
 
     @Test func nameLikeAFlagIsRefused() async {
         let runner = brew()
         let (succeeded, messages) = await run([.formula: ["--force"]], runner: runner)
         #expect(!succeeded)
-        #expect(messages == [Message(.error, "couldn't install formula --force: it isn't a package name")])
+        #expect(messages == [Message(.error, "couldn't install Homebrew formula --force: it isn't a package name")])
         #expect(runner.commands.count == 1)
     }
 
@@ -97,6 +99,6 @@ struct HomebrewPackagesTests {
         let runner = FakeRunner { _ in CommandResult(status: 1, errors: "Error: broken\n") }
         let (succeeded, messages) = await run([.cask: ["kitty"]], runner: runner)
         #expect(!succeeded)
-        #expect(messages == [Message(.error, "couldn't list the installed casks: Error: broken")])
+        #expect(messages == [Message(.error, "couldn't list the installed Homebrew casks: Error: broken")])
     }
 }
