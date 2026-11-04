@@ -8,14 +8,14 @@ func runApp() -> Never {
     let instance = AppInstance(state: StateFolder(files: files, locks: locks, paths: paths), locks: locks)
     do {
         guard try instance.claim(processID: getpid()) else {
-            terminal.report(Message(.info, "\(Project.name) is already running"))
+            announce(Message(.info, "\(Project.name) is already running"))
             exit(EXIT_SUCCESS)
         }
     } catch {
-        terminal.report(Message(.error, error.description))
+        announce(Message(.error, error.text))
         exit(EXIT_FAILURE)
     }
-    terminal.report(Message(.info, "\(Project.name) \(Project.version) is running"))
+    announce(Message(.info, "\(Project.name) \(Project.version) is running"))
     let menuBar = MenuBar()
     // TODO: one list of the modules, whose schemas MalumDocs shares, once there are modules.
     let modules: [any Module] = []

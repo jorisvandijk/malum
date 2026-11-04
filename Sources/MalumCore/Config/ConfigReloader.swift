@@ -38,9 +38,9 @@ public final class ConfigReloader {
         case .noDots:
             return failed("couldn't load \(Paths.configTOMLName): no dots folder yet, run \(Project.command) init")
         case .missing(let path):
-            return failed("couldn't load \(path): it doesn't exist")
+            return failed("couldn't load \(private: path): it doesn't exist")
         case .unreadable(let error):
-            return failed(error.description)
+            return failed(error.text)
         }
     }
 
@@ -65,7 +65,7 @@ public final class ConfigReloader {
     }
 
     /// A report for a file that couldn't be read: every module keeps its settings.
-    private func failed(_ text: String) -> ConfigReport {
+    private func failed(_ text: MessageText) -> ConfigReport {
         ConfigReport(loaded: nil, changed: [], kept: config.modules, problems: [ConfigProblem(.error, text)])
     }
 }

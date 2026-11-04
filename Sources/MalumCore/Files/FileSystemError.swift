@@ -10,20 +10,20 @@ public enum FileSystemError: Error, Equatable, Sendable {
     case unlinkable(path: String, reason: String)
 }
 
-// MARK: - CustomStringConvertible
+// MARK: - ReportableError
 
-extension FileSystemError: CustomStringConvertible {
+extension FileSystemError: ReportableError {
     /// The problem as the user sees it.
-    public var description: String {
+    public var text: MessageText {
         switch self {
         case .unreadable(let path, let reason):
-            "couldn't read \(path): \(reason)"
+            "couldn't read \(private: path): \(reason)"
         case .unwritable(let path, let reason):
-            "couldn't write \(path): \(reason)"
+            "couldn't write \(private: path): \(reason)"
         case .noDirectory(let path, let reason):
-            "couldn't create \(path): \(reason)"
+            "couldn't create \(private: path): \(reason)"
         case .unlinkable(let path, let reason):
-            "couldn't link \(path): \(reason)"
+            "couldn't link \(private: path): \(reason)"
         }
     }
 }

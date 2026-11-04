@@ -71,7 +71,7 @@ struct InitCommandTests {
         let files = FakeFileSystem(items: [dots: .directory])
         let messages = InitCommand(files: files, paths: paths)
             .run(dots: dots, workingDirectory: "/", executable: nil)
-        #expect(messages.last == Message(.warn, SetupError.notInApp(path: paths.commandLink).description))
+        #expect(messages.last == Message(.warn, SetupError.notInApp(path: paths.commandLink).text))
         #expect(files.item(at: paths.commandLink) == nil)
     }
 

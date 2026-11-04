@@ -7,10 +7,10 @@ public struct ConfigProblem: Equatable, Sendable {
     /// The column the problem is at, for syntax errors.
     public let column: Int?
     /// What's wrong.
-    public let text: String
+    public let text: MessageText
 
     /// Creates a problem at `line` and `column`, when they're known.
-    public init(_ level: Level, line: Int? = nil, column: Int? = nil, _ text: String) {
+    public init(_ level: Level, line: Int? = nil, column: Int? = nil, _ text: MessageText) {
         self.level = level
         self.line = line
         self.column = column

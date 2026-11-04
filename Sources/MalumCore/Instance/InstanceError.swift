@@ -10,20 +10,20 @@ public enum InstanceError: Error, Equatable, Sendable {
     case state(StateError)
 }
 
-// MARK: - CustomStringConvertible
+// MARK: - ReportableError
 
-extension InstanceError: CustomStringConvertible {
+extension InstanceError: ReportableError {
     /// The problem as the user sees it.
-    public var description: String {
+    public var text: MessageText {
         switch self {
         case .notRunning:
             "couldn't reach \(Project.name): it isn't running"
         case .noProcessID(let path):
-            "couldn't reach \(Project.name): no process ID in \(path)"
+            "couldn't reach \(Project.name): no process ID in \(private: path)"
         case .unsignalable(let processID, let reason):
             "couldn't signal \(Project.name) (process \(processID)): \(reason)"
         case .state(let error):
-            error.description
+            error.text
         }
     }
 }

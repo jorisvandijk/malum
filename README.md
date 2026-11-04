@@ -77,4 +77,6 @@ malum reload
 
 If the app isn't running, `malum reload` says so and exits with an error.
 
+The app writes what it does to the macOS log. The [log page](docs/log.md) shows how to read it.
+
 The app and the command keep their shared state in `~/Library/Application Support/com.jorisvandijk.malum`. Quit the app from its menu in the menu bar.

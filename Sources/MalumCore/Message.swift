@@ -3,10 +3,10 @@ public struct Message: Equatable, Sendable {
     /// How serious it is.
     public let level: Level
     /// What happened.
-    public let text: String
+    public let text: MessageText
 
     /// Creates a message with its level and text.
-    public init(_ level: Level, _ text: String) {
+    public init(_ level: Level, _ text: MessageText) {
         self.level = level
         self.text = text
     }

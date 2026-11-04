@@ -66,7 +66,7 @@ public struct Config: Sendable {
             return [ConfigProblem(.error, line: lines.line(of: [module]), "\(module) should be a table")]
         }
         return schema.problems(in: table, module: module).map { key, text in
-            ConfigProblem(.error, line: lines.line(of: [module, key]), text)
+            ConfigProblem(.error, line: lines.line(of: [module, key]), MessageText(text))
         }
     }
 
@@ -80,7 +80,7 @@ public struct Config: Sendable {
     private static func problem(_ error: TOMLReadError) -> ConfigProblem {
         switch error {
         case .syntax(let line, let column, let reason):
-            ConfigProblem(.error, line: line, column: column, reason)
+            ConfigProblem(.error, line: line, column: column, MessageText(reason))
         case .unreadable(let reason):
             ConfigProblem(.error, "couldn't read \(Paths.configTOMLName): \(reason)")
         }

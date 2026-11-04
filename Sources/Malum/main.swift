@@ -1,8 +1,11 @@
 import Foundation
 import MalumCore
+import MalumPlatform
 
 /// Where the CLI writes its output and messages.
 let terminal = Terminal()
+/// The app's log, in the system log.
+let systemLog = Log(writer: SystemLog())
 /// The real disk.
 let files = LocalFileSystem()
 /// The real file locks.
@@ -12,15 +15,22 @@ let paths = Paths(home: FileManager.default.homeDirectoryForCurrentUser.path)
 /// Malum's executable inside Malum.app, or nil when it runs from elsewhere, such as a build folder.
 let executable = Bundle.main.executableURL.flatMap { AppBundle.executable(at: $0.resolvingSymlinksInPath().path) }
 
+/// Shows a message in the terminal and writes it to the log, for what the app does.
+@MainActor
+func announce(_ message: Message) {
+    terminal.report(message)
+    systemLog.report(message)
+}
+
 /// Links `~/.local/bin/malum` on first start. Anything already there is left for `malum init`.
 @MainActor
 func linkOnFirstStart() {
     guard let executable else { return }
     do {
         guard try CommandLink(files: files, paths: paths).createIfMissing(to: executable) else { return }
-        terminal.report(Message(.info, "linked \(paths.commandLink) to \(executable)"))
+        announce(Message(.info, "linked \(private: paths.commandLink) to \(private: executable)"))
     } catch {
-        terminal.report(Message(.warn, error.description))
+        announce(Message(.warn, error.text))
     }
 }
 

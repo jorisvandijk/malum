@@ -6,16 +6,16 @@ public enum StateError: Error, Equatable, Sendable {
     case file(FileSystemError)
 }
 
-// MARK: - CustomStringConvertible
+// MARK: - ReportableError
 
-extension StateError: CustomStringConvertible {
+extension StateError: ReportableError {
     /// The problem as the user sees it.
-    public var description: String {
+    public var text: MessageText {
         switch self {
         case .unlockable(let path, let reason):
-            "couldn't lock \(path): \(reason)"
+            "couldn't lock \(private: path): \(reason)"
         case .file(let error):
-            error.description
+            error.text
         }
     }
 }
