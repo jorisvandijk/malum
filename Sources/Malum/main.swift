@@ -59,15 +59,26 @@ func runCommand(_ invocation: Invocation) {
         finish(overrideCommand().safe())
     case .disable(let module):
         finish(overrideCommand().disable(module))
+    case .permissions:
+        checkTerminal()
+    case .incomplete, .unknown:
+        reject(invocation)
+    }
+}
+
+/// Says what's wrong with the arguments, shows how to use the command, and exits with an error.
+@MainActor
+func reject(_ invocation: Invocation) -> Never {
+    switch invocation {
     case .incomplete(let command, let needs):
         terminal.report(Message(.error, "\(command) needs \(needs)"))
-        terminal.write(Invocation.usage)
-        exit(EXIT_FAILURE)
     case .unknown(let argument):
         terminal.report(Message(.error, "unknown argument: \(argument)"))
-        terminal.write(Invocation.usage)
-        exit(EXIT_FAILURE)
+    case .version, .help, .initialize, .reload, .safe, .disable, .permissions:
+        break  // These make sense; runCommand runs them.
     }
+    terminal.write(Invocation.usage)
+    exit(EXIT_FAILURE)
 }
 
 /// The command behind `malum safe` and `malum disable`.
@@ -76,6 +87,21 @@ func overrideCommand() -> OverrideCommand {
     let state = StateFolder(files: files, locks: locks, paths: paths)
     return OverrideCommand(
         store: OverrideStore(state: state), instance: AppInstance(state: state, locks: locks), signals: LocalSignals())
+}
+
+/// Says whether the terminal has Full Disk Access, and opens its page in System Settings when it doesn't.
+@MainActor
+func checkTerminal() {
+    let name = TerminalApp.name(
+        environment: ProcessInfo.processInfo.environment, isTerminal: isatty(STDIN_FILENO) == 1)
+    let access = TerminalAccess(terminal: name, check: PermissionProbe(home: paths.home))
+    terminal.report(access.report())
+    guard access.isMissing else { return }
+    guard PrivacySettings.open(.fullDiskAccess) else {
+        terminal.report(Message(.warn, "couldn't open System Settings at \(Permission.fullDiskAccess)"))
+        return
+    }
+    terminal.report(Message(.info, "opened System Settings at \(Permission.fullDiskAccess)"))
 }
 
 /// Shows `messages`, and exits with an error when one of them is an error.

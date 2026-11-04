@@ -1,20 +1,27 @@
 /// Starts and stops the modules as `malum.toml` switches them on and off, and hands running
-/// modules their new settings.
+/// modules their new settings. A module that's missing a permission waits until it's granted.
 @MainActor
 public final class ModuleSwitch {
     /// Every module, in the order they're started.
     private let modules: [any Module]
+    /// Tells which permissions Malum has.
+    private let permissions: any PermissionCheck
     /// The modules that started and haven't been stopped since.
     public private(set) var started: Set<String> = []
     /// The modules the last update switched on, so a module that failed to start is tried again
     /// only when its table changes.
     private var switchedOn: Set<String> = []
+    /// The settings the last update gave, for starting a module once its permissions are granted.
+    private var lastSettings: [String: ConfigTable] = [:]
+    /// The switched-on modules that wait for permissions, with the ones they're missing.
+    public private(set) var waiting: [String: Set<Permission>] = [:]
     /// The update still running, so the next one waits for it.
     private var current: Task<[Message], Never>?
 
-    /// Creates a switch for `modules`, with every module off.
-    public init(modules: [any Module]) {
+    /// Creates a switch for `modules`, with every module off, that checks their permissions with `permissions`.
+    public init(modules: [any Module], permissions: any PermissionCheck) {
         self.modules = modules
+        self.permissions = permissions
     }
 
     /// Has every module undo what an earlier run may have left behind, and says what failed. Runs in
@@ -30,6 +37,12 @@ public final class ModuleSwitch {
         enabled: Set<String>, settings: [String: ConfigTable], changed: Set<String>
     ) async -> [Message] {
         await enqueue { await $0.run(enabled: enabled, settings: settings, changed: changed) }
+    }
+
+    /// Starts the waiting modules whose permissions have been granted since, and says what it did.
+    /// Does nothing while every waiting module misses the same permissions as before.
+    public func retryWaiting() async -> [Message] {
+        await enqueue { await $0.retry() }
     }
 
     /// Runs `work` once everything asked for before it has finished.
@@ -57,21 +70,31 @@ public final class ModuleSwitch {
         return messages
     }
 
+    /// Runs the last update again when a waiting module's missing permissions have changed.
+    private func retry() async -> [Message] {
+        guard waiting.contains(where: { permissions.missing(from: $0.value) != $0.value }) else { return [] }
+        return await run(enabled: switchedOn, settings: lastSettings, changed: [])
+    }
+
     /// One update, after the one before it has finished.
     private func run(enabled: Set<String>, settings: [String: ConfigTable], changed: Set<String>) async -> [Message] {
+        lastSettings = settings
         var messages: [Message] = []
         for module in modules {
             let table = settings[module.id] ?? [:]
-            let isNew = !switchedOn.contains(module.id) || changed.contains(module.id)
+            let isNew =
+                !switchedOn.contains(module.id) || changed.contains(module.id) || waiting[module.id] != nil
             switch (enabled.contains(module.id), started.contains(module.id)) {
             case (true, false) where isNew:
-                messages.append(await start(module, with: table))
+                messages += await start(module, with: table)
             case (true, true) where changed.contains(module.id):
                 messages += apply(table, to: module)
             case (false, true):
                 await module.stop()
                 started.remove(module.id)
                 messages.append(Message(.info, "stopped \(module.id)"))
+            case (false, false):
+                waiting[module.id] = nil
             default:
                 break
             }
@@ -80,16 +103,26 @@ public final class ModuleSwitch {
         return messages
     }
 
-    /// Gives `module` its settings, then starts it.
-    private func start(_ module: any Module, with table: ConfigTable) async -> Message {
+    /// Gives `module` its settings, then starts it, once it has every permission it needs.
+    private func start(_ module: any Module, with table: ConfigTable) async -> [Message] {
+        let missing = permissions.missing(from: module.permissions)
+        guard missing.isEmpty else { return wait(module.id, for: missing) }
+        waiting[module.id] = nil
         do {
             try module.apply(table)
             try await module.start()
         } catch {
-            return Message(.error, "couldn't start \(module.id): \(error)")
+            return [Message(.error, "couldn't start \(module.id): \(error)")]
         }
         started.insert(module.id)
-        return Message(.info, "started \(module.id)")
+        return [Message(.info, "started \(module.id)")]
+    }
+
+    /// Keeps the module `id` waiting for `missing`, saying so only when that's news.
+    private func wait(_ id: String, for missing: Set<Permission>) -> [Message] {
+        guard waiting[id] != missing else { return [] }
+        waiting[id] = missing
+        return [Message(.warn, "couldn't start \(id) yet: it \(ModuleStatus.needsPermission(missing))")]
     }
 
     /// Gives a running module its new settings, saying so only when it couldn't take them.

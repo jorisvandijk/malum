@@ -27,7 +27,8 @@ func runApp() -> Never {
     let modules: [any Module] = []
     let schemas = Dictionary(modules.map { ($0.id, $0.schema) }) { first, _ in first }
     let config = LiveConfig(
-        reloader: ConfigReloader(files: files, paths: paths, schemas: schemas), modules: ModuleSwitch(modules: modules),
+        reloader: ConfigReloader(files: files, paths: paths, schemas: schemas),
+        modules: ModuleSwitch(modules: modules, permissions: PermissionProbe(home: paths.home)),
         overrides: OverrideStore(state: state))
     let menu = MenuFeed(modules: modules, config: config)
     config.start()

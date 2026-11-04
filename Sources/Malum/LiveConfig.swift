@@ -5,6 +5,9 @@ import MalumPlatform
 /// Each load switches the modules on and off and hands them their new settings.
 @MainActor
 final class LiveConfig {
+    /// How long to wait between checks for permissions granted in System Settings, which doesn't say when.
+    private static let recheckSeconds = 2
+
     /// Reads and checks the file.
     private let reloader: ConfigReloader
     /// Starts and stops the modules.
@@ -19,6 +22,8 @@ final class LiveConfig {
     private(set) var report: ConfigReport?
     /// Whether modules may run, which they may only once Malum is signed with its own certificate.
     private var modulesAllowed = false
+    /// Checks again and again for the permissions waiting modules need, while any module waits.
+    private var recheck: Task<Void, Never>?
     /// Runs after each load, and again once the modules have been switched.
     var onUpdate: @MainActor () -> Void = {}
 
@@ -73,7 +78,39 @@ final class LiveConfig {
             let messages = await self.modules.update(enabled: enabled, settings: settings, changed: report.changed)
             messages.forEach(announce)
             self.onUpdate()
+            self.watchPermissions()
         }
+    }
+
+    /// The switched-on modules that wait for permissions, with the ones they're missing.
+    var waiting: [String: Set<Permission>] { modules.waiting }
+
+    /// Starts checking for granted permissions while a module waits for them, unless that runs already.
+    private func watchPermissions() {
+        guard !modules.waiting.isEmpty, recheck == nil else { return }
+        recheck = Task { [weak self] in
+            while await self?.recheckPermissions() == true {}
+        }
+    }
+
+    /// Waits a moment, starts the modules whose permissions were granted, and says whether to keep checking.
+    private func recheckPermissions() async -> Bool {
+        do {
+            try await Task.sleep(for: .seconds(Self.recheckSeconds))
+        } catch {
+            recheck = nil
+            return false
+        }
+        let messages = await modules.retryWaiting()
+        messages.forEach(announce)
+        if !messages.isEmpty {
+            onUpdate()
+        }
+        guard !modules.waiting.isEmpty else {
+            recheck = nil
+            return false
+        }
+        return true
     }
 
     /// Reads the saved overrides. When they can't be read, the last ones stay.

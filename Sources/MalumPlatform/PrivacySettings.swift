@@ -1,14 +1,17 @@
-import Foundation
+import AppKit
 import MalumCore
 
 /// Where System Settings grants each permission.
-enum PrivacySettings {
+public enum PrivacySettings {
     /// The start of every Privacy & Security page's address.
     private static let base = "x-apple.systempreferences:com.apple.preference.security?"
 
-    /// The page in System Settings where `permission` is granted.
-    static func url(for permission: Permission) -> URL? {
-        URL(string: base + page(for: permission))
+    /// Opens the page in System Settings where `permission` is granted, and says whether it opened.
+    @MainActor
+    @discardableResult
+    public static func open(_ permission: Permission) -> Bool {
+        guard let url = URL(string: base + page(for: permission)) else { return false }
+        return NSWorkspace.shared.open(url)
     }
 
     /// The name System Settings gives the page for `permission`.

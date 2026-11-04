@@ -68,8 +68,8 @@ public final class MenuBar: NSObject {
         case .showFolder(let path):
             NSWorkspace.shared.open(URL(fileURLWithPath: path, isDirectory: true))
         case .openSettings(let permission):
-            guard let url = PrivacySettings.url(for: permission) else { return }
-            NSWorkspace.shared.open(url)
+            PermissionProbe.request(permission)
+            PrivacySettings.open(permission)
         case .reload, .leaveSafeMode, .enable:
             onPick(fix)
         case .quit:
