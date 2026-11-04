@@ -85,6 +85,8 @@ The app and the command keep their shared state in `~/Library/Application Suppor
 
 The [menu bar page](docs/menu-bar.md) explains Malum's icon and its menu.
 
+When something keeps crashing Malum, it turns on safe mode by itself, with every module off. `malum safe` turns it on by hand, and `malum disable <module>` keeps one module off. The [safe mode page](docs/safe-mode.md) has the details.
+
 ## Start at login
 
 When the app starts from `~/Applications/Malum.app`, it makes sure `~/Library/LaunchAgents/com.jorisvandijk.malum.plist` is there, and from the next login on, macOS starts Malum when you log in. The first time, macOS shows a "Background Items Added" notification. The file is the same for every version of Malum, so updates don't bring the notification back. A copy of Malum running from anywhere else, such as a build folder, leaves the file alone.

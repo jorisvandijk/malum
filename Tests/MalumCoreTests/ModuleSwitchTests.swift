@@ -81,4 +81,21 @@ struct ModuleSwitchTests {
         #expect(screenshots.calls == ["apply ", "start", "stop"])
         #expect(modules.started.isEmpty)
     }
+
+    @Test func cleanUpRunsForEveryModuleAndReportsFailures() async {
+        let modules = moduleSwitch()
+        launcher.failsToCleanUp = true
+        let messages = await modules.cleanUp()
+        #expect(messages == [Message(.warn, "couldn't clean up after launcher: it broke")])
+        #expect(launcher.calls == ["clean up"])
+        #expect(screenshots.calls == ["clean up"])
+    }
+
+    @Test func updateWaitsForCleanUp() async {
+        let modules = moduleSwitch()
+        async let cleanedUp = modules.cleanUp()
+        async let updated = modules.update(enabled: ["launcher"], settings: [:], changed: [])
+        _ = await (cleanedUp, updated)
+        #expect(launcher.calls == ["clean up", "apply ", "start"])
+    }
 }

@@ -89,4 +89,28 @@ struct StatusMenuTests {
         #expect(menu.items.contains(.text("malum.toml has no problems")))
         #expect(!menu.needsAttention)
     }
+
+    @Test func safeModeShowsItsReasonAndTheWayOut() {
+        let menu = StatusMenu(
+            modules: [], report: report([]), configPath: path, configExists: true,
+            overrides: Overrides(safeMode: .crashLoop))
+        #expect(
+            Array(menu.items[2...5]) == [
+                .text("safe mode: Malum started 3 times within 2 minutes"),
+                .action("Leave safe mode", .leaveSafeMode), .separator, .text("no modules yet"),
+            ])
+        #expect(menu.needsAttention)
+    }
+
+    @Test func disabledModulesEachGetAnEnableItem() {
+        let menu = StatusMenu(
+            modules: [(id: "samba", status: .off)], report: report([]), configPath: path, configExists: true,
+            overrides: Overrides(disabled: ["samba", "launcher"]))
+        #expect(
+            Array(menu.items[2...4]) == [
+                .text("samba: off"), .action("Enable launcher", .enable("launcher")),
+                .action("Enable samba", .enable("samba")),
+            ])
+        #expect(!menu.needsAttention)
+    }
 }

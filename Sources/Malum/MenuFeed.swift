@@ -16,7 +16,10 @@ final class MenuFeed {
     init(modules: [any Module], config: LiveConfig) {
         self.modules = modules
         self.config = config
-        menuBar = MenuBar { [weak config] in config?.reload(force: true) }
+        menuBar = MenuBar { [weak config] fix in
+            guard let config else { return }
+            Self.perform(fix, on: config)
+        }
         config.onUpdate = { [weak self] in self?.refresh() }
         refresh()
         observeModules()
@@ -27,8 +30,22 @@ final class MenuFeed {
         let path = config.path
         let menu = StatusMenu(
             modules: modules.map { (id: $0.id, status: $0.status) }, report: config.report, configPath: path,
-            configExists: path.map { files.item(at: $0) != nil } ?? false)
+            configExists: path.map { files.item(at: $0) != nil } ?? false, overrides: config.overrides)
         menuBar.show(menu)
+    }
+
+    /// Does what a picked item asks of the app.
+    private static func perform(_ fix: MenuFix, on config: LiveConfig) {
+        switch fix {
+        case .reload:
+            config.reload(force: true)
+        case .leaveSafeMode:
+            config.change { store throws(StateError) in try store.leaveSafeMode() }
+        case .enable(let module):
+            config.change { store throws(StateError) in try store.enable(module) }
+        case .openFile, .showFolder, .openSettings, .quit:
+            break  // MenuBar does these itself.
+        }
     }
 
     /// Refreshes the menu each time a module's status changes.

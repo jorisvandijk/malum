@@ -17,20 +17,44 @@ public final class ModuleSwitch {
         self.modules = modules
     }
 
+    /// Has every module undo what an earlier run may have left behind, and says what failed. Runs in
+    /// line with the updates, so a module never starts before its cleanup is done.
+    public func cleanUp() async -> [Message] {
+        await enqueue { await $0.cleanUpAll() }
+    }
+
     /// Switches each module on or off as `enabled` says, gives running modules whose settings
     /// `changed` their new settings, and says what it did. Updates run one at a time, in the order
     /// they're asked for.
     public func update(
         enabled: Set<String>, settings: [String: ConfigTable], changed: Set<String>
     ) async -> [Message] {
+        await enqueue { await $0.run(enabled: enabled, settings: settings, changed: changed) }
+    }
+
+    /// Runs `work` once everything asked for before it has finished.
+    private func enqueue(_ work: @escaping @Sendable @MainActor (ModuleSwitch) async -> [Message]) async -> [Message] {
         let previous = current
         let task = Task { [weak self] in
             _ = await previous?.value
             guard let self else { return [Message]() }
-            return await self.run(enabled: enabled, settings: settings, changed: changed)
+            return await work(self)
         }
         current = task
         return await task.value
+    }
+
+    /// Every module's cleanup, in order. A cleanup that fails doesn't stop the others.
+    private func cleanUpAll() async -> [Message] {
+        var messages: [Message] = []
+        for module in modules {
+            do {
+                try await module.cleanUp()
+            } catch {
+                messages.append(Message(.warn, "couldn't clean up after \(module.id): \(error)"))
+            }
+        }
+        return messages
     }
 
     /// One update, after the one before it has finished.

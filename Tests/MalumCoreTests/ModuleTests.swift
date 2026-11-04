@@ -53,6 +53,8 @@ private final class FakeModule: Module {
     let schema = ConfigSchema(about: "Does nothing.", settings: ["visible": Setting(.boolean, "Whether it shows.")])
     private(set) var status = ModuleStatus.off
 
+    func cleanUp() async throws {}
+
     func start() async throws { status = .running }
 
     func apply(_ config: ConfigTable) throws {

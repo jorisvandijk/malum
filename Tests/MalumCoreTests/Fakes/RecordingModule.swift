@@ -22,9 +22,17 @@ final class RecordingModule: Module {
     var failsToStart = false
     /// Whether `apply` throws.
     var failsToApply = false
+    /// Whether `cleanUp` throws.
+    var failsToCleanUp = false
 
     init(id: String) {
         self.id = id
+    }
+
+    func cleanUp() async throws {
+        await Task.yield()
+        calls.append("clean up")
+        guard !failsToCleanUp else { throw FakeError.failed }
     }
 
     func start() async throws {

@@ -8,6 +8,10 @@ public enum MenuFix: Equatable, Sendable {
     case openSettings(Permission)
     /// Loads `malum.toml` again.
     case reload
+    /// Turns safe mode off, so the modules start as `malum.toml` says.
+    case leaveSafeMode
+    /// Lets a disabled module run again, by its id.
+    case enable(String)
     /// Quits Malum.
     case quit
 }

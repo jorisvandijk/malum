@@ -45,4 +45,24 @@ struct InvocationTests {
     @Test func reloadWithExtraArgumentIsReported() {
         #expect(Invocation(arguments: ["reload", "now"]) == .unknown("now"))
     }
+
+    @Test func safeTurnsOnSafeMode() {
+        #expect(Invocation(arguments: ["safe"]) == .safe)
+    }
+
+    @Test func safeWithExtraArgumentIsReported() {
+        #expect(Invocation(arguments: ["safe", "now"]) == .unknown("now"))
+    }
+
+    @Test func disableTakesAModule() {
+        #expect(Invocation(arguments: ["disable", "launcher"]) == .disable(module: "launcher"))
+    }
+
+    @Test func disableWithoutModuleIsIncomplete() {
+        #expect(Invocation(arguments: ["disable"]) == .incomplete(command: "disable", needs: "a module"))
+    }
+
+    @Test func disableWithExtraArgumentIsReported() {
+        #expect(Invocation(arguments: ["disable", "launcher", "samba"]) == .unknown("samba"))
+    }
 }

@@ -8,6 +8,10 @@ public enum Invocation: Equatable, Sendable {
     case initialize(dots: String)
     /// Ask the running app to reload.
     case reload
+    /// Turn safe mode on.
+    case safe
+    /// Keep a module off, by its id.
+    case disable(module: String)
     /// A command that's missing an argument, with what it needs.
     case incomplete(command: String, needs: String)
     /// An argument Malum doesn't know.
@@ -18,9 +22,13 @@ public enum Invocation: Equatable, Sendable {
         usage: \(Project.command) [--version | --help]
                \(Project.command) init <path to dots>
                \(Project.command) reload
+               \(Project.command) safe
+               \(Project.command) disable <module>
 
           init       record where dots is checked out and link ~/.local/bin/\(Project.command)
           reload     ask the running app to reload
+          safe       keep every module off until you leave safe mode from the menu bar
+          disable    keep one module off until you enable it from the menu bar
           --version  show the version
           --help     show this help
         """
@@ -41,9 +49,20 @@ public enum Invocation: Equatable, Sendable {
             self = Self.initialize(rest)
         case "reload":
             self = rest.first.map(Self.unknown) ?? .reload
+        case "safe":
+            self = rest.first.map(Self.unknown) ?? .safe
+        case "disable":
+            self = Self.disable(rest)
         default:
             self = .unknown(first)
         }
+    }
+
+    /// Reads the arguments of `disable`: exactly one module.
+    private static func disable(_ arguments: [String]) -> Self {
+        guard let module = arguments.first else { return .incomplete(command: "disable", needs: "a module") }
+        guard let extra = arguments.dropFirst().first else { return .disable(module: module) }
+        return .unknown(extra)
     }
 
     /// Reads the arguments of `init`: exactly one path.

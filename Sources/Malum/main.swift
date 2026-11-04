@@ -53,6 +53,10 @@ func runCommand(_ invocation: Invocation) {
         let message = ReloadCommand(instance: instance, signals: LocalSignals()).run()
         terminal.report(message)
         guard message.level != .error else { exit(EXIT_FAILURE) }
+    case .safe:
+        finish(overrideCommand().safe())
+    case .disable(let module):
+        finish(overrideCommand().disable(module))
     case .incomplete(let command, let needs):
         terminal.report(Message(.error, "\(command) needs \(needs)"))
         terminal.write(Invocation.usage)
@@ -62,6 +66,21 @@ func runCommand(_ invocation: Invocation) {
         terminal.write(Invocation.usage)
         exit(EXIT_FAILURE)
     }
+}
+
+/// The command behind `malum safe` and `malum disable`.
+@MainActor
+func overrideCommand() -> OverrideCommand {
+    let state = StateFolder(files: files, locks: locks, paths: paths)
+    return OverrideCommand(
+        store: OverrideStore(state: state), instance: AppInstance(state: state, locks: locks), signals: LocalSignals())
+}
+
+/// Shows `messages`, and exits with an error when one of them is an error.
+@MainActor
+func finish(_ messages: [Message]) {
+    messages.forEach(terminal.report)
+    guard messages.allSatisfy({ $0.level != .error }) else { exit(EXIT_FAILURE) }
 }
 
 /// What the command line asked for.
