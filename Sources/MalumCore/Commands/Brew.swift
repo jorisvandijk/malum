@@ -14,4 +14,14 @@ public enum Brew {
     public static func install(_ name: String, kind: PackageKind) -> Command {
         Command(path, ["install", kind.flag, name], timeoutSeconds: installTimeoutSeconds)
     }
+
+    /// Uninstalls the package `name` of `kind`.
+    public static func uninstall(_ name: String, kind: PackageKind) -> Command {
+        Command(path, ["uninstall", kind.flag, name], timeoutSeconds: installTimeoutSeconds)
+    }
+
+    /// Whether the errors of a failed `uninstall` say other installed packages still need it.
+    public static func isNeeded(_ errors: String) -> Bool {
+        errors.contains("required by")
+    }
 }

@@ -13,6 +13,11 @@ public enum Mas {
         Sudo.asRoot(Command(path, ["get", String(id)], timeoutSeconds: installTimeoutSeconds))
     }
 
+    /// Uninstalls the App Store app with `id`. mas needs root for this too.
+    public static func uninstall(_ id: Int) -> Command {
+        Sudo.asRoot(Command(path, ["uninstall", String(id)]))
+    }
+
     /// The App Store IDs in the output of `installed`.
     public static func ids(in output: String) -> Set<Int> {
         Set(

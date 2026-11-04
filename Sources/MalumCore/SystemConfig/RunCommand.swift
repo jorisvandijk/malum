@@ -73,10 +73,11 @@ public struct RunCommand {
             }
             let sudo = SudoSession(runner: runner, canAsk: canAsk)
             defer { sudo.end() }
-            let homebrew = await HomebrewPackages(runner: runner, files: files).run(list.homebrew, report: report)
-            let appStore = await AppStoreApps(runner: runner, files: files, sudo: sudo).run(
-                list.appStore, report: report)
             let state = StateFolder(files: files, locks: locks, paths: paths)
+            let homebrew = await HomebrewPackages(runner: runner, files: files, state: state).run(
+                list.homebrew, report: report)
+            let appStore = await AppStoreApps(runner: runner, files: files, sudo: sudo, state: state).run(
+                list.appStore, report: report)
             let releases = await GitHubReleases(
                 github: github, runner: runner, files: files, state: state, folders: folders
             ).run(list.releases, report: report)

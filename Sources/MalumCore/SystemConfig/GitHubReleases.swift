@@ -1,7 +1,8 @@
 import Foundation
 
 /// The GitHub releases part of system config: installs each listed release that isn't installed
-/// yet, and updates each one Malum installed when a newer release is out.
+/// yet, updates each one Malum installed when a newer release is out, and removes each one Malum
+/// installed that isn't listed anymore.
 @MainActor
 public struct GitHubReleases {
     /// The state folder's folder that downloads are unpacked in, removed after each one.
@@ -33,34 +34,53 @@ public struct GitHubReleases {
         self.folders = folders
     }
 
-    /// Installs or updates each release in `releases`, reporting each step as it goes. Says whether
-    /// every one is installed and up to date now.
+    /// Installs or updates each release in `releases`, and removes each one Malum installed that
+    /// isn't listed anymore, reporting each step as it goes. Says whether everything worked.
     public func run(_ releases: [ReleaseEntry], report: (Message) -> Void) async -> Bool {
-        guard !releases.isEmpty else { return true }
+        let record: InstalledRecord
+        do {
+            record = try InstalledRecord.read(from: state)
+        } catch {
+            report(Message(.error, "couldn't install GitHub releases: \(MessageText(error: error))"))
+            return false
+        }
+        let listed = Set(releases.map(\.name))
         var succeeded = true
+        for (name, installed) in record.releases.sorted(by: { $0.key < $1.key }) where !listed.contains(name) {
+            succeeded = remove(name, installed, report: report) && succeeded
+        }
+        guard !releases.isEmpty else { return succeeded }
         var changed = false
         for entry in releases {
             do {
-                let record = InstalledRelease.record(from: try state.read(InstalledRelease.recordName))
-                guard let installed = try await update(entry, previous: record[entry.name], report: report) else {
-                    continue
-                }
-                try state.update(InstalledRelease.recordName) { text in
-                    InstalledRelease.text(
-                        of: InstalledRelease.record(from: text).merging([entry.name: installed]) { $1 })
-                }
+                guard let installed = try await update(entry, previous: record.releases[entry.name], report: report)
+                else { continue }
+                try InstalledRecord.change(in: state) { $0.releases[entry.name] = installed }
                 report(
                     Message(
                         .info, "installed GitHub release \(entry.name) \(installed.tag) at \(private: installed.path)"))
                 changed = true
             } catch {
-                let reason = (error as? any ReportableError)?.text ?? MessageText(String(describing: error))
-                report(Message(.error, "couldn't install GitHub release \(entry.name): \(reason)"))
+                report(Message(.error, "couldn't install GitHub release \(entry.name): \(MessageText(error: error))"))
                 succeeded = false
             }
         }
         if succeeded && !changed { report(Message(.info, "every listed GitHub release is up to date")) }
         return succeeded
+    }
+
+    /// Removes the release `name` that Malum installed, and takes it out of the record. Says whether
+    /// it worked.
+    private func remove(_ name: String, _ installed: InstalledRelease, report: (Message) -> Void) -> Bool {
+        do {
+            if files.item(at: installed.path) != nil { try files.remove(installed.path) }
+            try InstalledRecord.change(in: state) { $0.releases[name] = nil }
+            report(Message(.info, "removed GitHub release \(name) from \(private: installed.path)"))
+            return true
+        } catch {
+            report(Message(.error, "couldn't remove GitHub release \(name): \(MessageText(error: error))"))
+            return false
+        }
     }
 
     /// Installs the latest release of `entry`, unless `previous` is it already. Gives back what it

@@ -8,3 +8,10 @@ extension ReportableError {
     /// The problem as the user sees it, private parts included.
     public var description: String { text.description }
 }
+
+extension MessageText {
+    /// The reason `error` gives, for a message: its own text when it's reportable.
+    init(error: any Error) {
+        self = (error as? any ReportableError)?.text ?? MessageText(String(describing: error))
+    }
+}

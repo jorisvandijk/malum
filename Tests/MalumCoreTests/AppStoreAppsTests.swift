@@ -9,6 +9,18 @@ struct AppStoreAppsTests {
     private let xcode = AppStoreApp("xcode", id: 497_799_835)
     private let amphetamine = AppStoreApp("amphetamine", id: 937_984_704)
 
+    private var state: StateFolder {
+        StateFolder(files: masInstalled, locks: FakeFileLocks(), paths: Paths(home: "/Users/joris"))
+    }
+
+    /// The App Store apps in the record of what Malum installed.
+    private var managed: [String: Int] { (try? InstalledRecord.read(from: state).appStore) ?? [:] }
+
+    /// Records `apps` as managed by Malum.
+    private func manage(_ apps: [String: Int]) throws {
+        try InstalledRecord.change(in: state) { $0.appStore = apps }
+    }
+
     /// A runner whose `mas list` gives `installed`, whose sudo prompt gives `password`, and whose
     /// installs of `failing` fail.
     private func mas(installed: String = "", password: Int32 = 0, failing: Set<String> = []) -> FakeRunner {
@@ -32,7 +44,9 @@ struct AppStoreAppsTests {
         var messages: [Message] = []
         let sudo = SudoSession(runner: runner, canAsk: canAsk)
         defer { sudo.end() }
-        let part = AppStoreApps(runner: runner, files: files ?? masInstalled, sudo: sudo)
+        let files = files ?? masInstalled
+        let state = StateFolder(files: files, locks: FakeFileLocks(), paths: Paths(home: "/Users/joris"))
+        let part = AppStoreApps(runner: runner, files: files, sudo: sudo, state: state)
         let succeeded = await part.run(apps) { messages.append($0) }
         return (succeeded, messages)
     }
@@ -52,18 +66,59 @@ struct AppStoreAppsTests {
         #expect(runner.commands == [Mas.installed, Sudo.authorize, Mas.install(937_984_704)])
         #expect(
             messages == [
+                Message(.info, "App Store app xcode was already installed, Malum manages it now"),
                 Message(.info, "asking for your password to install App Store apps"),
                 Message(.info, "installing App Store app amphetamine (937984704)"),
                 Message(.info, "installed App Store app amphetamine"),
             ])
     }
 
-    @Test func installedAppsNeedNoPassword() async {
+    @Test func installedAppsAreTakenOverWithoutAPassword() async {
         let runner = mas(installed: "497799835  Xcode  (26.0)\n")
         let (succeeded, messages) = await run([xcode], runner: runner)
         #expect(succeeded)
-        #expect(messages == [Message(.info, "every listed App Store app is installed")])
+        #expect(
+            messages == [
+                Message(.info, "App Store app xcode was already installed, Malum manages it now"),
+                Message(.info, "every listed App Store app is installed"),
+            ])
         #expect(runner.commands == [Mas.installed])
+        #expect(managed == ["xcode": 497_799_835])
+        let (_, again) = await run([xcode], runner: runner)
+        #expect(again == [Message(.info, "every listed App Store app is installed")])
+    }
+
+    @Test func installsAreRecorded() async {
+        _ = await run([amphetamine], runner: mas())
+        #expect(managed == ["amphetamine": 937_984_704])
+    }
+
+    @Test func unlistedAppsMalumManagesAreUninstalledAfterOnePrompt() async throws {
+        try manage(["amphetamine": 937_984_704, "pages": 409_201_541])
+        let runner = mas(installed: "937984704  Amphetamine  (5.3)\n")
+        let (succeeded, messages) = await run([xcode], runner: runner)
+        #expect(succeeded)
+        #expect(
+            runner.commands == [Mas.installed, Sudo.authorize, Mas.install(497_799_835), Mas.uninstall(937_984_704)])
+        #expect(
+            messages == [
+                Message(.info, "App Store app pages was already uninstalled"),
+                Message(.info, "asking for your password to install and uninstall App Store apps"),
+                Message(.info, "installing App Store app xcode (497799835)"),
+                Message(.info, "installed App Store app xcode"),
+                Message(.info, "uninstalling App Store app amphetamine (937984704)"),
+                Message(.info, "uninstalled App Store app amphetamine"),
+            ])
+        #expect(managed == ["xcode": 497_799_835])
+    }
+
+    @Test func failedUninstallStaysManaged() async throws {
+        try manage(["amphetamine": 937_984_704])
+        let runner = mas(installed: "937984704  Amphetamine  (5.3)\n", failing: ["937984704"])
+        let (succeeded, messages) = await run([], runner: runner)
+        #expect(!succeeded)
+        #expect(messages.last == Message(.error, "couldn't uninstall App Store app amphetamine: exited with 1"))
+        #expect(managed == ["amphetamine": 937_984_704])
     }
 
     @Test func withoutMasNothingRuns() async {

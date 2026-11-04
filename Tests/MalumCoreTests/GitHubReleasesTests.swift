@@ -10,8 +10,14 @@ struct GitHubReleasesTests {
     private let mpv = ReleaseEntry("mpv", repo: "mpv-player/mpv", asset: "mpv-*-arm.zip")
     private let pagefind = ReleaseEntry("pagefind", repo: "CloudCannon/pagefind")
 
-    private var record: String { "\(state)/releases.json" }
+    private var record: String { "\(state)/installed.json" }
     private var downloads: String { "\(state)/downloads" }
+
+    /// The releases in the record of what Malum installed.
+    private func installedReleases(_ files: FakeFileSystem) -> [String: InstalledRelease] {
+        let state = StateFolder(files: files, locks: FakeFileLocks(), paths: paths)
+        return (try? InstalledRecord.read(from: state).releases) ?? [:]
+    }
 
     /// GitHub with mpv's release `mpvTag` and pagefind's `v1.3.0`.
     private func github(_ files: FakeFileSystem, mpvTag: String = "v0.40.0") -> FakeGitHub {
@@ -77,7 +83,7 @@ struct GitHubReleasesTests {
         #expect(files.isExecutable("/Users/joris/.local/bin/pagefind"))
         #expect(files.item(at: downloads) == nil)
         #expect(
-            InstalledRelease.record(from: files.text(at: record)) == [
+            installedReleases(files) == [
                 "mpv": InstalledRelease(repo: "mpv-player/mpv", tag: "v0.40.0", path: "/Applications/mpv.app"),
                 "pagefind": InstalledRelease(
                     repo: "CloudCannon/pagefind", tag: "v1.3.0", path: "/Users/joris/.local/bin/pagefind"),
@@ -101,7 +107,7 @@ struct GitHubReleasesTests {
         #expect(succeeded)
         #expect(messages.last == Message(.info, "installed GitHub release mpv v0.41.0 at /Applications/mpv.app"))
         #expect(files.item(at: "/Applications/mpv.app.malum-new") == nil)
-        #expect(InstalledRelease.record(from: files.text(at: record))["mpv"]?.tag == "v0.41.0")
+        #expect(installedReleases(files)["mpv"]?.tag == "v0.41.0")
     }
 
     @Test func somethingMalumDidntInstallIsNeverReplaced() async {
@@ -116,6 +122,24 @@ struct GitHubReleasesTests {
                 ))
         #expect(files.text(at: "/Applications/mpv.app/Contents/Info.plist") == "mine")
         #expect(files.item(at: record) == nil)
+    }
+
+    @Test func unlistedReleasesMalumInstalledAreRemoved() async {
+        let files = FakeFileSystem()
+        _ = await run([mpv, pagefind], files: files)
+        let (succeeded, messages) = await run([pagefind], files: files)
+        #expect(succeeded)
+        #expect(
+            messages == [
+                Message(.info, "removed GitHub release mpv from /Applications/mpv.app"),
+                Message(.info, "every listed GitHub release is up to date"),
+            ])
+        #expect(files.item(at: "/Applications/mpv.app") == nil)
+        #expect(installedReleases(files).keys.sorted() == ["pagefind"])
+        let (_, last) = await run([], files: files)
+        #expect(last == [Message(.info, "removed GitHub release pagefind from /Users/joris/.local/bin/pagefind")])
+        #expect(files.item(at: "/Users/joris/.local/bin/pagefind") == nil)
+        #expect(installedReleases(files).isEmpty)
     }
 
     @Test func problemsAreReportedAndTheRestGoAhead() async {
