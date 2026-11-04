@@ -6,7 +6,8 @@ import MalumCore
 ///
 /// Editors save in one of two ways, so it watches both: writing into the file itself, which the
 /// watch on the file sees, and writing a new file and renaming it over the old one, which the
-/// watch on the folder sees. After a rename the file watch still points at the replaced file, so
+/// watch on the folder sees. Emptying the file writes nothing and only changes its size, so the
+/// file watch also listens for changed attributes. After a rename the file watch still points at the replaced file, so
 /// it's attached again after every change. A missing file is seen by the folder watch when it
 /// appears.
 @MainActor
@@ -55,7 +56,7 @@ public final class ConfigWatcher {
     /// Watches the file again, which may now be a different file at the same path.
     private func watchFile() {
         fileSource?.cancel()
-        fileSource = watch(path, events: [.write, .extend, .rename, .delete])
+        fileSource = watch(path, events: [.write, .extend, .attrib, .rename, .delete])
     }
 
     /// Watches `path` for `events`, or gives nil when it can't be opened, such as a missing file.
