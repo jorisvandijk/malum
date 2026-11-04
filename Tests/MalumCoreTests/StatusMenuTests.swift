@@ -5,6 +5,7 @@ import Testing
 @Suite(.timeLimit(.minutes(1)))
 struct StatusMenuTests {
     private let path = "/dots/malum.toml"
+    private let title = MenuItem.text("Malum \(Project.version)")
 
     private func report(_ problems: [ConfigProblem], loaded: String? = "/dots/malum.toml") -> ConfigReport {
         ConfigReport(loaded: loaded, changed: [], kept: [], problems: problems)
@@ -14,7 +15,7 @@ struct StatusMenuTests {
         let menu = StatusMenu(modules: [], report: report([]), configPath: path, configExists: true)
         #expect(
             menu.items == [
-                .text("Malum dev"), .separator,
+                title, .separator,
                 .text("no modules yet"), .separator,
                 .text("malum.toml has no problems"), .action("Open malum.toml", .openFile(path)), .separator,
                 .action("Reload malum.toml", .reload), .action("Quit Malum", .quit),
@@ -25,7 +26,7 @@ struct StatusMenuTests {
     @Test func signingProblemTopsTheMenu() {
         let menu = StatusMenu(
             modules: [], report: report([]), configPath: path, configExists: true, signingProblem: "not signed")
-        #expect(Array(menu.items.prefix(4)) == [.text("Malum dev"), .separator, .text("not signed"), .separator])
+        #expect(Array(menu.items.prefix(4)) == [title, .separator, .text("not signed"), .separator])
         #expect(menu.needsAttention)
     }
 
