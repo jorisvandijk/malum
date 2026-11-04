@@ -16,7 +16,7 @@ public struct StatusMenu: Equatable, Sendable {
         items =
             [.text("\(Project.name) \(Project.version)"), .separator]
             + Self.moduleItems(modules) + [.separator]
-            + Self.configItems(problems, path: configPath, exists: configExists)
+            + Self.configItems(problems, path: configPath, exists: configExists) + [.separator]
             + [.action("Reload \(Paths.configTOMLName)", .reload), .action("Quit \(Project.name)", .quit)]
         needsAttention = !problems.isEmpty || modules.contains { Self.needsAttention($0.status) }
     }

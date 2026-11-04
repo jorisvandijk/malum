@@ -16,7 +16,7 @@ struct StatusMenuTests {
             menu.items == [
                 .text("Malum dev"), .separator,
                 .text("no modules yet"), .separator,
-                .text("malum.toml has no problems"), .action("Open malum.toml", .openFile(path)),
+                .text("malum.toml has no problems"), .action("Open malum.toml", .openFile(path)), .separator,
                 .action("Reload malum.toml", .reload), .action("Quit Malum", .quit),
             ])
         #expect(!menu.needsAttention)
