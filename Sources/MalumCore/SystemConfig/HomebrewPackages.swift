@@ -12,17 +12,17 @@ public struct HomebrewPackages {
         self.files = files
     }
 
-    /// Installs what system config's `settings` list and Homebrew doesn't have yet, reporting each
-    /// step as it goes. Says whether everything listed is installed now.
-    public func run(_ settings: ConfigTable, report: (Message) -> Void) async -> Bool {
-        let wanted = PackageKind.allCases.map { kind in (kind, Self.names(settings[kind.setting])) }
-        guard wanted.contains(where: { !$0.1.isEmpty }) else { return true }
+    /// Installs the packages in `packages` that Homebrew doesn't have yet, reporting each step as it
+    /// goes. Says whether everything listed is installed now.
+    public func run(_ packages: [PackageKind: [String]], report: (Message) -> Void) async -> Bool {
+        let wanted = PackageKind.allCases.map { kind in (kind, packages[kind] ?? []) }.filter { !$0.1.isEmpty }
+        guard !wanted.isEmpty else { return true }
         guard files.item(at: Brew.path) != nil else {
             report(Message(.error, "couldn't install packages: Homebrew isn't installed at \(private: Brew.path)"))
             return false
         }
         var succeeded = true
-        for (kind, names) in wanted where !names.isEmpty {
+        for (kind, names) in wanted {
             succeeded = await install(names, kind: kind, report: report) && succeeded
         }
         return succeeded
@@ -32,7 +32,7 @@ public struct HomebrewPackages {
     private func install(_ names: [String], kind: PackageKind, report: (Message) -> Void) async -> Bool {
         let listed = await runner.run(Brew.installed(kind))
         guard listed.succeeded else {
-            report(Message(.error, "couldn't list the installed \(kind.setting): \(listed.reason)"))
+            report(Message(.error, "couldn't list the installed \(kind.plural): \(listed.reason)"))
             return false
         }
         let installed = Set(listed.output.split(separator: "\n").map(String.init))
@@ -62,17 +62,6 @@ public struct HomebrewPackages {
         }
         report(Message(.info, "installed \(kind.rawValue) \(name)"))
         return true
-    }
-
-    /// The names a setting lists, each once, in the order given. The schema has checked that it's a
-    /// list of text, so anything else is never there.
-    private static func names(_ value: ConfigValue?) -> [String] {
-        guard case .array(let items) = value else { return [] }
-        var seen: Set<String> = []
-        return items.compactMap { item in
-            guard case .string(let name) = item, seen.insert(name).inserted else { return nil }
-            return name
-        }
     }
 
     /// The name `brew list` shows for `name`: without the tap, when it's written as `owner/tap/name`.

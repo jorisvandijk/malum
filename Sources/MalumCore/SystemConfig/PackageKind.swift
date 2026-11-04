@@ -1,4 +1,4 @@
-/// The two kinds of Homebrew package.
+/// The two kinds of Homebrew package, as `packages.toml` names them.
 public enum PackageKind: String, CaseIterable, Sendable {
     /// A command-line tool or library.
     case formula
@@ -8,8 +8,8 @@ public enum PackageKind: String, CaseIterable, Sendable {
     /// The flag `brew` takes for this kind.
     var flag: String { "--\(rawValue)" }
 
-    /// The setting in system config's table that lists packages of this kind.
-    var setting: String {
+    /// The kind in the plural, for messages.
+    var plural: String {
         switch self {
         case .formula:
             "formulae"

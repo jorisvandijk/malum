@@ -23,11 +23,11 @@ struct HomebrewPackagesTests {
         }
     }
 
-    private func run(_ settings: ConfigTable, runner: FakeRunner, files: FakeFileSystem? = nil) async -> (
+    private func run(_ packages: [PackageKind: [String]], runner: FakeRunner, files: FakeFileSystem? = nil) async -> (
         Bool, [Message]
     ) {
         var messages: [Message] = []
-        let succeeded = await HomebrewPackages(runner: runner, files: files ?? brewInstalled).run(settings) {
+        let succeeded = await HomebrewPackages(runner: runner, files: files ?? brewInstalled).run(packages) {
             messages.append($0)
         }
         return (succeeded, messages)
@@ -43,10 +43,7 @@ struct HomebrewPackagesTests {
 
     @Test func missingPackagesAreInstalled() async {
         let runner = brew(formulae: "bat\n", casks: "")
-        let settings: ConfigTable = [
-            "formulae": .array([.string("bat"), .string("ripgrep")]), "casks": .array([.string("kitty")]),
-        ]
-        let (succeeded, messages) = await run(settings, runner: runner)
+        let (succeeded, messages) = await run([.cask: ["kitty"], .formula: ["bat", "ripgrep"]], runner: runner)
         #expect(succeeded)
         #expect(
             runner.commands.map(\.arguments).filter { $0.first == "install" } == [
@@ -62,21 +59,15 @@ struct HomebrewPackagesTests {
     @Test func installedPackagesAreLeftAlone() async {
         let runner = brew(formulae: "bat\nripgrep\n")
         let (succeeded, messages) = await run(
-            ["formulae": .array([.string("bat"), .string("me/tap/ripgrep")])], runner: runner)
+            [.formula: ["bat", "me/tap/ripgrep"]], runner: runner)
         #expect(succeeded)
         #expect(messages == [Message(.info, "every listed formula is installed")])
         #expect(runner.commands.count == 1)
     }
 
-    @Test func packageListedTwiceIsInstalledOnce() async {
-        let runner = brew()
-        _ = await run(["casks": .array([.string("kitty"), .string("kitty")])], runner: runner)
-        #expect(runner.commands.filter { $0.arguments.first == "install" }.count == 1)
-    }
-
     @Test func failedInstallIsReportedAndTheRestGoOn() async {
         let runner = brew(failing: ["nope"])
-        let (succeeded, messages) = await run(["formulae": .array([.string("nope"), .string("bat")])], runner: runner)
+        let (succeeded, messages) = await run([.formula: ["nope", "bat"]], runner: runner)
         #expect(!succeeded)
         #expect(messages.contains(Message(.error, "couldn't install formula nope: Error: No available formula")))
         #expect(messages.last == Message(.info, "installed formula bat"))
@@ -84,7 +75,7 @@ struct HomebrewPackagesTests {
 
     @Test func nameLikeAFlagIsRefused() async {
         let runner = brew()
-        let (succeeded, messages) = await run(["formulae": .array([.string("--force")])], runner: runner)
+        let (succeeded, messages) = await run([.formula: ["--force"]], runner: runner)
         #expect(!succeeded)
         #expect(messages == [Message(.error, "couldn't install formula --force: it isn't a package name")])
         #expect(runner.commands.count == 1)
@@ -93,7 +84,7 @@ struct HomebrewPackagesTests {
     @Test func missingHomebrewIsReported() async {
         let runner = brew()
         let (succeeded, messages) = await run(
-            ["formulae": .array([.string("bat")])], runner: runner, files: FakeFileSystem())
+            [.formula: ["bat"]], runner: runner, files: FakeFileSystem())
         #expect(!succeeded)
         #expect(
             messages == [
@@ -104,7 +95,7 @@ struct HomebrewPackagesTests {
 
     @Test func failedListingIsReported() async {
         let runner = FakeRunner { _ in CommandResult(status: 1, errors: "Error: broken\n") }
-        let (succeeded, messages) = await run(["casks": .array([.string("kitty")])], runner: runner)
+        let (succeeded, messages) = await run([.cask: ["kitty"]], runner: runner)
         #expect(!succeeded)
         #expect(messages == [Message(.error, "couldn't list the installed casks: Error: broken")])
     }

@@ -53,8 +53,14 @@ public struct Paths: Equatable, Sendable {
     /// `malum.toml`, the name of the file in dots that holds Malum's settings.
     public static var configTOMLName: String { "\(Project.command).\(tomlExtension)" }
 
+    /// `packages.toml`, the name of the file in dots that lists what system config installs.
+    public static let packagesTOMLName = "packages.toml"
+
     /// `malum.toml` at the top of the dots folder `dots`.
     public func configTOML(in dots: String) -> String { "\(dots)/\(Self.configTOMLName)" }
+
+    /// `packages.toml` at the top of the dots folder `dots`.
+    public func packagesTOML(in dots: String) -> String { "\(dots)/\(Self.packagesTOMLName)" }
 
     /// Turns `path` into an absolute, clean path, expanding `~` and reading it relative to `base`.
     public func resolve(_ path: String, relativeTo base: String) -> String {
