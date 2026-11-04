@@ -61,15 +61,24 @@ func runCommand(_ invocation: Invocation) {
         finish(overrideCommand().disable(module))
     case .permissions:
         checkTerminal()
+    case .incomplete, .unknown:
+        reject(invocation)
+    }
+}
+
+/// Says what's wrong with the arguments, shows how to use the command, and exits with an error.
+@MainActor
+func reject(_ invocation: Invocation) -> Never {
+    switch invocation {
     case .incomplete(let command, let needs):
         terminal.report(Message(.error, "\(command) needs \(needs)"))
-        terminal.write(Invocation.usage)
-        exit(EXIT_FAILURE)
     case .unknown(let argument):
         terminal.report(Message(.error, "unknown argument: \(argument)"))
-        terminal.write(Invocation.usage)
-        exit(EXIT_FAILURE)
+    case .version, .help, .initialize, .reload, .safe, .disable, .permissions:
+        break  // These make sense; runCommand runs them.
     }
+    terminal.write(Invocation.usage)
+    exit(EXIT_FAILURE)
 }
 
 /// The command behind `malum safe` and `malum disable`.

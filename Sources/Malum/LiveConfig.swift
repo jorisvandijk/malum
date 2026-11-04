@@ -6,7 +6,7 @@ import MalumPlatform
 @MainActor
 final class LiveConfig {
     /// How long to wait between checks for permissions granted in System Settings, which doesn't say when.
-    private static let recheckDelay = Duration.seconds(2)
+    private static let recheckSeconds = 2
 
     /// Reads and checks the file.
     private let reloader: ConfigReloader
@@ -96,7 +96,7 @@ final class LiveConfig {
     /// Waits a moment, starts the modules whose permissions were granted, and says whether to keep checking.
     private func recheckPermissions() async -> Bool {
         do {
-            try await Task.sleep(for: Self.recheckDelay)
+            try await Task.sleep(for: .seconds(Self.recheckSeconds))
         } catch {
             recheck = nil
             return false
