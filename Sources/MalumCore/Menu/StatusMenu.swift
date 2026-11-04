@@ -6,19 +6,33 @@ public struct StatusMenu: Equatable, Sendable {
     /// Whether something is wrong, so the icon should say so.
     public let needsAttention: Bool
 
-    /// Builds the menu from the modules, in their order, and the last load of `malum.toml`, which
-    /// was looked for at `configPath`, where it may or may not exist. Both are nil before the first
-    /// load; the path is nil when dots isn't known.
+    /// Builds the menu from the modules, in their order, the last load of `malum.toml`, which
+    /// was looked for at `configPath`, where it may or may not exist, and the `overrides`. The report
+    /// and the path are nil before the first load; the path is nil when dots isn't known.
     public init(
-        modules: [(id: String, status: ModuleStatus)], report: ConfigReport?, configPath: String?, configExists: Bool
+        modules: [(id: String, status: ModuleStatus)], report: ConfigReport?, configPath: String?, configExists: Bool,
+        overrides: Overrides = Overrides()
     ) {
         let problems = report.map { $0.messages.filter { $0.level != .info } } ?? []
         items =
             [.text("\(Project.name) \(Project.version)"), .separator]
-            + Self.moduleItems(modules) + [.separator]
+            + Self.safeModeItems(overrides.safeMode)
+            + Self.moduleItems(modules) + Self.disabledItems(overrides.disabled) + [.separator]
             + Self.configItems(problems, path: configPath, exists: configExists) + [.separator]
             + [.action("Reload \(Paths.configTOMLName)", .reload), .action("Quit \(Project.name)", .quit)]
-        needsAttention = !problems.isEmpty || modules.contains { Self.needsAttention($0.status) }
+        needsAttention =
+            !problems.isEmpty || overrides.safeMode != nil || modules.contains { Self.needsAttention($0.status) }
+    }
+
+    /// Why safe mode is on and the way out of it, or nothing while it's off.
+    private static func safeModeItems(_ reason: SafeModeReason?) -> [MenuItem] {
+        guard let reason else { return [] }
+        return [.text("safe mode: \(reason)"), .action("Leave safe mode", .leaveSafeMode), .separator]
+    }
+
+    /// A way to enable each disabled module, in a steady order.
+    private static func disabledItems(_ disabled: Set<String>) -> [MenuItem] {
+        disabled.sorted().map { .action("Enable \($0)", .enable($0)) }
     }
 
     /// A line per module with its status, and a way to grant each permission it's missing.

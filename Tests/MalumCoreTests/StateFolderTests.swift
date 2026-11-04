@@ -45,4 +45,18 @@ struct StateFolderTests {
         let error = StateError.unlockable(path: "/tmp/state.lock", reason: "permission denied")
         #expect(error.description == "couldn't lock /tmp/state.lock: permission denied")
     }
+
+    @Test func updateChangesTextUnderTheLock() throws {
+        let files = FakeFileSystem(texts: ["\(folder)/disabled": "samba\n"])
+        let locks = FakeFileLocks()
+        try StateFolder(files: files, locks: locks, paths: paths).update("disabled") { ($0 ?? "") + "launcher\n" }
+        #expect(files.text(at: "\(folder)/disabled") == "samba\nlauncher\n")
+        #expect(locks.runs == ["\(folder)/state.lock"])
+    }
+
+    @Test func updateOfMissingFileStartsFromNil() throws {
+        let files = FakeFileSystem()
+        try StateFolder(files: files, locks: FakeFileLocks(), paths: paths).update("disabled") { $0 ?? "new\n" }
+        #expect(files.text(at: "\(folder)/disabled") == "new\n")
+    }
 }

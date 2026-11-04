@@ -40,6 +40,16 @@ public struct StateFolder: Sendable {
         try locks.withLock(path(of: Self.lockName)) { () throws(StateError) in try replace(name, with: text) }
     }
 
+    /// Replaces the file called `name` with what `change` makes of its text, which is nil when
+    /// there's no such file. The folder's lock is held from the read to the write, so two changes
+    /// never undo each other.
+    public func update(_ name: String, _ change: (String?) -> String) throws(StateError) {
+        try prepare()
+        try locks.withLock(path(of: Self.lockName)) { () throws(StateError) in
+            try replace(name, with: change(read(name)))
+        }
+    }
+
     /// Replaces the file called `name` with `text`, without the lock.
     private func replace(_ name: String, with text: String) throws(StateError) {
         do {

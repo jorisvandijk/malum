@@ -11,15 +11,16 @@ public final class MenuBar: NSObject {
 
     /// The icon and its menu.
     private let item: NSStatusItem
-    /// What to do when the user asks for a reload.
-    private let onReload: @MainActor () -> Void
+    /// What to do with the items the app handles: reloading and changing the overrides.
+    private let onPick: @MainActor (MenuFix) -> Void
     /// What each item that can be picked does, by the item's tag.
     private var fixes: [MenuFix] = []
 
-    /// Puts the icon in the menu bar. `onReload` runs when the user picks the reload item.
-    public init(onReload: @escaping @MainActor () -> Void) {
+    /// Puts the icon in the menu bar. `onPick` runs when the user picks an item the app handles:
+    /// reload, leave safe mode, or enable a module.
+    public init(onPick: @escaping @MainActor (MenuFix) -> Void) {
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        self.onReload = onReload
+        self.onPick = onPick
         super.init()
     }
 
@@ -60,7 +61,8 @@ public final class MenuBar: NSObject {
     /// Does what the picked item says.
     @objc private func picked(_ sender: NSMenuItem) {
         guard fixes.indices.contains(sender.tag) else { return }
-        switch fixes[sender.tag] {
+        let fix = fixes[sender.tag]
+        switch fix {
         case .openFile(let path):
             Self.open(file: path)
         case .showFolder(let path):
@@ -68,8 +70,8 @@ public final class MenuBar: NSObject {
         case .openSettings(let permission):
             guard let url = PrivacySettings.url(for: permission) else { return }
             NSWorkspace.shared.open(url)
-        case .reload:
-            onReload()
+        case .reload, .leaveSafeMode, .enable:
+            onPick(fix)
         case .quit:
             NSApplication.shared.terminate(nil)
         }

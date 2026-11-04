@@ -17,6 +17,9 @@ public protocol Module: AnyObject, Observable {
 
     // TODO: the hotkeys the module wants, once the hotkey registry exists.
 
+    /// Undoes whatever an earlier run may have left behind system-wide, such as a key remap after a
+    /// crash. Runs at every launch, before any module starts, whether the module is switched on or not.
+    func cleanUp() async throws
     /// Starts the module with the settings it was last given.
     func start() async throws
     /// Takes new settings from the module's table in `malum.toml`, without a restart. The table has
