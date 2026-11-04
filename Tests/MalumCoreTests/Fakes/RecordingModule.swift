@@ -13,7 +13,7 @@ final class RecordingModule: Module {
     }
 
     let id: String
-    let permissions: Set<Permission> = []
+    let permissions: Set<Permission>
     let schema = ConfigSchema(about: "Does nothing.", settings: ["size": Setting(.integer, "How big it is.")])
     private(set) var status = ModuleStatus.off
     /// Every call, in order, such as `apply size=1`, `start` or `stop`.
@@ -25,8 +25,9 @@ final class RecordingModule: Module {
     /// Whether `cleanUp` throws.
     var failsToCleanUp = false
 
-    init(id: String) {
+    init(id: String, permissions: Set<Permission> = []) {
         self.id = id
+        self.permissions = permissions
     }
 
     func cleanUp() async throws {

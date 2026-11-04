@@ -33,10 +33,15 @@ final class MenuFeed {
     func refresh() {
         let path = config.path
         let menu = StatusMenu(
-            modules: modules.map { (id: $0.id, status: $0.status) }, report: config.report, configPath: path,
+            modules: modules.map { (id: $0.id, status: status(of: $0)) }, report: config.report, configPath: path,
             configExists: path.map { files.item(at: $0) != nil } ?? false, overrides: config.overrides,
             signingProblem: signingProblem)
         menuBar.show(menu)
+    }
+
+    /// The module's status, or the permissions it waits for when it can't start without them.
+    private func status(of module: any Module) -> ModuleStatus {
+        config.waiting[module.id].map(ModuleStatus.needsPermission) ?? module.status
     }
 
     /// Does what a picked item asks of the app.

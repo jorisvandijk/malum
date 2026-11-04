@@ -85,6 +85,8 @@ The app and the command keep their shared state in `~/Library/Application Suppor
 
 The [menu bar page](docs/menu-bar.md) explains Malum's icon and its menu.
 
+A module that's missing a permission waits until you grant it, and `malum permissions` checks that your terminal has Full Disk Access. The [permissions page](docs/permissions.md) explains both.
+
 When something keeps crashing Malum, it turns on safe mode by itself, with every module off. `malum safe` turns it on by hand, and `malum disable <module>` keeps one module off. The [safe mode page](docs/safe-mode.md) has the details.
 
 ## Start at login

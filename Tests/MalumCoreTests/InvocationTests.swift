@@ -65,4 +65,12 @@ struct InvocationTests {
     @Test func disableWithExtraArgumentIsReported() {
         #expect(Invocation(arguments: ["disable", "launcher", "samba"]) == .unknown("samba"))
     }
+
+    @Test func permissionsChecksTheTerminal() {
+        #expect(Invocation(arguments: ["permissions"]) == .permissions)
+    }
+
+    @Test func permissionsWithExtraArgumentIsReported() {
+        #expect(Invocation(arguments: ["permissions", "extra"]) == .unknown("extra"))
+    }
 }
