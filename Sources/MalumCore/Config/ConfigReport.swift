@@ -19,7 +19,7 @@ public struct ConfigReport: Equatable, Sendable {
 
     /// Everything the user should see, one message per line.
     public var messages: [Message] {
-        let loadedMessage = loaded.map { [Message(.info, "loaded \($0)")] } ?? []
+        let loadedMessage = loaded.map { [Message(.info, "loaded \(private: $0)")] } ?? []
         let keptMessages = kept.sorted().map { Message(.warn, "\($0) keeps its last good settings") }
         return loadedMessage + problems.map(\.message) + keptMessages
     }

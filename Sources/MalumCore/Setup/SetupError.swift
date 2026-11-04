@@ -10,20 +10,20 @@ public enum SetupError: Error, Equatable, Sendable {
     case file(FileSystemError)
 }
 
-// MARK: - CustomStringConvertible
+// MARK: - ReportableError
 
-extension SetupError: CustomStringConvertible {
+extension SetupError: ReportableError {
     /// The problem as the user sees it.
-    public var description: String {
+    public var text: MessageText {
         switch self {
         case .dotsNotFound(let path):
-            "couldn't use \(path) as dots: folder not found"
+            "couldn't use \(private: path) as dots: folder not found"
         case .occupied(let path):
-            "couldn't link \(path): something that isn't a link is there, move it away and run init again"
+            "couldn't link \(private: path): something that isn't a link is there, move it away and run init again"
         case .notInApp(let path):
-            "couldn't link \(path): Malum isn't running from \(Project.name).app"
+            "couldn't link \(private: path): Malum isn't running from \(Project.name).app"
         case .file(let error):
-            error.description
+            error.text
         }
     }
 }

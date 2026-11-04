@@ -24,35 +24,38 @@ public struct InitCommand: Sendable {
     /// Saves where dots is.
     private func recordDots(_ dots: String) -> Message {
         guard files.item(at: dots) == .directory else {
-            return Message(.error, SetupError.dotsNotFound(path: dots).description)
+            return Message(.error, SetupError.dotsNotFound(path: dots).text)
         }
         let pointer = DotsPointer(files: files, paths: paths)
         do {
             let previous = try pointer.read()
-            guard previous != dots else { return Message(.info, "dots is already at \(dots)") }
+            guard previous != dots else { return Message(.info, "dots is already at \(private: dots)") }
             try pointer.write(dots)
-            guard let previous else { return Message(.info, "dots is at \(dots), saved in \(paths.configFile)") }
-            return Message(.info, "dots moved from \(previous) to \(dots)")
+            guard let previous else {
+                return Message(.info, "dots is at \(private: dots), saved in \(private: paths.configFile)")
+            }
+            return Message(.info, "dots moved from \(private: previous) to \(private: dots)")
         } catch {
-            return Message(.error, error.description)
+            return Message(.error, error.text)
         }
     }
 
     /// Points the command link at Malum.
     private func linkCommand(to executable: String?) -> Message {
         let link = paths.commandLink
-        guard let executable else { return Message(.warn, SetupError.notInApp(path: link).description) }
+        guard let executable else { return Message(.warn, SetupError.notInApp(path: link).text) }
         do {
             switch try CommandLink(files: files, paths: paths).point(to: executable) {
             case .created:
-                return Message(.info, "linked \(link) to \(executable)")
+                return Message(.info, "linked \(private: link) to \(private: executable)")
             case .unchanged:
-                return Message(.info, "\(link) already points to \(executable)")
+                return Message(.info, "\(private: link) already points to \(private: executable)")
             case .moved(let previous):
-                return Message(.info, "linked \(link) to \(executable), it pointed to \(previous)")
+                return Message(
+                    .info, "linked \(private: link) to \(private: executable), it pointed to \(private: previous)")
             }
         } catch {
-            return Message(.error, error.description)
+            return Message(.error, error.text)
         }
     }
 }

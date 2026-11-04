@@ -22,14 +22,14 @@ final class LiveConfig {
     /// same as last time is skipped.
     func reload(force: Bool) {
         guard let report = reloader.reload(force: force) else { return }
-        report.messages.forEach(terminal.report)
+        report.messages.forEach(announce)
         follow(reloader.path)
         let enabled = reloader.enabled
         let settings = reloader.settings
         Task { [weak self] in
             guard let self else { return }
             let messages = await self.modules.update(enabled: enabled, settings: settings, changed: report.changed)
-            messages.forEach(terminal.report)
+            messages.forEach(announce)
         }
     }
 
@@ -39,7 +39,7 @@ final class LiveConfig {
         watcher?.stop()
         watcher = path.map { path in ConfigWatcher(path: path) { [weak self] in self?.reload(force: false) } }
         guard let watcher, !watcher.isWatching else { return }
-        terminal.report(
-            Message(.warn, "couldn't watch \(watcher.folder), run \(Project.command) reload after a change"))
+        announce(
+            Message(.warn, "couldn't watch \(private: watcher.folder), run \(Project.command) reload after a change"))
     }
 }

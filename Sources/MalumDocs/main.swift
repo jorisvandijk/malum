@@ -16,6 +16,6 @@ do {
     try LocalFileSystem().write(ConfigDocs.page(for: schemas), to: path)
     terminal.report(Message(.info, "wrote \(ConfigDocs.path)"))
 } catch {
-    terminal.report(Message(.error, error.description))
+    terminal.report(Message(.error, error.text))
     exit(EXIT_FAILURE)
 }
