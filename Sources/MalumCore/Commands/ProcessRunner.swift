@@ -3,9 +3,6 @@ import Foundation
 /// Runs outside tools as real processes, with a clean environment and a timeout. stdout and stderr
 /// are read at the same time, so a tool that fills one of them never blocks.
 public struct ProcessRunner: CommandRunner {
-    /// Seconds a tool may run before it's stopped.
-    private static let timeoutSeconds = 30
-
     /// The only variables a tool gets.
     private let environment: [String: String]
 
@@ -21,7 +18,7 @@ public struct ProcessRunner: CommandRunner {
         async let output = Self.readAll(process.output)
         async let errors = Self.readAll(process.errors)
         let watchdog = Task {
-            try await Task.sleep(for: .seconds(Self.timeoutSeconds))
+            try await Task.sleep(for: .seconds(command.timeoutSeconds))
             process.stop()
         }
         let status = await process.start()

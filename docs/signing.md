@@ -17,6 +17,13 @@ At every start, the installed app at `~/Applications/Malum.app` checks that it's
 
 When any step fails, the app that was there stays, and the reason shows in the menu bar.
 
+### The keychain dialog
+
+The first time Malum signs itself with a new certificate, macOS asks whether `codesign` may use the key in your login keychain. Type your Mac's login password and click **Always Allow**. From then on, Malum signs every update without asking.
+
+- **Allow** works for this one signing only, so the dialog comes back with the next update.
+- **Deny**, or leaving the dialog for 5 minutes, makes signing fail. The app stays as it was, the modules stay off, and the next start asks again.
+
 No module starts until Malum is signed with its certificate. A copy of Malum that runs from anywhere else, such as a build folder, never signs itself, and keeps every module off. Its menu says so.
 
 ## A new Mac

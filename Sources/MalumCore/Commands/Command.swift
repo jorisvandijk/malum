@@ -5,10 +5,16 @@ public struct Command: Equatable, Sendable {
     public let executable: String
     /// The arguments, without the tool itself.
     public let arguments: [String]
+    /// Seconds the tool may run before it's stopped.
+    public let timeoutSeconds: Int
 
-    /// Creates the run of `executable` with `arguments`.
-    public init(_ executable: String, _ arguments: [String]) {
+    /// Seconds a tool may run, unless it waits for the user.
+    public static let defaultTimeoutSeconds = 30
+
+    /// Creates the run of `executable` with `arguments`, stopped after `timeoutSeconds`.
+    public init(_ executable: String, _ arguments: [String], timeoutSeconds: Int = defaultTimeoutSeconds) {
         self.executable = executable
         self.arguments = arguments
+        self.timeoutSeconds = timeoutSeconds
     }
 }

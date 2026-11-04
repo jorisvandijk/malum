@@ -9,7 +9,9 @@ struct CommandFilesTests {
     @Test func codesignSignsWithoutTimestamp() {
         #expect(
             Codesign.sign("/A.app", identity: hash)
-                == Command("/usr/bin/codesign", ["--force", "--sign", hash, "--timestamp=none", "/A.app"]))
+                == Command(
+                    "/usr/bin/codesign", ["--force", "--sign", hash, "--timestamp=none", "/A.app"], timeoutSeconds: 300)
+        )
     }
 
     @Test func codesignVerifiesAgainstTheCertificate() {
