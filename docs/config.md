@@ -4,4 +4,13 @@
 
 Every setting `malum.toml` takes, by module. Each module's settings go in a table named after the module, such as `[window_manager]`. A module is off until its table sets `enabled = true`. A setting that's left out takes its default, when it has one.
 
-No module takes settings, so `malum.toml` has nothing to set.
+## `system_config`
+
+Makes the Mac match dots when you run `malum run`, installing what `packages.toml` lists. Nothing happens in the background: the app only reads the switch, and `malum run` does the work.
+
+### `system_config.enabled`
+
+Switches the module on. The module stays off until this is set to true.
+
+- Value: true or false
+- Default: `false`

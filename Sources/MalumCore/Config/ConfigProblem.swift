@@ -1,4 +1,4 @@
-/// Something wrong with `malum.toml`, with the line it's on when that's known.
+/// Something wrong with one of Malum's TOML files in dots, with the line it's on when that's known.
 public struct ConfigProblem: Equatable, Sendable {
     /// How serious it is.
     public let level: Level
@@ -8,10 +8,15 @@ public struct ConfigProblem: Equatable, Sendable {
     public let column: Int?
     /// What's wrong.
     public let text: MessageText
+    /// The name of the file it's in, such as `malum.toml`.
+    public let file: String
 
-    /// Creates a problem at `line` and `column`, when they're known.
-    public init(_ level: Level, line: Int? = nil, column: Int? = nil, _ text: MessageText) {
+    /// Creates a problem in `file` at `line` and `column`, when they're known.
+    public init(
+        _ level: Level, file: String = Paths.configTOMLName, line: Int? = nil, column: Int? = nil, _ text: MessageText
+    ) {
         self.level = level
+        self.file = file
         self.line = line
         self.column = column
         self.text = text
@@ -20,7 +25,7 @@ public struct ConfigProblem: Equatable, Sendable {
     /// The problem as the user sees it, starting with where it is.
     public var message: Message {
         guard let line else { return Message(level, text) }
-        guard let column else { return Message(level, "\(Paths.configTOMLName) line \(line): \(text)") }
-        return Message(level, "\(Paths.configTOMLName) line \(line), column \(column): \(text)")
+        guard let column else { return Message(level, "\(file) line \(line): \(text)") }
+        return Message(level, "\(file) line \(line), column \(column): \(text)")
     }
 }
