@@ -8,8 +8,9 @@ struct ConfigTests {
 
     private func config() -> Config {
         Config(schemas: [
-            "window_manager": ConfigSchema(["gap": .integer]),
-            "launcher": ConfigSchema(["size": .integer]),
+            "window_manager": ConfigSchema(
+                about: "Tiles windows.", settings: ["gap": Setting(.integer, "Space between windows.")]),
+            "launcher": ConfigSchema(about: "Opens apps.", settings: ["size": Setting(.integer, "How big it is.")]),
         ])
     }
 

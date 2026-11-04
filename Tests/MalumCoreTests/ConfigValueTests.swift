@@ -31,4 +31,29 @@ struct ConfigValueTests {
         let second = ConfigValue.table(try TOMLReader.table(from: text))
         #expect(first == second)
     }
+
+    @Test func valuesAreWrittenAsTOML() {
+        #expect(ConfigValue.string("Finder").toml == "\"Finder\"")
+        #expect(ConfigValue.integer(-3).toml == "-3")
+        #expect(ConfigValue.float(0.5).toml == "0.5")
+        #expect(ConfigValue.boolean(true).toml == "true")
+        #expect(ConfigValue.date("2026-11-03").toml == "2026-11-03")
+        #expect(ConfigValue.array([.string("a"), .integer(1)]).toml == "[\"a\", 1]")
+        #expect(ConfigValue.table([:]).toml == "{}")
+        #expect(ConfigValue.table(["b": .integer(2), "a b": .integer(1)]).toml == "{ \"a b\" = 1, b = 2 }")
+    }
+
+    @Test func specialCharactersAreEscaped() {
+        #expect(ConfigValue.string("a\"b\\c\nd\te\u{1}").toml == "\"a\\\"b\\\\c\\nd\\te\\u0001\"")
+    }
+
+    @Test func writtenValueReadsBackTheSame() throws {
+        let value = ConfigValue.table([
+            "text": .string("quote \" slash \\ line\n\u{7}"),
+            "odd key": .array([.float(1e20), .float(-0.25), .boolean(false)]),
+            "inner": .table(["count": .integer(7)]),
+        ])
+        let table = ConfigValue.table(try TOMLReader.table(from: "value = \(value.toml)"))
+        #expect(table["value"] == value)
+    }
 }

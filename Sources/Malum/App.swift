@@ -17,7 +17,7 @@ func runApp() -> Never {
     }
     terminal.report(Message(.info, "\(Project.name) \(Project.version) is running"))
     let menuBar = MenuBar()
-    // TODO: the schema of each module, once there are any.
+    // TODO: one list of the modules' schemas, shared by the app and MalumDocs, once there are modules.
     let config = LiveConfig(reloader: ConfigReloader(files: files, paths: paths, schemas: [:]))
     config.reload(force: true)
     let hangup = HangupWatcher { config.reload(force: true) }

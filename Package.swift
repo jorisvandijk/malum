@@ -12,6 +12,8 @@ var targets: [Target] = [
         dependencies: [.product(name: "TOMLKit", package: "TOMLKit")],
         swiftSettings: strict
     ),
+    // Writes the config reference in docs/ from the modules' schemas.
+    .executableTarget(name: "MalumDocs", dependencies: ["MalumCore"], swiftSettings: strict),
     .testTarget(name: "MalumCoreTests", dependencies: ["MalumCore"], swiftSettings: strict),
 ]
 

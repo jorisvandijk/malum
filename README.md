@@ -50,7 +50,7 @@ This saves the path in `~/.config/malum/config`, the only file Malum keeps outsi
 
 ## Config
 
-Malum's settings live in `malum.toml`, at the top of your dots folder. Each module has its own table in it, named after the module, such as `[window_manager]`.
+Malum's settings live in `malum.toml`, at the top of your dots folder. Each module has its own table in it, named after the module, such as `[window_manager]`. Every setting is listed in the [config reference](docs/config.md).
 
 When the app starts, it reads `malum.toml`. While it runs, saving the file is enough: the app sees the change and reads the file again. Saving without changing anything does nothing. `malum reload` makes the app read the file again even when nothing changed.
 

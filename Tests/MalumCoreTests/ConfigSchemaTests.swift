@@ -4,7 +4,11 @@ import Testing
 
 @Suite(.timeLimit(.minutes(1)))
 struct ConfigSchemaTests {
-    private let schema = ConfigSchema(["gap": .integer, "floating": .strings])
+    private let schema = ConfigSchema(
+        about: "Tiles windows.",
+        settings: [
+            "gap": Setting(.integer, "Space between windows."), "floating": Setting(.strings, "Apps left alone."),
+        ])
 
     @Test func goodTableHasNoProblems() {
         let table: ConfigTable = ["gap": .integer(4), "floating": .array([.string("Finder")])]
