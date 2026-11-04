@@ -11,6 +11,10 @@ final class LiveConfig {
     private let modules: ModuleSwitch
     /// Watches the file, once dots is known.
     private var watcher: ConfigWatcher?
+    /// What the last load found, or nil before the first one.
+    private(set) var report: ConfigReport?
+    /// Runs after each load, and again once the modules have been switched.
+    var onUpdate: @MainActor () -> Void = {}
 
     /// Creates the config with nothing loaded yet and every module off.
     init(reloader: ConfigReloader, modules: ModuleSwitch) {
@@ -22,16 +26,22 @@ final class LiveConfig {
     /// same as last time is skipped.
     func reload(force: Bool) {
         guard let report = reloader.reload(force: force) else { return }
+        self.report = report
         report.messages.forEach(announce)
         follow(reloader.path)
+        onUpdate()
         let enabled = reloader.enabled
         let settings = reloader.settings
         Task { [weak self] in
             guard let self else { return }
             let messages = await self.modules.update(enabled: enabled, settings: settings, changed: report.changed)
             messages.forEach(announce)
+            self.onUpdate()
         }
     }
+
+    /// Where `malum.toml` was looked for last, or nil when dots isn't known.
+    var path: String? { reloader.path }
 
     /// Watches `path`, the file the last load looked for, when that isn't watched already.
     private func follow(_ path: String?) {
