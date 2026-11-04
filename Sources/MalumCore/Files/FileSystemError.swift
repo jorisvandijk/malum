@@ -8,6 +8,12 @@ public enum FileSystemError: Error, Equatable, Sendable {
     case noDirectory(path: String, reason: String)
     /// The link at the path couldn't be made.
     case unlinkable(path: String, reason: String)
+    /// The file or folder at the path couldn't be copied.
+    case uncopyable(path: String, reason: String)
+    /// What's at the two paths couldn't be swapped.
+    case unswappable(path: String, other: String, reason: String)
+    /// The file or folder at the path couldn't be removed.
+    case unremovable(path: String, reason: String)
 }
 
 // MARK: - ReportableError
@@ -24,6 +30,12 @@ extension FileSystemError: ReportableError {
             "couldn't create \(private: path): \(reason)"
         case .unlinkable(let path, let reason):
             "couldn't link \(private: path): \(reason)"
+        case .uncopyable(let path, let reason):
+            "couldn't copy \(private: path): \(reason)"
+        case .unswappable(let path, let other, let reason):
+            "couldn't swap \(private: path) with \(private: other): \(reason)"
+        case .unremovable(let path, let reason):
+            "couldn't remove \(private: path): \(reason)"
         }
     }
 }

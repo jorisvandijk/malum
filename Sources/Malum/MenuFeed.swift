@@ -11,6 +11,10 @@ final class MenuFeed {
     private let modules: [any Module]
     /// The config, which says what its last load found.
     private let config: LiveConfig
+    /// Why the modules stay off because Malum isn't signed, or nil when they don't.
+    var signingProblem: String? {
+        didSet { refresh() }
+    }
 
     /// Puts the icon in the menu bar and shows the state of `modules` and `config` in it.
     init(modules: [any Module], config: LiveConfig) {
@@ -30,7 +34,8 @@ final class MenuFeed {
         let path = config.path
         let menu = StatusMenu(
             modules: modules.map { (id: $0.id, status: $0.status) }, report: config.report, configPath: path,
-            configExists: path.map { files.item(at: $0) != nil } ?? false, overrides: config.overrides)
+            configExists: path.map { files.item(at: $0) != nil } ?? false, overrides: config.overrides,
+            signingProblem: signingProblem)
         menuBar.show(menu)
     }
 

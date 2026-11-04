@@ -19,6 +19,8 @@ public struct Paths: Equatable, Sendable {
     private static let applicationsRoot = "Applications"
     /// The folder of the user's login agents, relative to home.
     private static let launchAgentsRoot = "Library/LaunchAgents"
+    /// The user's login keychain, relative to home.
+    private static let loginKeychainPath = "Library/Keychains/login.keychain-db"
     /// The folder inside an app bundle that holds its executable.
     private static let executableFolder = "Contents/MacOS"
 
@@ -37,10 +39,12 @@ public struct Paths: Equatable, Sendable {
     public var commandLink: String { "\(binDirectory)/\(Project.command)" }
     /// `~/Library/Application Support/<bundle ID>`, the state folder the app and the command share.
     public var stateDirectory: String { "\(home)/\(Self.applicationSupportRoot)/\(Project.bundleID)" }
+    /// `~/Applications/Malum.app`, the installed app.
+    public var installedBundle: String { "\(home)/\(Self.applicationsRoot)/\(Project.name).app" }
     /// `~/Applications/Malum.app/Contents/MacOS/Malum`, the executable of the installed app.
-    public var installedExecutable: String {
-        "\(home)/\(Self.applicationsRoot)/\(Project.name).app/\(Self.executableFolder)/\(Project.name)"
-    }
+    public var installedExecutable: String { "\(installedBundle)/\(Self.executableFolder)/\(Project.name)" }
+    /// `~/Library/Keychains/login.keychain-db`, where Malum's signing certificate goes.
+    public var loginKeychain: String { "\(home)/\(Self.loginKeychainPath)" }
     /// `~/Library/LaunchAgents`, where the login agent goes.
     public var launchAgentsDirectory: String { "\(home)/\(Self.launchAgentsRoot)" }
     /// `~/Library/LaunchAgents/<bundle ID>.plist`, the agent that starts Malum at login.

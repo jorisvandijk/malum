@@ -17,6 +17,8 @@ final class LiveConfig {
     private var watcher: ConfigWatcher?
     /// What the last load found, or nil before the first one.
     private(set) var report: ConfigReport?
+    /// Whether modules may run, which they may only once Malum is signed with its own certificate.
+    private var modulesAllowed = false
     /// Runs after each load, and again once the modules have been switched.
     var onUpdate: @MainActor () -> Void = {}
 
@@ -34,6 +36,14 @@ final class LiveConfig {
             await self.modules.cleanUp().forEach(announce)
             self.reload(force: true)
         }
+    }
+
+    /// Lets the modules run from now on. Before the first load, that load switches them on; after it,
+    /// loading again does, since the modules have cleaned up by then.
+    func allowModules() {
+        modulesAllowed = true
+        guard report != nil else { return }
+        reload(force: true)
     }
 
     /// Changes the saved overrides with `edit`, then loads again so the modules follow.
@@ -56,7 +66,7 @@ final class LiveConfig {
         readOverrides()
         follow(reloader.path)
         onUpdate()
-        let enabled = overrides.allowed(reloader.enabled)
+        let enabled = modulesAllowed ? overrides.allowed(reloader.enabled) : []
         let settings = reloader.settings
         Task { [weak self] in
             guard let self else { return }

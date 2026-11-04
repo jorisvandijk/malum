@@ -18,4 +18,9 @@ public enum LaunchMode: Equatable, Sendable {
         let isApp = service == Project.bundleID || service.hasPrefix("\(Self.openedAppPrefix)\(Project.bundleID).")
         self = isApp ? .app : .command
     }
+
+    /// Whether launchd started this process as the login agent, rather than Finder or `open`.
+    public static func isLoginAgent(environment: [String: String]) -> Bool {
+        environment[serviceVariable] == Project.bundleID
+    }
 }

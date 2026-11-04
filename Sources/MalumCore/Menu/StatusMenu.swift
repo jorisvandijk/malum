@@ -7,21 +7,30 @@ public struct StatusMenu: Equatable, Sendable {
     public let needsAttention: Bool
 
     /// Builds the menu from the modules, in their order, the last load of `malum.toml`, which
-    /// was looked for at `configPath`, where it may or may not exist, and the `overrides`. The report
-    /// and the path are nil before the first load; the path is nil when dots isn't known.
+    /// was looked for at `configPath`, where it may or may not exist, the `overrides`, and why the
+    /// modules stay off unsigned. The report and the path are nil before the first load; the path is
+    /// nil when dots isn't known.
     public init(
         modules: [(id: String, status: ModuleStatus)], report: ConfigReport?, configPath: String?, configExists: Bool,
-        overrides: Overrides = Overrides()
+        overrides: Overrides = Overrides(), signingProblem: String? = nil
     ) {
         let problems = report.map { $0.messages.filter { $0.level != .info } } ?? []
         items =
             [.text("\(Project.name) \(Project.version)"), .separator]
+            + Self.signingItems(signingProblem)
             + Self.safeModeItems(overrides.safeMode)
             + Self.moduleItems(modules) + Self.disabledItems(overrides.disabled) + [.separator]
             + Self.configItems(problems, path: configPath, exists: configExists) + [.separator]
             + [.action("Reload \(Paths.configTOMLName)", .reload), .action("Quit \(Project.name)", .quit)]
         needsAttention =
-            !problems.isEmpty || overrides.safeMode != nil || modules.contains { Self.needsAttention($0.status) }
+            !problems.isEmpty || overrides.safeMode != nil || signingProblem != nil
+            || modules.contains { Self.needsAttention($0.status) }
+    }
+
+    /// Why the modules stay off unsigned, or nothing when Malum is signed.
+    private static func signingItems(_ problem: String?) -> [MenuItem] {
+        guard let problem else { return [] }
+        return [.text(problem), .separator]
     }
 
     /// Why safe mode is on and the way out of it, or nothing while it's off.
