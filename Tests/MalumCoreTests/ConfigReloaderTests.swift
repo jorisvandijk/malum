@@ -8,7 +8,9 @@ struct ConfigReloaderTests {
     private let paths = Paths(home: "/Users/joris")
     private let pointer = "/Users/joris/.config/malum/config"
     private let file = "/Users/joris/dots/malum.toml"
-    private let schemas = ["launcher": ConfigSchema(["size": .integer])]
+    private let schemas = [
+        "launcher": ConfigSchema(about: "Opens apps.", settings: ["size": Setting(.integer, "How big it is.")])
+    ]
 
     @Test func fileIsReadFromDots() {
         let files = FakeFileSystem(texts: [pointer: "/Users/joris/dots\n", file: "[launcher]\nsize = 3\n"])

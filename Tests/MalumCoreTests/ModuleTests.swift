@@ -50,7 +50,7 @@ private final class FakeModule: Module {
 
     let id = "fake"
     let permissions: Set<Permission> = [.accessibility]
-    let schema = ConfigSchema(["enabled": .boolean])
+    let schema = ConfigSchema(about: "Does nothing.", settings: ["enabled": Setting(.boolean, "Whether it runs.")])
     private(set) var status = ModuleStatus.off
 
     func start() async throws { status = .running }
