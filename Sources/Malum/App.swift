@@ -17,8 +17,11 @@ func runApp() -> Never {
     }
     terminal.report(Message(.info, "\(Project.name) \(Project.version) is running"))
     let menuBar = MenuBar()
-    // TODO: one list of the modules' schemas, shared by the app and MalumDocs, once there are modules.
-    let config = LiveConfig(reloader: ConfigReloader(files: files, paths: paths, schemas: [:]))
+    // TODO: one list of the modules, whose schemas MalumDocs shares, once there are modules.
+    let modules: [any Module] = []
+    let schemas = Dictionary(modules.map { ($0.id, $0.schema) }) { first, _ in first }
+    let config = LiveConfig(
+        reloader: ConfigReloader(files: files, paths: paths, schemas: schemas), modules: ModuleSwitch(modules: modules))
     config.reload(force: true)
     let hangup = HangupWatcher { config.reload(force: true) }
     let app = NSApplication.shared

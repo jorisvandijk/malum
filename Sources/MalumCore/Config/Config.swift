@@ -5,8 +5,10 @@
 public struct Config: Sendable {
     /// Each module's schema, by the module's id.
     private let schemas: [String: ConfigSchema]
-    /// Each module's last good settings, by the module's id.
+    /// Each module's last good settings, by the module's id, without `enabled`.
     public private(set) var settings: [String: ConfigTable] = [:]
+    /// The modules whose last good table switches them on.
+    public private(set) var enabled: Set<String> = []
 
     /// Creates a config with no settings yet, for the modules with these schemas.
     public init(schemas: [String: ConfigSchema]) {
@@ -35,9 +37,11 @@ public struct Config: Sendable {
                 kept.insert(module)
                 continue
             }
-            let table = document[module].flatMap(Self.table) ?? [:]
+            var table = document[module].flatMap(Self.table) ?? [:]
+            let switchedOn = table.removeValue(forKey: ConfigSchema.switchKey) == .boolean(true)
             if settings[module] != table { changed.insert(module) }
             settings[module] = table
+            if switchedOn { enabled.insert(module) } else { enabled.remove(module) }
         }
         return ConfigReport(loaded: path, changed: changed, kept: kept, problems: problems)
     }

@@ -18,9 +18,9 @@ struct ModuleTests {
     @Test func badConfigFailsOnlyThatCall() async throws {
         let module = FakeModule()
         try await module.start()
-        let table: ConfigTable = ["enabled": .string("yes")]
+        let table: ConfigTable = ["visible": .string("yes")]
         #expect(throws: FakeModule.FakeError.self) { try module.apply(table) }
-        #expect(module.status == .degraded(reason: "enabled is not a boolean"))
+        #expect(module.status == .degraded(reason: "visible is not a boolean"))
     }
 
     @Test func statusChangesAreObserved() async throws {
@@ -50,14 +50,14 @@ private final class FakeModule: Module {
 
     let id = "fake"
     let permissions: Set<Permission> = [.accessibility]
-    let schema = ConfigSchema(about: "Does nothing.", settings: ["enabled": Setting(.boolean, "Whether it runs.")])
+    let schema = ConfigSchema(about: "Does nothing.", settings: ["visible": Setting(.boolean, "Whether it shows.")])
     private(set) var status = ModuleStatus.off
 
     func start() async throws { status = .running }
 
     func apply(_ config: ConfigTable) throws {
-        guard case .boolean = config["enabled"] else {
-            status = .degraded(reason: "enabled is not a boolean")
+        guard case .boolean = config["visible"] else {
+            status = .degraded(reason: "visible is not a boolean")
             throw FakeError.notBoolean
         }
         status = .running
