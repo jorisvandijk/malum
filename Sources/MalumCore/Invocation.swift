@@ -14,6 +14,8 @@ public enum Invocation: Equatable, Sendable {
     case disable(module: String)
     /// Check that the terminal has the permissions Malum needs in it.
     case permissions
+    /// Make the Mac match dots.
+    case run
     /// A command that's missing an argument, with what it needs.
     case incomplete(command: String, needs: String)
     /// An argument Malum doesn't know.
@@ -27,12 +29,14 @@ public enum Invocation: Equatable, Sendable {
                \(Project.command) safe
                \(Project.command) disable <module>
                \(Project.command) permissions
+               \(Project.command) run
 
           init         record where dots is checked out and link ~/.local/bin/\(Project.command)
           reload       ask the running app to reload
           safe         keep every module off until you leave safe mode from the menu bar
           disable      keep one module off until you enable it from the menu bar
           permissions  check that this terminal has Full Disk Access
+          run          make the Mac match dots: install the packages it lists
           --version    show the version
           --help       show this help
         """
@@ -59,6 +63,8 @@ public enum Invocation: Equatable, Sendable {
             self = Self.disable(rest)
         case "permissions":
             self = rest.first.map(Self.unknown) ?? .permissions
+        case "run":
+            self = rest.first.map(Self.unknown) ?? .run
         default:
             self = .unknown(first)
         }

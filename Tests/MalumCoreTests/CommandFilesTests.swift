@@ -6,6 +6,16 @@ import Testing
 struct CommandFilesTests {
     private let hash = "3F2A1B0C9D8E7F6A5B4C3D2E1F0A9B8C7D6E5F40"
 
+    @Test func brewListsOneKindOfPackage() {
+        #expect(Brew.installed(.cask) == Command("/opt/homebrew/bin/brew", ["list", "--cask", "-1"]))
+    }
+
+    @Test func brewInstallsWithALongTimeout() {
+        #expect(
+            Brew.install("ripgrep", kind: .formula)
+                == Command("/opt/homebrew/bin/brew", ["install", "--formula", "ripgrep"], timeoutSeconds: 1800))
+    }
+
     @Test func codesignSignsWithoutTimestamp() {
         #expect(
             Codesign.sign("/A.app", identity: hash)

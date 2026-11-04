@@ -23,9 +23,9 @@ func runApp() -> Never {
     let state = StateFolder(files: files, locks: locks, paths: paths)
     let launches = LaunchRecord(state: state)
     checkCrashLoop(launches, overrides: OverrideStore(state: state))
-    // TODO: one list of the modules, whose schemas MalumDocs shares, once there are modules.
+    // TODO: one list of the modules, which MalumDocs shares, once there are modules.
     let modules: [any Module] = []
-    let schemas = Dictionary(modules.map { ($0.id, $0.schema) }) { first, _ in first }
+    let schemas = ConfigSchemas.all(modules: modules)
     let config = LiveConfig(
         reloader: ConfigReloader(files: files, paths: paths, schemas: schemas),
         modules: ModuleSwitch(modules: modules, permissions: PermissionProbe(home: paths.home)),

@@ -70,6 +70,14 @@ struct InvocationTests {
         #expect(Invocation(arguments: ["permissions"]) == .permissions)
     }
 
+    @Test func runMakesTheMacMatchDots() {
+        #expect(Invocation(arguments: ["run"]) == .run)
+    }
+
+    @Test func runWithExtraArgumentIsReported() {
+        #expect(Invocation(arguments: ["run", "extra"]) == .unknown("extra"))
+    }
+
     @Test func permissionsWithExtraArgumentIsReported() {
         #expect(Invocation(arguments: ["permissions", "extra"]) == .unknown("extra"))
     }

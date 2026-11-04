@@ -45,11 +45,9 @@ func runCommand(_ invocation: Invocation) {
     case .help:
         terminal.write(Invocation.usage)
     case .initialize(let dots):
-        /// What init did, one message per step.
-        let messages = InitCommand(files: files, paths: paths)
-            .run(dots: dots, workingDirectory: FileManager.default.currentDirectoryPath, executable: executable)
-        messages.forEach(terminal.report)
-        guard messages.allSatisfy({ $0.level != .error }) else { exit(EXIT_FAILURE) }
+        finish(
+            InitCommand(files: files, paths: paths)
+                .run(dots: dots, workingDirectory: FileManager.default.currentDirectoryPath, executable: executable))
     case .reload:
         let instance = AppInstance(state: StateFolder(files: files, locks: locks, paths: paths), locks: locks)
         let message = ReloadCommand(instance: instance, signals: LocalSignals()).run()
@@ -61,9 +59,21 @@ func runCommand(_ invocation: Invocation) {
         finish(overrideCommand().disable(module))
     case .permissions:
         checkTerminal()
+    case .run:
+        applySystemConfig()
     case .incomplete, .unknown:
         reject(invocation)
     }
+}
+
+/// Runs `malum run`, reporting as it goes, and exits once it's done.
+@MainActor
+func applySystemConfig() -> Never {
+    Task {
+        let succeeded = await RunCommand(files: files, paths: paths, runner: runner).run { announce($0) }
+        exit(succeeded ? EXIT_SUCCESS : EXIT_FAILURE)
+    }
+    dispatchMain()
 }
 
 /// Says what's wrong with the arguments, shows how to use the command, and exits with an error.
@@ -74,7 +84,7 @@ func reject(_ invocation: Invocation) -> Never {
         terminal.report(Message(.error, "\(command) needs \(needs)"))
     case .unknown(let argument):
         terminal.report(Message(.error, "unknown argument: \(argument)"))
-    case .version, .help, .initialize, .reload, .safe, .disable, .permissions:
+    case .version, .help, .initialize, .reload, .safe, .disable, .permissions, .run:
         break  // These make sense; runCommand runs them.
     }
     terminal.write(Invocation.usage)
