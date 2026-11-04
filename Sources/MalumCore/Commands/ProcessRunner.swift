@@ -12,8 +12,10 @@ public struct ProcessRunner: CommandRunner {
         environment = ["HOME": home, "PATH": "/usr/bin:/bin:/usr/sbin:/sbin"]
     }
 
-    /// Starts the tool, reads both of its outputs, and stops it when it runs past the timeout.
+    /// Starts the tool, reads both of its outputs, and stops it when it runs past the timeout. A tool
+    /// that runs on the terminal writes there instead, so its result has only the exit status.
     public func run(_ command: Command) async -> CommandResult {
+        guard !command.onTerminal else { return await TerminalProcess.run(command, environment: environment) }
         let process = RunningProcess(command, environment: environment)
         async let output = Self.readAll(process.output)
         async let errors = Self.readAll(process.errors)

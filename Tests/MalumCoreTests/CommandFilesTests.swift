@@ -16,6 +16,25 @@ struct CommandFilesTests {
                 == Command("/opt/homebrew/bin/brew", ["install", "--formula", "ripgrep"], timeoutSeconds: 1800))
     }
 
+    @Test func masInstallsAsRootOnTheTerminal() {
+        #expect(
+            Mas.install(497_799_835)
+                == Command(
+                    "/usr/bin/sudo", ["-n", "/opt/homebrew/bin/mas", "get", "497799835"], timeoutSeconds: 7200,
+                    onTerminal: true))
+    }
+
+    @Test func masListGivesTheIds() {
+        let output = "497799835  Xcode  (26.0)\n 937984704  Amphetamine  (5.3.2)\nNo installed apps found\n"
+        #expect(Mas.ids(in: output) == [497_799_835, 937_984_704])
+    }
+
+    @Test func sudoAsksOnTheTerminal() {
+        #expect(Sudo.authorize.onTerminal)
+        #expect(Sudo.authorize.arguments.first == "-v")
+        #expect(Sudo.refresh == Command("/usr/bin/sudo", ["-n", "-v"], onTerminal: true))
+    }
+
     @Test func codesignSignsWithoutTimestamp() {
         #expect(
             Codesign.sign("/A.app", identity: hash)

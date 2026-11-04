@@ -7,15 +7,18 @@ public struct RunCommand {
     private let paths: Paths
     /// Runs the outside tools.
     private let runner: any CommandRunner
+    /// Whether it runs in a terminal, where sudo can ask for the password.
+    private let canAsk: Bool
 
-    /// Creates the command.
-    public init(files: any FileSystem, paths: Paths, runner: any CommandRunner) {
+    /// Creates the command, which asks for the password only when `canAsk` is set.
+    public init(files: any FileSystem, paths: Paths, runner: any CommandRunner, canAsk: Bool) {
         self.files = files
         self.paths = paths
         self.runner = runner
+        self.canAsk = canAsk
     }
 
-    // TODO: App Store apps, GitHub releases, app config files and macOS settings, as further parts.
+    // TODO: GitHub releases, app config files and macOS settings, as further parts.
     /// Loads `malum.toml` and runs each part of system config in order, reporting as it goes. Says
     /// whether everything worked.
     public func run(report: (Message) -> Void) async -> Bool {
@@ -58,7 +61,12 @@ public struct RunCommand {
                 report(Message(.error, "couldn't install packages: fix \(private: file) first"))
                 return false
             }
-            return await HomebrewPackages(runner: runner, files: files).run(list.homebrew, report: report)
+            let sudo = SudoSession(runner: runner, canAsk: canAsk)
+            defer { sudo.end() }
+            let homebrew = await HomebrewPackages(runner: runner, files: files).run(list.homebrew, report: report)
+            let appStore = await AppStoreApps(runner: runner, files: files, sudo: sudo).run(
+                list.appStore, report: report)
+            return homebrew && appStore
         } catch {
             report(Message(.error, error.text))
             return false
