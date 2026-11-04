@@ -21,7 +21,7 @@ When the table is missing, sets `enabled = false`, or has a problem, `malum run`
 
 ## packages.toml
 
-What gets installed is listed in `packages.toml`, at the top of your dots folder, next to `malum.toml`. Each way of installing has its own table: `[homebrew]` and `[app_store]`.
+What gets installed is listed in `packages.toml`, at the top of your dots folder, next to `malum.toml`. Each way of installing has its own table: `[homebrew]`, `[app_store]` and `[release.<name>]`.
 
 ```toml
 [homebrew]
@@ -33,6 +33,13 @@ mole = "formula"
 [app_store]
 amphetamine = 937984704
 xcode = 497799835
+
+[release.mpv]
+repo = "mpv-player/mpv"
+asset = "mpv-*-macos-15-arm.zip"
+
+[release.pagefind]
+repo = "CloudCannon/pagefind"
 ```
 
 In `[homebrew]`, each package is its name set to `"formula"` or `"cask"`. A package from a tap is written as `owner/tap/name`, in quotes. Homebrew adds the tap by itself, so taps aren't listed anywhere.
@@ -81,5 +88,34 @@ mas installs as root, so when an app is missing, `malum run` asks for your passw
 ```
 
 An app that's already installed is left alone, and so is everything that isn't listed. When mas can't install an app, the error it wrote stays above `[error] couldn't install App Store app xcode: exited with 1`, and the rest still go ahead.
+
+## GitHub releases
+
+Each `[release.<name>]` table installs an app or a program from the latest release of a GitHub repository, after the App Store apps. `repo` is the repository, as `owner/name`. `asset` names the file to download, with `*` matching any text; leave it out when the release has only one file, or only one with `mac`, `darwin` or `apple` in its name. Checksums and notes such as `.sha256` and `.txt` files don't count. Only public repositories work for now.
+
+Zip files and tarballs are unpacked, along with one more archive inside them. An app (`mpv.app`) goes to `/Applications`, and a program goes to `~/.local/bin`, under the table's name. A file that isn't an archive is the program itself. Installers (`.dmg`, `.pkg`) can't be installed. Both folders are settings of system config in `malum.toml`:
+
+```toml
+[system_config]
+enabled = true
+release_apps = "/Applications"
+release_programs = "~/.local/bin"
+```
+
+Malum remembers what it installed. The next run installs a newer release over it, and leaves one that's up to date alone:
+
+```
+[info] installing GitHub release mpv v0.40.0 (mpv-v0.40.0-macos-15-arm.zip)
+[info] installed GitHub release mpv v0.40.0 at /Applications/mpv.app
+[info] every listed GitHub release is up to date
+```
+
+Malum never replaces an app or program it didn't install itself. Remove it by hand first, and the next run installs the release in its place:
+
+```
+[error] couldn't install GitHub release mpv: /Applications/mpv.app is already there, and Malum didn't install it
+```
+
+Taking a release out of the list doesn't uninstall it.
 
 The messages also go to the macOS log, as the [log page](log.md) describes.

@@ -7,18 +7,27 @@ public struct RunCommand {
     private let paths: Paths
     /// Runs the outside tools.
     private let runner: any CommandRunner
+    /// Looks up and downloads GitHub releases.
+    private let github: any GitHub
+    /// The locks of the state folder.
+    private let locks: any FileLocks
     /// Whether it runs in a terminal, where sudo can ask for the password.
     private let canAsk: Bool
 
     /// Creates the command, which asks for the password only when `canAsk` is set.
-    public init(files: any FileSystem, paths: Paths, runner: any CommandRunner, canAsk: Bool) {
+    public init(
+        files: any FileSystem, paths: Paths, runner: any CommandRunner, github: any GitHub, locks: any FileLocks,
+        canAsk: Bool
+    ) {
         self.files = files
         self.paths = paths
         self.runner = runner
+        self.github = github
+        self.locks = locks
         self.canAsk = canAsk
     }
 
-    // TODO: GitHub releases, app config files and macOS settings, as further parts.
+    // TODO: App config files and macOS settings, as further parts.
     /// Loads `malum.toml` and runs each part of system config in order, reporting as it goes. Says
     /// whether everything worked.
     public func run(report: (Message) -> Void) async -> Bool {
@@ -37,7 +46,8 @@ public struct RunCommand {
                     "couldn't run \(SystemConfig.id): it's off, set enabled = true in its table in \(private: loaded)"))
             return false
         }
-        let succeeded = await installPackages(report: report)
+        let folders = ReleaseFolders(reloader.settings[SystemConfig.id] ?? [:], paths: paths)
+        let succeeded = await installPackages(folders: folders, report: report)
         report(
             succeeded
                 ? Message(.info, "\(SystemConfig.id) is done")
@@ -46,7 +56,7 @@ public struct RunCommand {
     }
 
     /// Reads `packages.toml` from dots and installs what it lists. Says whether everything worked.
-    private func installPackages(report: (Message) -> Void) async -> Bool {
+    private func installPackages(folders: ReleaseFolders, report: (Message) -> Void) async -> Bool {
         let file: String
         do {
             guard let dots = try DotsPointer(files: files, paths: paths).read() else { return false }
@@ -66,7 +76,11 @@ public struct RunCommand {
             let homebrew = await HomebrewPackages(runner: runner, files: files).run(list.homebrew, report: report)
             let appStore = await AppStoreApps(runner: runner, files: files, sudo: sudo).run(
                 list.appStore, report: report)
-            return homebrew && appStore
+            let state = StateFolder(files: files, locks: locks, paths: paths)
+            let releases = await GitHubReleases(
+                github: github, runner: runner, files: files, state: state, folders: folders
+            ).run(list.releases, report: report)
+            return homebrew && appStore && releases
         } catch {
             report(Message(.error, error.text))
             return false

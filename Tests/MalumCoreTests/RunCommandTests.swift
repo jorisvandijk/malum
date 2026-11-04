@@ -20,7 +20,10 @@ struct RunCommandTests {
         let files = FakeFileSystem(
             items: ["/opt/homebrew/bin/brew": .file, "/opt/homebrew/bin/mas": .file], texts: texts)
         var messages: [Message] = []
-        let succeeded = await RunCommand(files: files, paths: paths, runner: runner, canAsk: true).run {
+        let succeeded = await RunCommand(
+            files: files, paths: paths, runner: runner, github: FakeGitHub([:], files: files), locks: FakeFileLocks(),
+            canAsk: true
+        ).run {
             messages.append($0)
         }
         return (succeeded, messages)
@@ -104,5 +107,20 @@ struct RunCommandTests {
         #expect(
             runner.commands.map { $0.arguments.first ?? "" } == ["list", "install", "list", "-v", "-n"])
         #expect(messages.last == Message(.info, "system_config is done"))
+    }
+
+    @Test func releasesInstallLastWithTheFoldersFromMalumToml() async {
+        let (succeeded, messages) = await run(
+            "[system_config]\nenabled = true\nrelease_programs = \"~/bin\"\n",
+            packages: "[release.ghost]\nrepo = \"nobody/ghost\"\n")
+        #expect(!succeeded)
+        #expect(
+            messages == [
+                Message(
+                    .error,
+                    "couldn't install GitHub release ghost: nobody/ghost has no published release on GitHub, or it's private"
+                ),
+                Message(.error, "system_config finished with errors"),
+            ])
     }
 }

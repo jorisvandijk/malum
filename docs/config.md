@@ -14,3 +14,17 @@ Switches the module on. The module stays off until this is set to true.
 
 - Value: true or false
 - Default: `false`
+
+### `system_config.release_apps`
+
+The folder apps from GitHub releases are installed in.
+
+- Value: text in quotes
+- Default: `"/Applications"`
+
+### `system_config.release_programs`
+
+The folder programs from GitHub releases are installed in.
+
+- Value: text in quotes
+- Default: `"~/.local/bin"`

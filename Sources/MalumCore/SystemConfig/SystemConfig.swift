@@ -10,5 +10,12 @@ public enum SystemConfig {
             Makes the Mac match dots when you run `malum run`, installing what `packages.toml` lists. \
             Nothing happens in the background: the app only reads the switch, and `malum run` does the work.
             """,
-        settings: [:])
+        settings: [
+            ReleaseFolders.appsKey: Setting(
+                .string, "The folder apps from GitHub releases are installed in.",
+                default: .string(ReleaseFolders.defaultApps)),
+            ReleaseFolders.programsKey: Setting(
+                .string, "The folder programs from GitHub releases are installed in.",
+                default: .string(ReleaseFolders.defaultPrograms)),
+        ])
 }
