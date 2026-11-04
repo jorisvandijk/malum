@@ -56,6 +56,12 @@ public struct Paths: Equatable, Sendable {
     /// `packages.toml`, the name of the file in dots that lists what system config installs.
     public static let packagesTOMLName = "packages.toml"
 
+    /// `apps`, the folder in dots that holds one file for each app whose config Malum writes.
+    public static let appsFolderName = "apps"
+
+    /// The `apps` folder at the top of the dots folder `dots`.
+    public func appsFolder(in dots: String) -> String { "\(dots)/\(Self.appsFolderName)" }
+
     /// `malum.toml` at the top of the dots folder `dots`.
     public func configTOML(in dots: String) -> String { "\(dots)/\(Self.configTOMLName)" }
 
