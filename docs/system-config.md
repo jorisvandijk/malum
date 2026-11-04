@@ -68,7 +68,7 @@ A table Malum doesn't know only gets a warning. Without a `packages.toml`, there
 
 An install that fails is reported with the last line Homebrew wrote, and the rest still go ahead. The run then ends with `[error] system_config finished with errors` and exits with an error.
 
-Homebrew itself has to be installed at `/opt/homebrew/bin/brew`. Packages that aren't listed are left alone, and taking a package out of the list doesn't uninstall it.
+Homebrew itself has to be installed at `/opt/homebrew/bin/brew`. Taking a package out of the list uninstalls it, as [Removing](#removing) describes.
 
 A cask that runs an installer package needs your password, which `malum run` can't ask for yet, so its install fails.
 
@@ -76,7 +76,7 @@ A cask that runs an installer package needs your password, which `malum run` can
 
 App Store apps are installed after the Homebrew packages, with [mas](https://github.com/mas-cli/mas). List `mas = "formula"` under `[homebrew]`, and the same run installs it first. You have to be signed in to the App Store. Free apps are got for your account; a paid app has to have been bought with it already.
 
-mas installs as root, so when an app is missing, `malum run` asks for your password once, in the terminal, and the rest of the run doesn't ask again. Outside a terminal it can't ask, and installs no App Store apps. What mas writes while it downloads shows up between Malum's own lines:
+mas installs and uninstalls as root, so when an app is missing or has to go, `malum run` asks for your password once, in the terminal, and the rest of the run doesn't ask again. Outside a terminal it can't ask, and installs or uninstalls no App Store apps. What mas writes while it downloads shows up between Malum's own lines:
 
 ```
 [info] every listed Homebrew formula is installed
@@ -87,7 +87,7 @@ mas installs as root, so when an app is missing, `malum run` asks for your passw
 [info] system_config is done
 ```
 
-An app that's already installed is left alone, and so is everything that isn't listed. When mas can't install an app, the error it wrote stays above `[error] couldn't install App Store app xcode: exited with 1`, and the rest still go ahead.
+An app that's already installed is left alone. When mas can't install an app, the error it wrote stays above `[error] couldn't install App Store app xcode: exited with 1`, and the rest still go ahead.
 
 ## GitHub releases
 
@@ -116,6 +116,34 @@ Malum never replaces an app or program it didn't install itself. Remove it by ha
 [error] couldn't install GitHub release mpv: /Applications/mpv.app is already there, and Malum didn't install it
 ```
 
-Taking a release out of the list doesn't uninstall it.
+Taking a release out of the list removes it, as [Removing](#removing) describes.
+
+## Removing
+
+Malum keeps a record of the packages, apps and releases it manages, in `installed.json` in its folder in `~/Library/Application Support/`. It manages what it installed, and also everything listed that a run finds already installed, which it says once:
+
+```
+[info] Homebrew formula mole was already installed, Malum manages it now
+```
+
+When you take something it manages out of `packages.toml`, the next run uninstalls it: Homebrew packages with `brew uninstall`, App Store apps with `mas uninstall`, and releases by removing the app or program Malum put in place.
+
+```
+[info] uninstalling Homebrew cask kitty
+[info] uninstalled Homebrew cask kitty
+[info] asking for your password to uninstall App Store apps
+[sudo] password for you:
+[info] uninstalling App Store app xcode (497799835)
+[info] uninstalled App Store app xcode
+[info] removed GitHub release mpv from /Applications/mpv.app
+```
+
+Anything that was never listed is left alone, even when it's installed. Something you already uninstalled by hand is only taken out of the record. A formula that other packages still need stays installed, and Malum stops managing it:
+
+```
+[warn] Homebrew formula libyaml is still needed by other packages, so it stays and Malum no longer manages it
+```
+
+An uninstall that fails is reported, stays in the record and is tried again on the next run. Without a `packages.toml`, or with an error in it, nothing is uninstalled.
 
 The messages also go to the macOS log, as the [log page](log.md) describes.
