@@ -67,6 +67,8 @@ A problem in one module's table affects only that module. It keeps the settings 
 
 Malum runs as the menu bar app when you open `Malum.app`, from Finder or with `open`, and as a command when you run `malum` in a terminal. Both are the same program.
 
+In a terminal, the word in each message's tag is coloured: `info` green, `warn` yellow and `error` red. Set `NO_COLOR` to any value to turn that off. Output sent to a file or a pipe, and the log, are never coloured.
+
 Only one app runs at a time. Opening `Malum.app` again while it runs does nothing, and the second copy quits straight away.
 
 To make the running app reload, run:
