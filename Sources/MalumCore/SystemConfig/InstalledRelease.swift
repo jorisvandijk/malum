@@ -29,7 +29,7 @@ public struct InstalledRelease: Codable, Equatable, Sendable {
     /// The record of `releases` as text.
     static func text(of releases: [String: Self]) -> String {
         let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
         guard let data = try? encoder.encode(releases), let text = String(bytes: data, encoding: .utf8) else {
             return "{}\n"
         }
