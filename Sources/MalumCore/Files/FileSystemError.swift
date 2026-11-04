@@ -14,6 +14,8 @@ public enum FileSystemError: Error, Equatable, Sendable {
     case unswappable(path: String, other: String, reason: String)
     /// The file or folder at the path couldn't be removed.
     case unremovable(path: String, reason: String)
+    /// The folder at the path couldn't be listed.
+    case unlistable(path: String, reason: String)
 }
 
 // MARK: - ReportableError
@@ -36,6 +38,8 @@ extension FileSystemError: ReportableError {
             "couldn't swap \(private: path) with \(private: other): \(reason)"
         case .unremovable(let path, let reason):
             "couldn't remove \(private: path): \(reason)"
+        case .unlistable(let path, let reason):
+            "couldn't list \(private: path): \(reason)"
         }
     }
 }

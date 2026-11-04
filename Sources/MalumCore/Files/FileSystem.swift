@@ -19,4 +19,10 @@ public protocol FileSystem: Sendable {
     func exchange(_ path: String, _ other: String) throws(FileSystemError)
     /// Removes the file or folder at `path`, with everything in it.
     func remove(_ path: String) throws(FileSystemError)
+    /// The names of what's in the folder at `path`.
+    func contents(of path: String) throws(FileSystemError) -> [String]
+    /// Whether the file at `path` can be run.
+    func isExecutable(_ path: String) -> Bool
+    /// Lets the file at `path` be run.
+    func makeExecutable(_ path: String) throws(FileSystemError)
 }

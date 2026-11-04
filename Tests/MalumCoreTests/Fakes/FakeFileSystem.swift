@@ -8,6 +8,8 @@ final class FakeFileSystem: FileSystem {
     private let items: Mutex<[String: FileItem]>
     /// The text of each file.
     private let texts: Mutex<[String: String]>
+    /// Files that can be run.
+    private let executables: Mutex<Set<String>>
     /// Paths whose writes fail.
     let failing: Set<String>
     /// Paths spelled differently from how they are on disk, with their spelling on disk.
@@ -15,12 +17,13 @@ final class FakeFileSystem: FileSystem {
 
     init(
         items: [String: FileItem] = [:], texts: [String: String] = [:], failing: Set<String> = [],
-        spellings: [String: String] = [:]
+        spellings: [String: String] = [:], executables: Set<String> = []
     ) {
         var all = items
         for path in texts.keys { all[path] = .file }
         self.items = Mutex(all)
         self.texts = Mutex(texts)
+        self.executables = Mutex(executables)
         self.failing = failing
         self.spellings = spellings
     }
@@ -70,6 +73,9 @@ final class FakeFileSystem: FileSystem {
         }
         items.withLock { $0.merge(Self.moved($0, from: source, to: destination)) { $1 } }
         texts.withLock { $0.merge(Self.moved($0, from: source, to: destination)) { $1 } }
+        executables.withLock { names in
+            names.formUnion(names.filter { Self.isInside($0, source) }.map { destination + $0.dropFirst(source.count) })
+        }
     }
 
     func exchange(_ path: String, _ other: String) throws(FileSystemError) {
@@ -78,12 +84,34 @@ final class FakeFileSystem: FileSystem {
         }
         items.withLock { $0 = Self.swapped($0, path, other) }
         texts.withLock { $0 = Self.swapped($0, path, other) }
+        executables.withLock { names in
+            let flags = Dictionary(uniqueKeysWithValues: names.map { ($0, true) })
+            names = Set(Self.swapped(flags, path, other).keys)
+        }
     }
 
     func remove(_ path: String) throws(FileSystemError) {
         guard !failing.contains(path) else { throw .unremovable(path: path, reason: "read-only") }
         items.withLock { $0 = $0.filter { !Self.isInside($0.key, path) } }
         texts.withLock { $0 = $0.filter { !Self.isInside($0.key, path) } }
+        executables.withLock { $0 = $0.filter { !Self.isInside($0, path) } }
+    }
+
+    func contents(of path: String) throws(FileSystemError) -> [String] {
+        guard item(at: path) == .directory else { throw .unlistable(path: path, reason: "not a folder") }
+        let names = allPaths.filter { $0.hasPrefix(path + "/") }.map { $0.dropFirst(path.count + 1) }
+        return Array(Set(names.compactMap { $0.split(separator: "/").first.map(String.init) }))
+    }
+
+    func isExecutable(_ path: String) -> Bool {
+        executables.withLock { $0.contains(path) }
+    }
+
+    func makeExecutable(_ path: String) throws(FileSystemError) {
+        guard !failing.contains(path), item(at: path) == .file else {
+            throw .unwritable(path: path, reason: "read-only")
+        }
+        executables.withLock { _ = $0.insert(path) }
     }
 
     /// Whether something sits at `path` or inside it.

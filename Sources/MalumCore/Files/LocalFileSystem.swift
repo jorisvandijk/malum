@@ -92,4 +92,30 @@ public struct LocalFileSystem: FileSystem {
             throw .unremovable(path: path, reason: error.localizedDescription)
         }
     }
+
+    /// Lists with `FileManager`.
+    public func contents(of path: String) throws(FileSystemError) -> [String] {
+        do {
+            return try FileManager.default.contentsOfDirectory(atPath: path)
+        } catch {
+            throw .unlistable(path: path, reason: error.localizedDescription)
+        }
+    }
+
+    /// Asks `FileManager`.
+    public func isExecutable(_ path: String) -> Bool {
+        FileManager.default.isExecutableFile(atPath: path)
+    }
+
+    /// Sets the permissions to `rwxr-xr-x`.
+    public func makeExecutable(_ path: String) throws(FileSystemError) {
+        do {
+            try FileManager.default.setAttributes([.posixPermissions: Self.executableMode], ofItemAtPath: path)
+        } catch {
+            throw .unwritable(path: path, reason: error.localizedDescription)
+        }
+    }
+
+    /// `rwxr-xr-x`.
+    private static let executableMode = 0o755
 }
