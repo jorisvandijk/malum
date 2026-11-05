@@ -19,31 +19,3 @@ public enum FileSystemError: Error, Equatable, Sendable {
     /// The file at the path is a TOML file, which only the user writes.
     case userFile(path: String)
 }
-
-// MARK: - ReportableError
-
-extension FileSystemError: ReportableError {
-    /// The problem as the user sees it.
-    public var text: MessageText {
-        switch self {
-        case .unreadable(let path, let reason):
-            "couldn't read \(private: path): \(reason)"
-        case .unwritable(let path, let reason):
-            "couldn't write \(private: path): \(reason)"
-        case .noDirectory(let path, let reason):
-            "couldn't create \(private: path): \(reason)"
-        case .unlinkable(let path, let reason):
-            "couldn't link \(private: path): \(reason)"
-        case .uncopyable(let path, let reason):
-            "couldn't copy \(private: path): \(reason)"
-        case .unswappable(let path, let other, let reason):
-            "couldn't swap \(private: path) with \(private: other): \(reason)"
-        case .unremovable(let path, let reason):
-            "couldn't remove \(private: path): \(reason)"
-        case .unlistable(let path, let reason):
-            "couldn't list \(private: path): \(reason)"
-        case .userFile(let path):
-            "won't write \(private: path): \(Project.name) never writes TOML files"
-        }
-    }
-}

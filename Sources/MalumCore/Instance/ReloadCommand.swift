@@ -15,9 +15,9 @@ public struct ReloadCommand: Sendable {
     public func run() -> Message {
         do {
             try signals.hangUp(instance.runningProcessID())
-            return Message(.info, "asked \(Project.name) to reload")
+            return .askedToReload
         } catch {
-            return Message(.error, error.text)
+            return .failed(error)
         }
     }
 }

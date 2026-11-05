@@ -56,7 +56,7 @@ final class LiveConfig {
         do {
             try edit(store)
         } catch {
-            announce(Message(.error, error.text))
+            announce(.failed(error))
             return
         }
         reload(force: true)
@@ -118,7 +118,7 @@ final class LiveConfig {
         do {
             overrides = try store.read()
         } catch {
-            announce(Message(.error, error.text))
+            announce(.failed(error))
         }
     }
 
@@ -131,7 +131,6 @@ final class LiveConfig {
         watcher?.stop()
         watcher = path.map { path in ConfigWatcher(path: path) { [weak self] in self?.reload(force: false) } }
         guard let watcher, !watcher.isWatching else { return }
-        announce(
-            Message(.warn, "couldn't watch \(private: watcher.folder), run \(Project.command) reload after a change"))
+        announce(.unwatchable(watcher.folder))
     }
 }

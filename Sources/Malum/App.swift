@@ -8,17 +8,17 @@ func runApp() -> Never {
     let instance = AppInstance(state: state, locks: locks)
     do {
         guard try instance.claim(processID: getpid()) else {
-            announce(Message(.info, "\(Project.name) is already running"))
+            announce(.alreadyRunning)
             // launchd starts the login agent again after a failure, so a freshly signed app that
             // launchd starts while the old one is still quitting gets another go once it's gone.
             exit(
                 LaunchMode.isLoginAgent(environment: ProcessInfo.processInfo.environment) ? EXIT_FAILURE : EXIT_SUCCESS)
         }
     } catch {
-        announce(Message(.error, error.text))
+        announce(.failed(error))
         exit(EXIT_FAILURE)
     }
-    announce(Message(.info, "\(Project.name) \(Project.version) is running"))
+    announce(.running)
     updateLoginAgent()
     let launches = LaunchRecord(state: state)
     checkCrashLoop(launches, overrides: OverrideStore(state: state))
@@ -53,26 +53,25 @@ private func startWhenSigned(config: LiveConfig, menu: MenuFeed) async {
     case .signed:
         config.allowModules()
     case .resigned:
-        announce(
-            Message(.info, "signed \(Project.name) with the \"\(SigningCertificate.name)\" certificate, restarting"))
+        announce(.resigned)
         do {
             try await signing.restart(userID: getuid())
             exit(EXIT_SUCCESS)
         } catch {
-            refuse(error.text, menu: menu)
+            refuse(.warning(error), menu: menu)
         }
     case .notInstalled:
-        refuse("modules stay off: \(Project.name) isn't running from \(private: paths.installedBundle)", menu: menu)
+        refuse(.modulesOff(installed: paths.installedBundle), menu: menu)
     case .failed(let error):
-        refuse(error.text, menu: menu)
+        refuse(.warning(error), menu: menu)
     }
 }
 
 /// Keeps the modules off because Malum isn't signed, and says why in the log and the menu.
 @MainActor
-private func refuse(_ problem: MessageText, menu: MenuFeed) {
-    announce(Message(.warn, problem))
-    menu.signingProblem = problem.description
+private func refuse(_ problem: Message, menu: MenuFeed) {
+    announce(problem)
+    menu.signingProblem = problem.text.description
 }
 
 /// Writes down this start, and turns safe mode on when Malum keeps starting, as it does when it
@@ -82,9 +81,9 @@ private func checkCrashLoop(_ launches: LaunchRecord, overrides: OverrideStore) 
     do {
         guard try launches.record(at: Int(Date().timeIntervalSince1970)) else { return }
         try overrides.enterSafeMode(.crashLoop)
-        announce(Message(.warn, "\(SafeModeReason.crashLoop), so safe mode is on and every module stays off"))
+        announce(.crashLoop)
     } catch {
-        announce(Message(.warn, error.text))
+        announce(.warning(error))
     }
 }
 
@@ -94,7 +93,7 @@ private func forget(_ launches: LaunchRecord) {
     do {
         try launches.clear()
     } catch {
-        announce(Message(.warn, error.text))
+        announce(.warning(error))
     }
 }
 
@@ -104,14 +103,13 @@ private func updateLoginAgent() {
     do {
         switch try LoginAgent(files: files, paths: paths).update(executable: executable) {
         case .written:
-            announce(Message(.info, "\(Project.name) starts at login, through \(private: paths.loginAgent)"))
+            announce(.startsAtLogin(through: paths.loginAgent))
         case .unchanged:
             break
         case .notInstalled:
-            let installed = paths.installedExecutable
-            announce(Message(.info, "not starting at login: \(Project.name) isn't running from \(private: installed)"))
+            announce(.notStartingAtLogin(installed: paths.installedExecutable))
         }
     } catch {
-        announce(Message(.warn, error.text))
+        announce(.warning(error))
     }
 }

@@ -23,19 +23,15 @@ public struct TerminalAccess: Sendable {
     /// What the check found, as a message.
     public func report() -> Message {
         guard let terminal else {
-            return Message(.info, "not running in a terminal, so there's no terminal to check")
+            return .noTerminal
         }
         switch check.state(of: .fullDiskAccess) {
         case .granted:
-            return Message(.info, "\(terminal) has \(Permission.fullDiskAccess)")
+            return .hasFullDiskAccess(terminal)
         case .missing:
-            let advice =
-                "\(terminal) doesn't have \(Permission.fullDiskAccess), so macOS keeps asking \(terminal) about what "
-                + "\(Project.command) does in it; turn it on in System Settings > Privacy & Security > "
-                + "\(Permission.fullDiskAccess), then quit and reopen \(terminal)"
-            return Message(.warn, MessageText(advice))
+            return .lacksFullDiskAccess(terminal)
         case .unknown:
-            return Message(.warn, "couldn't tell whether \(terminal) has \(Permission.fullDiskAccess)")
+            return .unknownFullDiskAccess(terminal)
         }
     }
 }

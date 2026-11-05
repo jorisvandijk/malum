@@ -32,9 +32,9 @@ func linkOnFirstStart() {
     guard let executable else { return }
     do {
         guard try CommandLink(files: files, paths: paths).createIfMissing(to: executable) else { return }
-        announce(Message(.info, "linked \(private: paths.commandLink) to \(private: executable)"))
+        announce(.linked(paths.commandLink, to: executable))
     } catch {
-        announce(Message(.warn, error.text))
+        announce(.warning(error))
     }
 }
 
@@ -86,9 +86,9 @@ func applySystemConfig() -> Never {
 func reject(_ invocation: Invocation) -> Never {
     switch invocation {
     case .incomplete(let command, let needs):
-        terminal.report(Message(.error, "\(command) needs \(needs)"))
+        terminal.report(.incomplete(command, needs: needs))
     case .unknown(let argument):
-        terminal.report(Message(.error, "unknown argument: \(argument)"))
+        terminal.report(.unknownArgument(argument))
     case .version, .help, .initialize, .reload, .safe, .disable, .permissions, .run:
         break  // These make sense; runCommand runs them.
     }
@@ -112,10 +112,10 @@ func checkTerminal() {
     terminal.report(access.report())
     guard access.isMissing else { return }
     guard PrivacySettings.open(.fullDiskAccess) else {
-        terminal.report(Message(.warn, "couldn't open System Settings at \(Permission.fullDiskAccess)"))
+        terminal.report(.settingsUnopenable(at: .fullDiskAccess))
         return
     }
-    terminal.report(Message(.info, "opened System Settings at \(Permission.fullDiskAccess)"))
+    terminal.report(.openedSettings(at: .fullDiskAccess))
 }
 
 /// Shows `messages`, and exits with an error when one of them is an error.
