@@ -110,18 +110,29 @@ struct GitHubReleasesTests {
         #expect(installedReleases(files)["mpv"]?.tag == "v0.41.0")
     }
 
-    @Test func somethingMalumDidntInstallIsNeverReplaced() async {
+    @Test func somethingAlreadyThereIsTakenOver() async {
         let files = FakeFileSystem(texts: ["/Applications/mpv.app/Contents/Info.plist": "mine"])
         let (succeeded, messages) = await run([mpv], files: files)
+        #expect(succeeded)
+        #expect(
+            messages.dropFirst().first
+                == Message(.info, "/Applications/mpv.app was already there and was replaced, Malum manages it now"))
+        #expect(files.text(at: "/Applications/mpv.app/Contents/Info.plist") == "app")
+        #expect(installedReleases(files)["mpv"]?.path == "/Applications/mpv.app")
+    }
+
+    @Test func anotherReleaseIsNeverReplaced() async {
+        let files = FakeFileSystem()
+        let copy = ReleaseEntry("mpv-copy", repo: "mpv-player/mpv", asset: "mpv-*-arm.zip")
+        let (succeeded, messages) = await run([mpv, copy], files: files)
         #expect(!succeeded)
         #expect(
             messages.last
                 == Message(
                     .error,
-                    "couldn't install GitHub release mpv: /Applications/mpv.app is already there, and Malum didn't install it"
+                    "couldn't install GitHub release mpv-copy: /Applications/mpv.app is where GitHub release mpv is installed"
                 ))
-        #expect(files.text(at: "/Applications/mpv.app/Contents/Info.plist") == "mine")
-        #expect(files.item(at: record) == nil)
+        #expect(installedReleases(files).keys.sorted() == ["mpv"])
     }
 
     @Test func unlistedReleasesMalumInstalledAreRemoved() async {

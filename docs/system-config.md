@@ -110,11 +110,15 @@ Malum remembers what it installed. The next run installs a newer release over it
 [info] every listed GitHub release is up to date
 ```
 
-Malum never replaces an app or program it didn't install itself. Remove it by hand first, and the next run installs the release in its place:
+An app or program that's already where a listed release goes is replaced by the release, and Malum manages it from then on:
 
 ```
-[error] couldn't install GitHub release mpv: /Applications/mpv.app is already there, and Malum didn't install it
+[info] installing GitHub release mpv v0.40.0 (mpv-v0.40.0-macos-15-arm.zip)
+[info] /Applications/mpv.app was already there and was replaced, Malum manages it now
+[info] installed GitHub release mpv v0.40.0 at /Applications/mpv.app
 ```
+
+The one exception is a place another listed release is installed: two releases never replace each other.
 
 Taking a release out of the list removes it, as [Removing](#removing) describes.
 

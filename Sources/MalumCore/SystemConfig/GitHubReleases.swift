@@ -47,15 +47,16 @@ public struct GitHubReleases {
         }
         guard !releases.isEmpty else { return succeeded }
         var changed = false
+        var recorded = record.releases
         for entry in releases {
             do {
-                guard let installed = try await update(entry, previous: record.releases[entry.name], report: report)
-                else { continue }
+                guard let installed = try await update(entry, recorded: recorded, report: report) else { continue }
                 guard InstalledRecord.remember(in: state, report: report, { $0.releases[entry.name] = installed })
                 else {
                     succeeded = false
                     continue
                 }
+                recorded[entry.name] = installed
                 report(.installed(release: entry.name, tag: installed.tag, at: installed.path))
                 changed = true
             } catch {
@@ -81,11 +82,12 @@ public struct GitHubReleases {
         return true
     }
 
-    /// Installs the latest release of `entry`, unless `previous` is it already. Gives back what it
-    /// installed, or nil when nothing changed.
+    /// Installs the latest release of `entry`, unless what `recorded` holds for it is that already.
+    /// Gives back what it installed, or nil when nothing changed.
     private func update(
-        _ entry: ReleaseEntry, previous: InstalledRelease?, report: (Message) -> Void
+        _ entry: ReleaseEntry, recorded: [String: InstalledRelease], report: (Message) -> Void
     ) async throws -> InstalledRelease? {
+        let previous = recorded[entry.name]
         guard let latest = try await github.latestRelease(of: entry.repo) else {
             throw ReleaseError.noRelease(repo: entry.repo)
         }
@@ -103,7 +105,8 @@ public struct GitHubReleases {
         let (payload, isApp) = try await unpack(download, name: entry.name, in: scratch)
         let destination =
             isApp ? "\(folders.apps)/\((payload as NSString).lastPathComponent)" : "\(folders.programs)/\(entry.name)"
-        try place(payload, at: destination, previous: previous?.path)
+        let owner = recorded.first { $0.key != entry.name && $0.value.path == destination }?.key
+        try place(payload, at: destination, previous: previous?.path, owner: owner, report: report)
         if !isApp { try files.makeExecutable(destination) }
         return InstalledRelease(repo: entry.repo, tag: latest.tag, path: destination)
     }
@@ -130,20 +133,21 @@ public struct GitHubReleases {
         return (download, false)
     }
 
-    /// Puts `payload` at `destination`, replacing what's there only when Malum put it there, which
-    /// `previous` says. Removes `previous` when the new one goes elsewhere.
-    private func place(_ payload: String, at destination: String, previous: String?) throws {
+    /// Puts `payload` at `destination`, replacing what's there and taking it over, unless the release
+    /// `owner` is installed there. Removes `previous` when the new one goes elsewhere.
+    private func place(
+        _ payload: String, at destination: String, previous: String?, owner: String?, report: (Message) -> Void
+    ) throws {
         try files.createDirectory((destination as NSString).deletingLastPathComponent)
         if files.item(at: destination) == nil {
             try files.copy(payload, to: destination)
         } else {
-            guard previous == destination else {
-                throw ReleaseError.taken(path: destination)
-            }
+            if let owner { throw ReleaseError.taken(path: destination, by: owner) }
             let staged = "\(destination).\(Project.command)-new"
             try? files.remove(staged)  // A leftover from an interrupted update; usually there's none.
             try files.copy(payload, to: staged)
             try files.replace(destination, with: staged)
+            if previous != destination { report(.takenOver(release: destination)) }
         }
         guard let previous, previous != destination, files.item(at: previous) != nil else { return }
         try files.remove(previous)

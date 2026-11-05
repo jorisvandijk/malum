@@ -174,6 +174,11 @@ extension Message {
         Message(.info, "removed \(MessageText.release) \(name) from \(private: path)")
     }
 
+    /// A release replaced what was already at `path`, which Malum didn't install.
+    static func takenOver(release path: String) -> Message {
+        Message(.info, .managesNow("\(private: path) was already there and was replaced"))
+    }
+
     /// The release `name` couldn't be installed.
     static func installFailed(release name: String, _ error: any Error) -> Message {
         failed("install \(MessageText.release) \(name)", error)
@@ -226,8 +231,8 @@ extension ReleaseError: ReportableError {
             "it holds several programs, and none is called \(name)"
         case .nothingToInstall:
             "it holds no app or program"
-        case .taken(let path):
-            "\(private: path) is already there, and \(Project.name) didn't install it"
+        case .taken(let path, let owner):
+            "\(private: path) is where \(MessageText.release) \(owner) is installed"
         }
     }
 }

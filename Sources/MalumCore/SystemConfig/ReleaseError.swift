@@ -18,6 +18,6 @@ enum ReleaseError: Error, Equatable {
     case severalPrograms(name: String)
     /// The download holds no app or program.
     case nothingToInstall
-    /// Something Malum didn't install is already at the path.
-    case taken(path: String)
+    /// The release `by` is installed at the path.
+    case taken(path: String, by: String)
 }
