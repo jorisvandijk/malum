@@ -7,12 +7,12 @@ struct AppConfigsTests {
     private let header = Self.header(of: "git")
 
     /// The line at the top of each file of `app` that has comments.
-    private static func header(of app: String) -> String {
+    static func header(of app: String) -> String {
         "# Written by Malum from apps/\(app).toml in dots. Changes made here are overwritten.\n"
     }
 
     /// What `app` makes of its TOML `text`.
-    private func read(
+    func read(
         _ text: String, app: String = "git"
     ) throws -> (files: [AppFile], problems: [Message]) {
         let config = try #require(AppConfigs.app(named: app))
@@ -155,13 +155,14 @@ struct AppConfigsTests {
     }
 
     @Test func wrongLineValuesAreErrors() throws {
+        let expected = "should be text on one line, a number, true or false, or a list of them"
         let (_, problems) = try read(
             """
             theme = 1
 
             [settings]
             "two words" = 1
-            colors = [1]
+            colors = [[1]]
 
             [keybindings]
             "cmd+b" = "a\\nb"
@@ -169,10 +170,19 @@ struct AppConfigsTests {
         #expect(
             problems == [
                 Message(.error, "theme should be a table"),
+                Message(.error, "settings.colors \(expected)"),
                 Message(.error, "settings.\"two words\": the name can't be empty or hold spaces"),
-                Message(.error, "settings.colors should be text on one line, a number, true or false"),
-                Message(.error, "keybindings.\"cmd+b\" should be text on one line, a number, true or false"),
+                Message(.error, "keybindings.\"cmd+b\" \(expected)"),
             ])
+    }
+
+    @Test func kittyListsRepeatTheirOption() throws {
+        let (files, problems) = try read(
+            "[settings]\nsymbol_map = [\"U+E0A0 Nerd\", \"U+F000 Awesome\"]\n", app: "kitty")
+        #expect(problems.isEmpty)
+        #expect(
+            files.first?.text
+                == Self.header(of: "kitty") + "symbol_map U+E0A0 Nerd\nsymbol_map U+F000 Awesome\n")
     }
 
     // MARK: - micro

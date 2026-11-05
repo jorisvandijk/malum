@@ -41,6 +41,13 @@ public enum ConfigValue: Equatable, Sendable {
         }
     }
 
+    /// The items of a list, or the value alone when it isn't one, for formats that write a list
+    /// as one line per item.
+    var items: [ConfigValue] {
+        guard case .array(let items) = self else { return [self] }
+        return items
+    }
+
     /// The value written as TOML, as the docs show it.
     public var toml: String {
         switch self {

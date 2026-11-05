@@ -28,6 +28,18 @@ enum AppConfigs {
                     ".config/micro/colorschemes/*.micro", .lines([LineBlock(nil, prefix: "color-link", quoted: true)]),
                     each: "colorschemes"),
             ]),
+        AppConfig(
+            name: "newsboat",
+            files: [
+                AppConfigFile(
+                    ".config/newsboat/config",
+                    .lines([
+                        LineBlock("settings", quoted: true), LineBlock("keybindings", prefix: "bind-key"),
+                        LineBlock("ignore_articles", prefix: "ignore-article", quoted: true),
+                    ]),
+                    always: true),
+                AppConfigFile(".config/newsboat/urls", .feeds(table: "feeds")),
+            ]),
     ]
 
     /// The app called `name`, or nil when there's none.

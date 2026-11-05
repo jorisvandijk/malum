@@ -18,10 +18,8 @@ enum IniText {
     ) -> String {
         var text = "[\(sectionName(name))]\n"
         for (key, value) in entries.sorted(by: { $0.key < $1.key }) {
-            let items: [ConfigValue]
-            if case .array(let list) = value { items = list } else { items = [value] }
-            let written = items.compactMap(self.value)
-            guard written.count == items.count else {
+            let written = value.items.compactMap(self.value)
+            guard written.count == value.items.count else {
                 reader.expect(path + [key], "text, a whole number, true or false, or a list of them")
                 continue
             }

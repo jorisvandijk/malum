@@ -216,7 +216,7 @@ enable_audio_bell = false
 "cmd+b" = "launch --location=vsplit"
 ```
 
-- `[theme]` and `[settings]`: any of [kitty's options](https://sw.kovidgoyal.net/kitty/conf/), as `option = value`, each written as an `option value` line. `true` and `false` are written as `yes` and `no`. The theme is written first, so a setting wins over it.
+- `[theme]` and `[settings]`: any of [kitty's options](https://sw.kovidgoyal.net/kitty/conf/), as `option = value`, each written as an `option value` line. `true` and `false` are written as `yes` and `no`. The theme is written first, so a setting wins over it. A list writes the option once for each item, for options kitty takes more than once, such as `symbol_map`.
 - `[keybindings]`: keyboard shortcuts, as `"keys" = "action"`. Each becomes a `map keys action` line.
 
 ### micro
@@ -239,5 +239,32 @@ comment = "italic #6272A4"
 - `[settings]`: any of [micro's options](https://github.com/zyedidia/micro/blob/master/runtime/help/options.md), as `option = value`. Setting an option from inside micro with `set` changes `settings.json`, so the next run overwrites it with a warning: set options here instead.
 - `[bindings]`: [key bindings](https://github.com/zyedidia/micro/blob/master/runtime/help/keybindings.md), as `"key" = "action"`. `bindings.json` is only written when the table has something in it.
 - `[colorschemes.<name>]`: a colour scheme, with `group = "colours"` for each highlight group. Each becomes a `color-link group "colours"` line in `colorschemes/<name>.micro`. Pick the scheme with the `colorscheme` setting.
+
+### newsboat
+
+`apps/newsboat.toml` writes newsboat's config, `~/.config/newsboat/config`, and its feeds to `~/.config/newsboat/urls`. What you've read is kept in newsboat's cache, which Malum leaves alone. Install newsboat itself with the `newsboat` formula in `packages.toml`.
+
+```toml
+[settings]
+auto-reload = true
+reload-time = 60
+browser = "open %u"
+
+[keybindings]
+j = "down"
+J = "next-feed articlelist"
+
+[ignore_articles]
+"*" = ["title =~ \"sponsored\"", "author = \"bot\""]
+
+[feeds]
+"Hacker News" = "https://news.ycombinator.com/rss"
+Lobsters = { url = "https://lobste.rs/rss", tags = ["tech"] }
+```
+
+- `[settings]`: any of [newsboat's options](https://newsboat.org/releases/2.42/docs/newsboat.html#_configuration_commands), as `option = value`. Text is written in double quotes, `true` and `false` as `yes` and `no`.
+- `[keybindings]`: key bindings, as `key = "operation"`, each written as `bind-key key operation`. Put a dialog after the operation to bind it in that dialog only, as `J` does above.
+- `[ignore_articles]`: articles to hide, as `feed = "filter"`, or a list of filters. Each filter becomes an `ignore-article feed "filter"` line. The feed is its address, or `"*"` for every feed, and the filter is in [newsboat's filter language](https://newsboat.org/releases/2.42/docs/newsboat.html#_filter_language).
+- `[feeds]`: the feeds, as `title = "address"`. The title is shown in newsboat's feed list instead of the feed's own. Use `{ url = "...", tags = [...] }` to give a feed tags. The feeds are written in alphabetical order of title, and `urls` is only written when there's at least one.
 
 The messages also go to the macOS log, as the [log page](log.md) describes.
