@@ -5,7 +5,7 @@ import MalumPlatform
 /// Runs Malum as the menu bar app, or quits straight away when another app already runs.
 @MainActor
 func runApp() -> Never {
-    let instance = AppInstance(state: StateFolder(files: files, locks: locks, paths: paths), locks: locks)
+    let instance = AppInstance(state: state, locks: locks)
     do {
         guard try instance.claim(processID: getpid()) else {
             announce(Message(.info, "\(Project.name) is already running"))
@@ -20,7 +20,6 @@ func runApp() -> Never {
     }
     announce(Message(.info, "\(Project.name) \(Project.version) is running"))
     updateLoginAgent()
-    let state = StateFolder(files: files, locks: locks, paths: paths)
     let launches = LaunchRecord(state: state)
     checkCrashLoop(launches, overrides: OverrideStore(state: state))
     // TODO: one list of the modules, which MalumDocs shares, once there are modules.

@@ -1,7 +1,7 @@
 /// Every way Malum runs `mas`, the App Store's command line, which Homebrew installs.
 public enum Mas {
     /// Where Homebrew puts `mas` on Apple silicon.
-    public static let path = "/opt/homebrew/bin/mas"
+    public static let path = "\(Brew.binFolder)/mas"
     /// Seconds one install may take: Xcode alone downloads many gigabytes.
     private static let installTimeoutSeconds = 7200
 

@@ -14,7 +14,7 @@ public enum Security {
     /// Adds the certificate and key in the PKCS #12 file `file`, protected with `password`, to
     /// `keychain`. `-T` lets codesign use the key without asking.
     public static func importIdentity(_ file: String, password: String, keychain: String) -> Command {
-        Command(path, ["import", file, "-k", keychain, "-f", "pkcs12", "-P", password, "-T", "/usr/bin/codesign"])
+        Command(path, ["import", file, "-k", keychain, "-f", "pkcs12", "-P", password, "-T", Codesign.path])
     }
 
     /// The SHA-1 of the certificate called `name` in the output of `findIdentities`, whose lines

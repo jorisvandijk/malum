@@ -7,7 +7,7 @@ public struct ReleaseFolders: Equatable, Sendable {
     /// Where apps go when the setting is left out.
     static let defaultApps = "/Applications"
     /// Where programs go when the setting is left out.
-    static let defaultPrograms = "~/.local/bin"
+    static let defaultPrograms = "~/" + Paths.binRoot
 
     /// The folder apps go in.
     public let apps: String

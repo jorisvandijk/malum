@@ -52,7 +52,7 @@ struct AppConfigFile: Sendable {
         let text = format.text(from: table, at: tablePath, reader: &reader)
         guard always || text != nil else { return nil }
         let header = format.comment.map { mark in
-            "\(mark) Written by \(Project.name) from \(Paths.appsFolderName)/\(app).toml in dots. "
+            "\(mark) Written by \(Project.name) from \(Paths.appFile(named: app)) in dots. "
                 + "Changes made here are overwritten.\n"
         }
         return AppFile(path, (header ?? "") + (text ?? format.empty))

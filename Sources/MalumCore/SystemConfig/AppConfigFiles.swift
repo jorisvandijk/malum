@@ -1,10 +1,9 @@
+import Foundation
+
 /// The app config files part of system config: reads each app's file in `apps/` in dots, and
 /// writes the config files it asks for.
 @MainActor
 public struct AppConfigFiles {
-    /// The extension of the files in `apps/`.
-    private static let tomlExtension = ".toml"
-
     /// The disk.
     private let files: any FileSystem
     /// Where the record of what Malum wrote is kept.
@@ -30,7 +29,8 @@ public struct AppConfigFiles {
         }
         let names: [String]
         do {
-            names = try files.contents(of: folder).filter { $0.hasSuffix(Self.tomlExtension) }.sorted()
+            names = try files.contents(of: folder).filter { ($0 as NSString).pathExtension == Paths.tomlExtension }
+                .sorted()
         } catch {
             report(Message(.error, "couldn't write app config files: \(MessageText(error: error))"))
             return false
@@ -38,9 +38,9 @@ public struct AppConfigFiles {
         var wanted: [(app: String, file: AppFile)] = []
         var broken: Set<String> = []
         for fileName in names {
-            let name = String(fileName.dropLast(Self.tomlExtension.count))
+            let name = (fileName as NSString).deletingPathExtension
             guard let app = AppConfigs.app(named: name) else {
-                report(Message(.warn, "\(Paths.appsFolderName)/\(fileName): \(Project.name) has no app called \(name)"))
+                report(Message(.warn, "\(Paths.appFile(named: name)): \(Project.name) has no app called \(name)"))
                 continue
             }
             guard let appFiles = read(app, from: "\(folder)/\(fileName)", report: report) else {
@@ -55,7 +55,7 @@ public struct AppConfigFiles {
 
     /// The files `app` asks for in its file at `path`, or nil when an error in it stops them.
     private func read(_ app: AppConfig, from path: String, report: (Message) -> Void) -> [AppFile]? {
-        let fileName = "\(Paths.appsFolderName)/\(app.name)\(Self.tomlExtension)"
+        let fileName = Paths.appFile(named: app.name)
         let fixFirst = Message(.error, "couldn't write \(app.name)'s config files: fix \(private: path) first")
         var reader: TableReader
         do {

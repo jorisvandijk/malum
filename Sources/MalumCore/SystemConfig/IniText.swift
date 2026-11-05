@@ -41,7 +41,7 @@ enum IniText {
     private static func value(_ value: ConfigValue) -> String? {
         switch value {
         case .string(let text):
-            "\"" + escaped(text) + "\""
+            Escaping.quoted(text, controls: .breaks)
         case .integer(let number):
             String(number)
         case .boolean(let flag):
@@ -49,23 +49,5 @@ enum IniText {
         case .float, .date, .array, .table:
             nil
         }
-    }
-
-    /// `text` with the characters a quoted value needs escaped.
-    private static func escaped(_ text: String) -> String {
-        text.unicodeScalars.map { scalar in
-            switch scalar {
-            case "\\":
-                "\\\\"
-            case "\"":
-                "\\\""
-            case "\n":
-                "\\n"
-            case "\t":
-                "\\t"
-            default:
-                String(scalar)
-            }
-        }.joined()
     }
 }

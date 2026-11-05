@@ -45,7 +45,7 @@ public enum ConfigValue: Equatable, Sendable {
     public var toml: String {
         switch self {
         case .string(let text):
-            Self.quoted(text)
+            Escaping.quoted(text, controls: .all)
         case .integer(let number):
             String(number)
         case .float(let number):
@@ -70,44 +70,12 @@ public enum ConfigValue: Equatable, Sendable {
     /// `name` as a TOML key: bare when TOML allows it, in quotes otherwise.
     static func key(_ name: String) -> String {
         let bare = !name.isEmpty && name.unicodeScalars.allSatisfy { bareKeyCharacters.contains($0) }
-        return bare ? name : quoted(name)
+        return bare ? name : Escaping.quoted(name, controls: .all)
     }
 
     /// The characters a bare TOML key may hold.
     private static let bareKeyCharacters = Set(
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-".unicodeScalars)
-
-    /// How many hex digits a `\u` escape has.
-    private static let escapeDigits = 4
-    /// The base of a hex number.
-    private static let hexRadix = 16
-
-    /// `text` as a TOML string in double quotes, with the characters TOML needs escaped.
-    private static func quoted(_ text: String) -> String {
-        let escaped = text.unicodeScalars.map { scalar in
-            switch scalar {
-            case "\\":
-                "\\\\"
-            case "\"":
-                "\\\""
-            case "\n":
-                "\\n"
-            case "\t":
-                "\\t"
-            case _ where scalar.properties.generalCategory == .control:
-                unicodeEscape(scalar)
-            default:
-                String(scalar)
-            }
-        }
-        return "\"" + escaped.joined() + "\""
-    }
-
-    /// A control character as a `\uXXXX` escape.
-    private static func unicodeEscape(_ scalar: Unicode.Scalar) -> String {
-        let hex = String(scalar.value, radix: hexRadix, uppercase: true)
-        return "\\u" + String(repeating: "0", count: max(0, escapeDigits - hex.count)) + hex
-    }
 
     /// Copies a whole table the parser read.
     static func table(_ table: TOMLTable) -> ConfigTable {

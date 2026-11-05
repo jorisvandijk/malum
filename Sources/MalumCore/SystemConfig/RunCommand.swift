@@ -50,8 +50,8 @@ public struct RunCommand {
         let succeeded: Bool
         do {
             guard let dots = try DotsPointer(files: files, paths: paths).read() else { return false }
-            let packages = await installPackages(dots: dots, folders: folders, report: report)
             let state = StateFolder(files: files, locks: locks, paths: paths)
+            let packages = await installPackages(dots: dots, folders: folders, state: state, report: report)
             let apps = AppConfigFiles(files: files, state: state, paths: paths).run(dots: dots, report: report)
             succeeded = packages && apps
         } catch {
@@ -67,7 +67,9 @@ public struct RunCommand {
 
     /// Reads `packages.toml` from the dots folder `dots` and installs what it lists. Says whether
     /// everything worked.
-    private func installPackages(dots: String, folders: ReleaseFolders, report: (Message) -> Void) async -> Bool {
+    private func installPackages(
+        dots: String, folders: ReleaseFolders, state: StateFolder, report: (Message) -> Void
+    ) async -> Bool {
         let file = paths.packagesTOML(in: dots)
         do {
             guard files.item(at: file) != nil else {
@@ -82,7 +84,6 @@ public struct RunCommand {
             }
             let sudo = SudoSession(runner: runner, canAsk: canAsk)
             defer { sudo.end() }
-            let state = StateFolder(files: files, locks: locks, paths: paths)
             let homebrew = await HomebrewPackages(runner: runner, files: files, state: state).run(
                 list.homebrew, report: report)
             let appStore = await AppStoreApps(runner: runner, files: files, sudo: sudo, state: state).run(

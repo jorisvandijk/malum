@@ -53,11 +53,10 @@ public struct BundleSigner: Sendable {
     /// left at `staged`. A running app keeps running from the files it already opened.
     private func swapIn(_ staged: String, at destination: String) throws(SigningError) {
         do {
-            try files.exchange(staged, destination)
+            try files.replace(destination, with: staged)
         } catch {
             throw .files(error)
         }
-        try? files.remove(staged)  // The new bundle is in place; the next install removes a leftover.
     }
 
     /// Removes what an earlier install left at `staged`.

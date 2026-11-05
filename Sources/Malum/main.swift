@@ -12,6 +12,8 @@ let files = LocalFileSystem()
 let locks = LocalFileLocks()
 /// Where Malum's own files go.
 let paths = Paths(home: FileManager.default.homeDirectoryForCurrentUser.path)
+/// Malum's state folder, shared by the app and the command.
+let state = StateFolder(files: files, locks: locks, paths: paths)
 /// Runs the outside tools.
 let runner = ProcessRunner(home: paths.home)
 /// Malum's executable inside Malum.app, or nil when it runs from elsewhere, such as a build folder.
@@ -49,7 +51,7 @@ func runCommand(_ invocation: Invocation) {
             InitCommand(files: files, paths: paths)
                 .run(dots: dots, workingDirectory: FileManager.default.currentDirectoryPath, executable: executable))
     case .reload:
-        let instance = AppInstance(state: StateFolder(files: files, locks: locks, paths: paths), locks: locks)
+        let instance = AppInstance(state: state, locks: locks)
         let message = ReloadCommand(instance: instance, signals: LocalSignals()).run()
         terminal.report(message)
         guard message.level != .error else { exit(EXIT_FAILURE) }
@@ -97,8 +99,7 @@ func reject(_ invocation: Invocation) -> Never {
 /// The command behind `malum safe` and `malum disable`.
 @MainActor
 func overrideCommand() -> OverrideCommand {
-    let state = StateFolder(files: files, locks: locks, paths: paths)
-    return OverrideCommand(
+    OverrideCommand(
         store: OverrideStore(state: state), instance: AppInstance(state: state, locks: locks), signals: LocalSignals())
 }
 

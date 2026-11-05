@@ -26,3 +26,12 @@ public protocol FileSystem: Sendable {
     /// Lets the file at `path` be run.
     func makeExecutable(_ path: String) throws(FileSystemError)
 }
+
+extension FileSystem {
+    /// Puts `staged` at `destination` in one step, then removes what was there, which the swap
+    /// left at `staged`. Both must exist.
+    func replace(_ destination: String, with staged: String) throws(FileSystemError) {
+        try exchange(staged, destination)
+        try? remove(staged)  // The new one is in place; the next replace removes a leftover.
+    }
+}
