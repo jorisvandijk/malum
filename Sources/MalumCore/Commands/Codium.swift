@@ -5,13 +5,15 @@ import Foundation
 public enum Codium {
     /// Where the `vscodium` cask links `codium`.
     public static let path = "\(Brew.binFolder)/codium"
+    /// Seconds one install may take, since it downloads the extension.
+    private static let installTimeoutSeconds = 300
 
     /// Lists the installed extensions, one `publisher.name` per line.
     public static let installed = Command(path, ["--list-extensions"])
 
     /// Installs the extension `id` from Open VSX.
     public static func install(_ id: String) -> Command {
-        Command(path, ["--install-extension", id])
+        Command(path, ["--install-extension", id], timeoutSeconds: installTimeoutSeconds)
     }
 
     /// Uninstalls the extension `id`.
