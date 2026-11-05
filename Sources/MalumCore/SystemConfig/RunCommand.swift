@@ -27,7 +27,7 @@ public struct RunCommand {
         self.canAsk = canAsk
     }
 
-    // TODO: App config files and macOS settings, as further parts.
+    // TODO: macOS settings, as a further part.
     /// Loads `malum.toml` and runs each part of system config in order, reporting as it goes. Says
     /// whether everything worked.
     public func run(report: (Message) -> Void) async -> Bool {
@@ -47,7 +47,17 @@ public struct RunCommand {
             return false
         }
         let folders = ReleaseFolders(reloader.settings[SystemConfig.id] ?? [:], paths: paths)
-        let succeeded = await installPackages(folders: folders, report: report)
+        let succeeded: Bool
+        do {
+            guard let dots = try DotsPointer(files: files, paths: paths).read() else { return false }
+            let packages = await installPackages(dots: dots, folders: folders, report: report)
+            let state = StateFolder(files: files, locks: locks, paths: paths)
+            let apps = AppConfigFiles(files: files, state: state, paths: paths).run(dots: dots, report: report)
+            succeeded = packages && apps
+        } catch {
+            report(Message(.error, error.text))
+            return false
+        }
         report(
             succeeded
                 ? Message(.info, "\(SystemConfig.id) is done")
@@ -55,12 +65,11 @@ public struct RunCommand {
         return succeeded
     }
 
-    /// Reads `packages.toml` from dots and installs what it lists. Says whether everything worked.
-    private func installPackages(folders: ReleaseFolders, report: (Message) -> Void) async -> Bool {
-        let file: String
+    /// Reads `packages.toml` from the dots folder `dots` and installs what it lists. Says whether
+    /// everything worked.
+    private func installPackages(dots: String, folders: ReleaseFolders, report: (Message) -> Void) async -> Bool {
+        let file = paths.packagesTOML(in: dots)
         do {
-            guard let dots = try DotsPointer(files: files, paths: paths).read() else { return false }
-            file = paths.packagesTOML(in: dots)
             guard files.item(at: file) != nil else {
                 report(Message(.info, "nothing to install: \(private: file) doesn't exist"))
                 return true

@@ -1,7 +1,7 @@
 import Foundation
 
-/// What Malum installed or took over, kept in the state folder and shaped like `packages.toml`.
-/// Only what's in here is ever uninstalled.
+/// What Malum installed or took over, kept in the state folder and shaped like `packages.toml`,
+/// plus the app config files it wrote. Only what's in here is ever uninstalled or removed.
 public struct InstalledRecord: Codable, Equatable, Sendable {
     /// The record's file in the state folder.
     static let fileName = "installed.json"
@@ -14,6 +14,8 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
     public var appStore: [String: Int] = [:]
     /// The GitHub releases, by their name in `packages.toml`.
     public var releases: [String: InstalledRelease] = [:]
+    /// The app config files Malum wrote, by their full path.
+    public var files: [String: ManagedFile] = [:]
 
     /// Creates an empty record.
     public init() {}
@@ -23,6 +25,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         case homebrew
         case appStore = "app_store"
         case releases = "release"
+        case files
     }
 
     /// The Homebrew packages' keys, named like the values in `packages.toml`.
@@ -41,6 +44,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         }
         appStore = try container.decodeIfPresent([String: Int].self, forKey: .appStore) ?? [:]
         releases = try container.decodeIfPresent([String: InstalledRelease].self, forKey: .releases) ?? [:]
+        files = try container.decodeIfPresent([String: ManagedFile].self, forKey: .files) ?? [:]
     }
 
     /// Writes the record, sorted, so the file only changes when the record does.
@@ -51,6 +55,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         try homebrew.encode(casks.sorted(), forKey: .casks)
         try container.encode(appStore, forKey: .appStore)
         try container.encode(releases, forKey: .releases)
+        try container.encode(files, forKey: .files)
     }
 
     /// The Homebrew packages of `kind`.

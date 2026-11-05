@@ -146,4 +146,51 @@ Anything that was never listed is left alone, even when it's installed. Somethin
 
 An uninstall that fails is reported, stays in the record and is tried again on the next run. Without a `packages.toml`, or with an error in it, nothing is uninstalled.
 
+## App config files
+
+Each app whose config Malum writes has its own file in the `apps` folder at the top of your dots folder, named after the app: `apps/git.toml`. `malum run` writes the app's own config files from it, after the packages. A file in `apps/` for an app Malum doesn't know only gets a warning. Without an `apps` folder, nothing is written or removed.
+
+```
+[info] wrote /Users/you/.config/git/config from apps/git.toml
+[info] every app config file is up to date
+```
+
+Every file Malum writes starts with a comment that says where it comes from. Malum owns these files: change the TOML in dots, not the file. When a file was changed outside Malum since the last run, or was already there before Malum first wrote it, the next run writes over it and keeps the old one next to it, with `.backup` added to its name, replacing an older backup. The warning gives the command that shows what changed:
+
+```
+[warn] /Users/you/.config/git/config was changed outside Malum, so it was overwritten from apps/git.toml, see what changed with: diff /Users/you/.config/git/config.backup /Users/you/.config/git/config
+```
+
+A link in the place of a file is replaced by the file. A file that's already right is only recorded. Malum keeps a fingerprint of each file it wrote in `installed.json`, to spot changes.
+
+When an app's file has an error, its config files are left as they are, and the run ends with an error. When an app stops asking for a file, because you took a list out of its TOML or removed the TOML, the next run removes the file, unless it was changed outside Malum: then it stays, and Malum no longer manages it.
+
+### git
+
+`apps/git.toml` writes git's per-user config, `~/.config/git/config`. Settings in `~/.gitconfig` still apply on top of it, so keep that file empty or remove it.
+
+```toml
+[settings.user]
+name = "Joris"
+email = "joris@example.com"
+
+[settings.init]
+defaultBranch = "main"
+
+[settings."url.git@github.com:"]
+insteadOf = "https://github.com/"
+
+[ignore]
+patterns = [".DS_Store", "*.swp"]
+
+[attributes]
+lines = ["*.pdf diff=pdf"]
+```
+
+- `[settings.<section>]`: one table for each section of git's config, with its keys spelled the way git spells them. A dot in the section's name makes a subsection: `"url.git@github.com:"` becomes `[url "git@github.com:"]`. Values are text, whole numbers, `true` or `false`, or a list of them, which writes the key once for each item.
+- `[ignore]`: `patterns` is written to `~/.config/git/ignore`, one per line, and git ignores them in every repository.
+- `[attributes]`: `lines` is written to `~/.config/git/attributes`, which applies to every repository.
+
+`ignore` and `attributes` are only written when their list has something in it.
+
 The messages also go to the macOS log, as the [log page](log.md) describes.

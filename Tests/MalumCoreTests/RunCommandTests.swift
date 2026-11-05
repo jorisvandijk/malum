@@ -12,9 +12,9 @@ struct RunCommandTests {
     private let switchedOn = "[system_config]\nenabled = true\n"
 
     private func run(
-        _ toml: String?, packages list: String? = nil, runner: FakeRunner = FakeRunner()
+        _ toml: String?, packages list: String? = nil, runner: FakeRunner = FakeRunner(), more: [String: String] = [:]
     ) async -> (Bool, [Message]) {
-        var texts = [pointer: "/Users/joris/dots\n"]
+        var texts = more.merging([pointer: "/Users/joris/dots\n"]) { $1 }
         texts[file] = toml
         texts[packages] = list
         let files = FakeFileSystem(
@@ -44,6 +44,7 @@ struct RunCommandTests {
         #expect(
             messages == [
                 Message(.info, "nothing to install: \(packages) doesn't exist"),
+                Message(.info, "no app config files to write: /Users/joris/dots/apps doesn't exist"),
                 Message(.info, "system_config is done"),
             ])
         #expect(runner.commands.isEmpty)
@@ -58,6 +59,7 @@ struct RunCommandTests {
             messages == [
                 Message(.error, "packages.toml line 3: homebrew.kitty should be \"formula\" or \"cask\""),
                 Message(.error, "couldn't install packages: fix \(packages) first"),
+                Message(.info, "no app config files to write: /Users/joris/dots/apps doesn't exist"),
                 Message(.error, "system_config finished with errors"),
             ])
         #expect(runner.commands.isEmpty)
@@ -120,7 +122,20 @@ struct RunCommandTests {
                     .error,
                     "couldn't install GitHub release ghost: nobody/ghost has no published release on GitHub, or it's private"
                 ),
+                Message(.info, "no app config files to write: /Users/joris/dots/apps doesn't exist"),
                 Message(.error, "system_config finished with errors"),
+            ])
+    }
+
+    @Test func appConfigFilesAreWrittenAfterThePackages() async {
+        let (succeeded, messages) = await run(
+            switchedOn, more: ["/Users/joris/dots/apps/git.toml": "[settings.init]\ndefaultBranch = \"main\"\n"])
+        #expect(succeeded)
+        #expect(
+            messages == [
+                Message(.info, "nothing to install: \(packages) doesn't exist"),
+                Message(.info, "wrote /Users/joris/.config/git/config from apps/git.toml"),
+                Message(.info, "system_config is done"),
             ])
     }
 }

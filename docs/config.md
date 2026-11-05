@@ -6,7 +6,7 @@ Every setting `malum.toml` takes, by module. Each module's settings go in a tabl
 
 ## `system_config`
 
-Makes the Mac match dots when you run `malum run`, installing what `packages.toml` lists. Nothing happens in the background: the app only reads the switch, and `malum run` does the work.
+Makes the Mac match dots when you run `malum run`, installing what `packages.toml` lists and writing the app config files in `apps/`. Nothing happens in the background: the app only reads the switch, and `malum run` does the work.
 
 ### `system_config.enabled`
 
