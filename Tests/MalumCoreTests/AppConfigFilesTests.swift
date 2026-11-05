@@ -8,7 +8,7 @@ struct AppConfigFilesTests {
     private let home = "/Users/joris"
     private let toml = "/Users/joris/dots/apps/git.toml"
     private let config = "/Users/joris/.config/git/config"
-    private let backup = "/Users/joris/Library/Application Support/com.jorisvandijk.malum/backups/.config/git/config"
+    private let backup = "/Users/joris/.config/git/config.backup"
     private let header =
         "# Written by Malum from apps/git.toml in dots. Changes made here are overwritten.\n"
     private let settings = "[settings.init]\ndefaultBranch = \"main\"\n"
@@ -77,7 +77,9 @@ struct AppConfigFilesTests {
         #expect(
             messages == [
                 Message(
-                    .warn, "\(config) was already there and differed from apps/git.toml, the old one is at \(backup)")
+                    .warn,
+                    "\(config) was already there and differed from apps/git.toml, see what changed with: diff \(backup) \(config)"
+                )
             ])
         #expect(files.text(at: config) == written)
         #expect(files.text(at: backup) == "[user]\n\tname = me\n")
@@ -92,7 +94,7 @@ struct AppConfigFilesTests {
             messages == [
                 Message(
                     .warn,
-                    "\(config) was changed outside Malum, so it was overwritten from apps/git.toml, the old one is at \(backup)"
+                    "\(config) was changed outside Malum, so it was overwritten from apps/git.toml, see what changed with: diff \(backup) \(config)"
                 )
             ])
         #expect(files.text(at: config) == written)
@@ -190,5 +192,20 @@ struct AppConfigFilesTests {
         let (succeeded, messages) = run(files)
         #expect(succeeded)
         #expect(messages == [Message(.warn, "apps/vim.toml: Malum has no app called vim")])
+    }
+
+    @Test func pathWithSpacesIsQuotedInTheDiffCommand() {
+        let toml = "/Users/joris/dots/apps/git.toml"
+        let files = FakeFileSystem(texts: [toml: settings, "/Users/jo ris/.config/git/config": "old\n"])
+        var messages: [Message] = []
+        _ = AppConfigFiles(
+            files: files, state: StateFolder(files: files, locks: FakeFileLocks(), paths: Paths(home: "/Users/jo ris")),
+            paths: Paths(home: "/Users/jo ris")
+        ).run(dots: "/Users/joris/dots") { messages.append($0) }
+        #expect(
+            messages.first?.text.description.hasSuffix(
+                "see what changed with: diff '/Users/jo ris/.config/git/config.backup' '/Users/jo ris/.config/git/config'"
+            )
+                == true)
     }
 }

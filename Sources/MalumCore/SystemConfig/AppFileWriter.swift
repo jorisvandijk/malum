@@ -1,13 +1,17 @@
+import Foundation
+
 /// Writes app config files, and spots changes made to them outside Malum.
 ///
 /// Malum owns every file it writes. A file that was changed since the last run, or that was
-/// already there before Malum first wrote it, is overwritten, and the old one is kept in the
-/// state folder's `backups` folder. A file no app asks for anymore is removed, unless it was
+/// already there before Malum first wrote it, is overwritten, and the old one is kept next to it,
+/// with `.backup` added to its name. A file no app asks for anymore is removed, unless it was
 /// changed outside Malum: then it stays, and Malum no longer manages it.
 @MainActor
 struct AppFileWriter {
-    /// The state folder's folder that old files are kept in, under their path in the home folder.
-    private static let backupsName = "backups"
+    /// What's added to a file's name for the copy of what was there before Malum overwrote it.
+    private static let backupExtension = ".backup"
+    /// The characters a path may hold and still be pasted into a shell without quotes.
+    private static let shellSafe = Set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/._-+@:,=")
 
     /// What writing or removing one file did.
     private enum Outcome {
@@ -21,7 +25,7 @@ struct AppFileWriter {
 
     /// The disk.
     private let files: any FileSystem
-    /// Where the record and the backups are kept.
+    /// Where the record is kept.
     private let state: StateFolder
     /// Where the home folder is.
     private let paths: Paths
@@ -114,7 +118,8 @@ struct AppFileWriter {
             let why =
                 known == nil
                 ? "was already there and differed from" : "was changed outside Malum, so it was overwritten from"
-            return Message(.warn, "\(private: path) \(why) \(source), the old one is at \(private: backup)")
+            let diff = "diff \(Self.shellQuoted(backup)) \(Self.shellQuoted(path))"
+            return Message(.warn, "\(private: path) \(why) \(source), see what changed with: \(private: diff)")
         }
         return Message(.info, "updated \(private: path) from \(source)")
     }
@@ -143,12 +148,17 @@ struct AppFileWriter {
         return remember(path, nil, report: report)
     }
 
-    /// Keeps `text`, the old contents of `path`, in the backups folder, and says where.
+    /// Keeps `text`, the old contents of `path`, next to it, replacing an older copy, and says where.
     private func backUp(_ path: String, _ text: String) throws -> String {
-        let name = "\(Self.backupsName)/\(path.dropFirst(paths.home.count + 1))"
-        try files.createDirectory(Self.parent(of: state.path(of: name)))
-        try state.write(text, to: name)
-        return state.path(of: name)
+        let backup = path + Self.backupExtension
+        try files.write(text, to: backup)
+        return backup
+    }
+
+    /// `path` as it's pasted into a shell: as it is when that's safe, in single quotes otherwise.
+    private static func shellQuoted(_ path: String) -> String {
+        guard !path.allSatisfy(shellSafe.contains) else { return path }
+        return "'" + path.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
     /// Records `managed` as the file at `path`, or takes the path out of the record when it's nil.

@@ -155,10 +155,10 @@ Each app whose config Malum writes has its own file in the `apps` folder at the 
 [info] every app config file is up to date
 ```
 
-Every file Malum writes starts with a comment that says where it comes from. Malum owns these files: change the TOML in dots, not the file. When a file was changed outside Malum since the last run, or was already there before Malum first wrote it, the next run writes over it and keeps the old one in `backups` in its folder in `~/Library/Application Support/`, under the same path as in your home folder:
+Every file Malum writes starts with a comment that says where it comes from. Malum owns these files: change the TOML in dots, not the file. When a file was changed outside Malum since the last run, or was already there before Malum first wrote it, the next run writes over it and keeps the old one next to it, with `.backup` added to its name, replacing an older backup. The warning gives the command that shows what changed:
 
 ```
-[warn] /Users/you/.config/git/config was changed outside Malum, so it was overwritten from apps/git.toml, the old one is at /Users/you/Library/Application Support/com.jorisvandijk.malum/backups/.config/git/config
+[warn] /Users/you/.config/git/config was changed outside Malum, so it was overwritten from apps/git.toml, see what changed with: diff /Users/you/.config/git/config.backup /Users/you/.config/git/config
 ```
 
 A link in the place of a file is replaced by the file. A file that's already right is only recorded. Malum keeps a fingerprint of each file it wrote in `installed.json`, to spot changes.
