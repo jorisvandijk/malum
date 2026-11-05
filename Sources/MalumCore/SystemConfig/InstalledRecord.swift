@@ -1,7 +1,8 @@
 import Foundation
 
 /// What Malum installed or took over, kept in the state folder and shaped like `packages.toml`,
-/// plus the app config files it wrote and the app preferences it set. Only what's in here is ever
+/// plus the app config files it wrote, the app preferences it set and the VSCodium extensions it
+/// installed. Only what's in here is ever
 /// uninstalled or removed.
 public struct InstalledRecord: Codable, Equatable, Sendable {
     /// The record's file in the state folder.
@@ -19,6 +20,8 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
     public var files: [String: ManagedFile] = [:]
     /// The app preferences Malum set, by their domain.
     public var preferences: [String: ManagedPreferences] = [:]
+    /// The VSCodium extensions, as `apps/vscodium.toml` lists them.
+    public var extensions: Set<String> = []
 
     /// Creates an empty record.
     public init() {}
@@ -30,6 +33,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         case releases = "release"
         case files
         case preferences
+        case extensions = "vscodium_extensions"
     }
 
     /// The Homebrew packages' keys, named like the values in `packages.toml`.
@@ -50,6 +54,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         releases = try container.decodeIfPresent([String: InstalledRelease].self, forKey: .releases) ?? [:]
         files = try container.decodeIfPresent([String: ManagedFile].self, forKey: .files) ?? [:]
         preferences = try container.decodeIfPresent([String: ManagedPreferences].self, forKey: .preferences) ?? [:]
+        extensions = Set(try container.decodeIfPresent([String].self, forKey: .extensions) ?? [])
     }
 
     /// Writes the record, sorted, so the file only changes when the record does.
@@ -62,6 +67,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         try container.encode(releases, forKey: .releases)
         try container.encode(files, forKey: .files)
         try container.encode(preferences, forKey: .preferences)
+        try container.encode(extensions.sorted(), forKey: .extensions)
     }
 
     /// The Homebrew packages of `kind`.

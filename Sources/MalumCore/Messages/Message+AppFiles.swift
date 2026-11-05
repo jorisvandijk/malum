@@ -7,6 +7,15 @@ extension MessageText {
     /// Setting every app's preferences.
     static let setPreferences: MessageText = "set app preferences"
 
+    /// Installing the extensions VSCodium lists.
+    static let installExtensions: MessageText = "install \(vscodiumExtensions)"
+
+    /// A VSCodium extension, as the install and uninstall messages name it.
+    static let vscodiumExtension: MessageText = "VSCodium extension"
+
+    /// VSCodium extensions, in the plural.
+    static let vscodiumExtensions: MessageText = "VSCodium extensions"
+
     /// Writing the config files of `app`.
     static func writeAppFiles(of app: String) -> MessageText {
         "write \(app)'s config files"
@@ -14,6 +23,14 @@ extension MessageText {
 }
 
 extension Message {
+    /// `codium` isn't where the `vscodium` cask links it.
+    static var noCodium: Message {
+        couldnt(
+            .installExtensions,
+            "codium isn't installed at \(private: Codium.path), add vscodium = \"cask\" to [homebrew] in \(Paths.packagesTOMLName)"
+        )
+    }
+
     /// There's no `apps/` folder at `path`.
     static func noAppsFolder(missing path: String) -> Message {
         Message(.info, "no app config files to write: \(private: path) doesn't exist")

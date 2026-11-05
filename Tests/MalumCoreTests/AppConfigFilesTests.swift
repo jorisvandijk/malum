@@ -187,6 +187,19 @@ struct AppConfigFilesTests {
         #expect(messages.first?.text.description.hasPrefix("apps/git.toml line 1") == true)
     }
 
+    @Test func errorInVSCodiumsFileKeepsItsExtensions() async throws {
+        let files = FakeFileSystem(
+            items: ["/opt/homebrew/bin/codium": .file], texts: ["/Users/joris/dots/apps/vscodium.toml": "[extensions\n"]
+        )
+        try InstalledRecord.change(in: state(files)) { $0.extensions = ["a.b"] }
+        let runner = FakeRunner()
+        _ = await AppConfigFiles(files: files, runner: runner, state: state(files), paths: Paths(home: home)).run(
+            dots: "/Users/joris/dots"
+        ) { _ in }
+        #expect(runner.commands.isEmpty)
+        #expect(try InstalledRecord.read(from: state(files)).extensions == ["a.b"])
+    }
+
     @Test func unknownAppIsAWarning() async {
         let files = FakeFileSystem(texts: [
             "/Users/joris/dots/apps/vim.toml": "", "/Users/joris/dots/apps/notes.txt": "",

@@ -1,5 +1,5 @@
 /// Every app system config writes config files or preferences for, each described by its files
-/// and their formats, or its preferences domain.
+/// and their formats, its preferences domain, or whether it lists extensions.
 enum AppConfigs {
     /// The apps, each read from `apps/<name>.toml`.
     static let all = [
@@ -44,6 +44,14 @@ enum AppConfigs {
                 AppConfigFile(".config/newsboat/urls", .feeds(table: "feeds")),
             ]),
         AppConfig(name: "oversight", domain: "com.objective-see.oversight"),
+        AppConfig(
+            name: "vscodium",
+            files: [
+                AppConfigFile(
+                    "Library/Application Support/VSCodium/User/settings.json", .json(table: "settings"), always: true),
+                AppConfigFile(".vscode-oss/argv.json", .json(table: "argv")),
+            ],
+            extensions: true),
     ]
 
     /// The app called `name`, or nil when there's none.
