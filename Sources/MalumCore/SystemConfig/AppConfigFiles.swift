@@ -1,12 +1,12 @@
 import Foundation
 
 /// The app config files part of system config: reads each app's file in `apps/` in dots, and
-/// writes the config files and sets the preferences it asks for.
+/// writes the config files, sets the preferences and installs the extensions it asks for.
 @MainActor
 public struct AppConfigFiles {
     /// The disk.
     private let files: any FileSystem
-    /// Runs `defaults`.
+    /// Runs `defaults` and `codium`.
     private let runner: any CommandRunner
     /// Where the record of what Malum wrote is kept.
     private let state: StateFolder
@@ -41,6 +41,7 @@ public struct AppConfigFiles {
         }
         var wanted: [(app: String, file: AppFile)] = []
         var preferences: [(app: String, preference: AppPreference)] = []
+        var extensions: [String] = []
         var broken: Set<String> = []
         for fileName in names {
             let name = (fileName as NSString).deletingPathExtension
@@ -54,19 +55,25 @@ public struct AppConfigFiles {
             }
             wanted += settings.files.map { (name, $0) }
             preferences += settings.preferences.map { (name, $0) }
+            extensions += settings.extensions
         }
         let wrote = AppFileWriter(files: files, state: state, paths: paths).write(
             wanted, keeping: broken, report: report)
         let set = await AppPreferenceWriter(runner: runner, state: state).write(
             preferences, keeping: broken, report: report)
-        return wrote && set && broken.isEmpty
+        let installed = await install(extensions, keeping: broken, report: report)
+        return wrote && set && installed && broken.isEmpty
     }
 
-    /// The files and preferences `app` asks for in its file at `path`, or nil when an error in it
-    /// stops them.
-    private func read(
-        _ app: AppConfig, from path: String, report: (Message) -> Void
-    ) -> (files: [AppFile], preferences: [AppPreference])? {
+    /// Installs the extensions in `ids` and uninstalls the unlisted ones, unless an app with
+    /// extensions is `broken`: an error in its file keeps them as they are. Says whether it worked.
+    private func install(_ ids: [String], keeping broken: Set<String>, report: (Message) -> Void) async -> Bool {
+        guard !AppConfigs.all.contains(where: { $0.extensions && broken.contains($0.name) }) else { return true }
+        return await VSCodiumExtensions(runner: runner, files: files, state: state).run(ids, report: report)
+    }
+
+    /// What `app` asks for in its file at `path`, or nil when an error in it stops it.
+    private func read(_ app: AppConfig, from path: String, report: (Message) -> Void) -> AppSettings? {
         let fileName = Paths.appFile(named: app.name)
         let fixFirst = Message.needsFix(.writeAppFiles(of: app.name), path)
         var reader: TableReader

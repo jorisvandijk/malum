@@ -267,6 +267,31 @@ Lobsters = { url = "https://lobste.rs/rss", tags = ["tech"] }
 - `[ignore_articles]`: articles to hide, as `feed = "filter"`, or a list of filters. Each filter becomes an `ignore-article feed "filter"` line. The feed is its address, or `"*"` for every feed, and the filter is in [newsboat's filter language](https://newsboat.org/releases/2.42/docs/newsboat.html#_filter_language).
 - `[feeds]`: the feeds, as `title = "address"`. The title is shown in newsboat's feed list instead of the feed's own. Use `{ url = "...", tags = [...] }` to give a feed tags. The feeds are written in alphabetical order of title, and `urls` is only written when there's at least one.
 
+### VSCodium
+
+`apps/vscodium.toml` writes VSCodium's settings to `~/Library/Application Support/VSCodium/User/settings.json` and its startup options to `~/.vscode-oss/argv.json`, and installs the extensions it lists. Install VSCodium itself with the `vscodium` cask in `packages.toml`, which also gives Malum the `codium` command it installs extensions with.
+
+```toml
+[extensions]
+ids = ["dracula-theme.theme-dracula", "tamasfe.even-better-toml"]
+
+[settings]
+"workbench.colorTheme" = "Dracula Theme"
+"editor.fontLigatures" = true
+
+[argv]
+enable-crash-reporter = false
+```
+
+- `[extensions]`: `ids` lists extensions as `publisher.name`, their name on [Open VSX](https://open-vsx.org). Malum installs them after the app config files, and works with them the way it does with packages: one that's already installed is taken over, and one you take out of the list is uninstalled. Extensions you installed yourself and never listed are left alone. When `apps/vscodium.toml` has an error, extensions are neither installed nor uninstalled.
+- `[settings]`: [user settings](https://code.visualstudio.com/docs/configure/settings), as `"name" = value`. Names have dots, so quote them. Changing a setting in VSCodium changes `settings.json`, so the next run overwrites it with a warning: change settings here instead.
+- `[argv]`: startup options, as `option = value`. `argv.json` is only written when the table has something in it.
+
+```
+[info] installing VSCodium extension tamasfe.even-better-toml
+[info] installed VSCodium extension tamasfe.even-better-toml
+```
+
 ## App preferences
 
 Some apps keep their settings as macOS preferences rather than in a file. Their file in `apps/` has one table, `[preferences]`, with each preference by the name the app stores it under, as `"Name" = value`. `defaults read <domain>` lists an app's current preferences. Malum sets them after the app config files, the way `defaults write` would:
