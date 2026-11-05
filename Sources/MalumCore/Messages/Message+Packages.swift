@@ -236,3 +236,19 @@ extension ReleaseError: ReportableError {
         }
     }
 }
+
+extension GitHubError: ReportableError {
+    /// The problem as the user sees it.
+    public var text: MessageText {
+        switch self {
+        case .unreachable(let reason):
+            .couldnt("reach GitHub", "\(reason)")
+        case .refused(let status):
+            "GitHub answered with HTTP \(status)"
+        case .unreadable:
+            "GitHub sent an answer \(Project.name) can't read"
+        case .unsaved(let path, let reason):
+            .couldnt("save \(private: path)", "\(reason)")
+        }
+    }
+}

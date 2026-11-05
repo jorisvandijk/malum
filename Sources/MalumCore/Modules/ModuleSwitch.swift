@@ -64,7 +64,7 @@ public final class ModuleSwitch {
             do {
                 try await module.cleanUp()
             } catch {
-                messages.append(Message(.warn, "couldn't clean up after \(module.id): \(error)"))
+                messages.append(.cleanUpFailed(module.id, error))
             }
         }
         return messages
@@ -92,7 +92,7 @@ public final class ModuleSwitch {
             case (false, true):
                 await module.stop()
                 started.remove(module.id)
-                messages.append(Message(.info, "stopped \(module.id)"))
+                messages.append(.stopped(module.id))
             case (false, false):
                 waiting[module.id] = nil
             default:
@@ -112,17 +112,17 @@ public final class ModuleSwitch {
             try module.apply(table)
             try await module.start()
         } catch {
-            return [Message(.error, "couldn't start \(module.id): \(error)")]
+            return [.startFailed(module.id, error)]
         }
         started.insert(module.id)
-        return [Message(.info, "started \(module.id)")]
+        return [.started(module.id)]
     }
 
     /// Keeps the module `id` waiting for `missing`, saying so only when that's news.
     private func wait(_ id: String, for missing: Set<Permission>) -> [Message] {
         guard waiting[id] != missing else { return [] }
         waiting[id] = missing
-        return [Message(.warn, "couldn't start \(id) yet: it \(ModuleStatus.needsPermission(missing))")]
+        return [.waiting(id, for: missing)]
     }
 
     /// Gives a running module its new settings, saying so only when it couldn't take them.
@@ -130,7 +130,7 @@ public final class ModuleSwitch {
         do {
             try module.apply(table)
         } catch {
-            return [Message(.error, "couldn't apply \(module.id) settings: \(error)")]
+            return [.applyFailed(module.id, error)]
         }
         return []
     }

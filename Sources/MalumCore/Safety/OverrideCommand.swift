@@ -20,10 +20,9 @@ public struct OverrideCommand: Sendable {
         do {
             try store.enterSafeMode(.asked)
         } catch {
-            return [Message(.error, error.text)]
+            return [.failed(error)]
         }
-        return [Message(.info, "safe mode is on: every module stays off until you leave it from the menu bar")]
-            + tellApp()
+        return [.safeModeOn] + tellApp()
     }
 
     /// Keeps `module` off and says what happened.
@@ -31,9 +30,9 @@ public struct OverrideCommand: Sendable {
         do {
             try store.disable(module)
         } catch {
-            return [Message(.error, error.text)]
+            return [.failed(error)]
         }
-        return [Message(.info, "\(module) stays off until you enable it from the menu bar")] + tellApp()
+        return [.staysOff(module)] + tellApp()
     }
 
     /// Asks the running app to reload. When it isn't running, the override waits for its next start.
@@ -41,9 +40,9 @@ public struct OverrideCommand: Sendable {
         do {
             try signals.hangUp(instance.runningProcessID())
         } catch {
-            guard error == .notRunning else { return [Message(.error, error.text)] }
-            return [Message(.info, "\(Project.name) isn't running, so this takes effect when it starts")]
+            guard error == .notRunning else { return [.failed(error)] }
+            return [.takesEffectAtStart]
         }
-        return [Message(.info, "asked \(Project.name) to reload")]
+        return [.askedToReload]
     }
 }

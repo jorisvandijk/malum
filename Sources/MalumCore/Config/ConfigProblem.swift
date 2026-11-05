@@ -21,11 +21,4 @@ public struct ConfigProblem: Error, Equatable, Sendable {
         self.column = column
         self.text = text
     }
-
-    /// The problem as the user sees it, starting with where it is.
-    public var message: Message {
-        guard let line else { return Message(level, text) }
-        guard let column else { return Message(level, "\(file) line \(line): \(text)") }
-        return Message(level, "\(file) line \(line), column \(column): \(text)")
-    }
 }

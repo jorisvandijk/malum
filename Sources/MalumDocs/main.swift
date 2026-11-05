@@ -14,8 +14,8 @@ let path = FileManager.default.currentDirectoryPath + "/" + ConfigDocs.path
 
 do {
     try LocalFileSystem().write(ConfigDocs.page(for: schemas), to: path)
-    terminal.report(Message(.info, "wrote \(ConfigDocs.path)"))
+    terminal.report(.wrote(ConfigDocs.path))
 } catch {
-    terminal.report(Message(.error, error.text))
+    terminal.report(.failed(error))
     exit(EXIT_FAILURE)
 }

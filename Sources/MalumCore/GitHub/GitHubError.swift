@@ -9,21 +9,3 @@ public enum GitHubError: Error, Equatable, Sendable {
     /// The download couldn't be saved at the path.
     case unsaved(path: String, reason: String)
 }
-
-// MARK: - ReportableError
-
-extension GitHubError: ReportableError {
-    /// The problem as the user sees it.
-    public var text: MessageText {
-        switch self {
-        case .unreachable(let reason):
-            "couldn't reach GitHub: \(reason)"
-        case .refused(let status):
-            "GitHub answered with HTTP \(status)"
-        case .unreadable:
-            "GitHub sent an answer \(Project.name) can't read"
-        case .unsaved(let path, let reason):
-            "couldn't save \(private: path): \(reason)"
-        }
-    }
-}

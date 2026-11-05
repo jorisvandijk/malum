@@ -37,4 +37,9 @@ extension Message {
     public static func failed(_ error: any Error) -> Message {
         Message(.error, MessageText(error: error))
     }
+
+    /// The error's own text as a warning, for errors that already say what failed and don't stop the work.
+    public static func warning(_ error: any Error) -> Message {
+        Message(.warn, MessageText(error: error))
+    }
 }
