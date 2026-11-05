@@ -93,7 +93,7 @@ An app that's already installed is left alone. When mas can't install an app, th
 
 Each `[release.<name>]` table installs an app or a program from the latest release of a GitHub repository, after the App Store apps. `repo` is the repository, as `owner/name`. `asset` names the file to download, with `*` matching any text; leave it out when the release has only one file, or only one with `mac`, `darwin` or `apple` in its name. Checksums and notes such as `.sha256` and `.txt` files don't count. Only public repositories work for now.
 
-Zip files and tarballs are unpacked, along with one more archive inside them. An app (`mpv.app`) goes to `/Applications`, and a program goes to `~/.local/bin`, under the table's name. A file that isn't an archive is the program itself. Installers (`.dmg`, `.pkg`) can't be installed. Both folders are settings of system config in `malum.toml`:
+Zip files and tarballs are unpacked, along with one more archive inside them. An app (`mpv.app`) goes to `/Applications`, and a program goes to `~/.local/bin`, under the table's name, so the name can't be empty, start with a dot or hold `/`. A file that isn't an archive is the program itself. Installers (`.dmg`, `.pkg`) can't be installed. Both folders are settings of system config in `malum.toml`:
 
 ```toml
 [system_config]

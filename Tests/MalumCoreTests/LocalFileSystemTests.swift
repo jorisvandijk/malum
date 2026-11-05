@@ -17,6 +17,12 @@ struct LocalFileSystemTests {
         #expect(files.isExecutable(folder + "/tool"))
     }
 
+    @Test func neverWritesATOMLFile() {
+        let path = NSTemporaryDirectory() + "malum-tests-\(UUID().uuidString).TOML"
+        #expect(throws: FileSystemError.userFile(path: path)) { try LocalFileSystem().write("", to: path) }
+        #expect(LocalFileSystem().item(at: path) == nil)
+    }
+
     @Test func listingAMissingFolderIsAnError() {
         #expect(throws: FileSystemError.self) { try LocalFileSystem().contents(of: "/nonexistent-malum-folder") }
     }

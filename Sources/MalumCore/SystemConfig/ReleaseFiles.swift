@@ -31,24 +31,20 @@ enum ReleaseFiles {
         if let pattern = entry.asset {
             let matches = release.assets.filter { fnmatch(pattern, $0.name, 0) == 0 }
             guard matches.count == 1, let match = matches.first else {
-                throw ReleaseError("\(matches.count) files match \"\(pattern)\"; \(found)")
+                throw .assetMatches(count: matches.count, pattern: pattern, found: found)
             }
             chosen = match
         } else {
             let files = release.assets.filter { !ends($0.name, with: extras) }
             let mac = files.filter { asset in macWords.contains { asset.name.lowercased().contains($0) } }
-            switch (files.count, mac.count) {
-            case (1, _):
-                chosen = files[0]
-            case (_, 1):
-                chosen = mac[0]
-            default:
+            guard let only = [files, mac].first(where: { $0.count == 1 })?.first else {
                 let table = "\(PackageList.releaseTable).\(ConfigValue.key(entry.name))"
-                throw ReleaseError("can't tell which file to install, set asset in [\(table)]; \(found)")
+                throw .unclearAsset(table: table, found: found)
             }
+            chosen = only
         }
         guard !ends(chosen.name, with: installers) else {
-            throw ReleaseError("\"\(chosen.name)\" is an installer, which Malum can't install")
+            throw .installer(name: chosen.name)
         }
         return chosen
     }
@@ -88,12 +84,10 @@ enum ReleaseFiles {
         if let app = found.apps.first(where: { file($0).lowercased() == "\(name.lowercased()).app" }) {
             return (app, true)
         }
-        guard found.apps.isEmpty else { throw ReleaseError("it holds several apps, and none is called \(name).app") }
+        guard found.apps.isEmpty else { throw .severalApps(name: name) }
         if let program = found.programs.first(where: { file($0) == name }) { return (program, false) }
         if found.programs.count == 1, let program = found.programs.first { return (program, false) }
-        throw ReleaseError(
-            found.programs.isEmpty
-                ? "it holds no app or program" : "it holds several programs, and none is called \(name)")
+        throw found.programs.isEmpty ? .nothingToInstall : .severalPrograms(name: name)
     }
 
     /// What an unpacked archive holds.

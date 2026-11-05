@@ -93,6 +93,11 @@ public struct PackageList: Equatable, Sendable {
                 problems.append(problem("\(path) should be a table", at: [releaseTable, name], lines: lines))
                 continue
             }
+            guard Paths.isPlainName(name) else {
+                let text = "\(path): the name can't be empty, start with a dot or hold /"
+                problems.append(problem(text, at: [releaseTable, name], lines: lines))
+                continue
+            }
             for key in fields.keys.sorted() where !["repo", "asset"].contains(key) {
                 problems.append(problem("unknown setting \(path).\(key)", at: [releaseTable, name, key], lines: lines))
             }

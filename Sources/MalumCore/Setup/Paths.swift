@@ -12,7 +12,7 @@ public struct Paths: Equatable, Sendable {
     /// The folder for the user's commands, relative to home. Getting it on `PATH` is dots' job.
     private static let binRoot = ".local/bin"
     /// The extension of Malum's config files in dots.
-    private static let tomlExtension = "toml"
+    static let tomlExtension = "toml"
     /// The folder for apps' own data, relative to home.
     private static let applicationSupportRoot = "Library/Application Support"
     /// The folder Malum is installed in, relative to home.
@@ -67,6 +67,12 @@ public struct Paths: Equatable, Sendable {
 
     /// `packages.toml` at the top of the dots folder `dots`.
     public func packagesTOML(in dots: String) -> String { "\(dots)/\(Self.packagesTOMLName)" }
+
+    /// Whether `name` is safe as a single file name: it isn't empty, doesn't start with a dot and
+    /// holds no `/`, so it can't reach outside the folder it's put in.
+    public static func isPlainName(_ name: String) -> Bool {
+        !name.isEmpty && !name.hasPrefix(".") && !name.contains("/")
+    }
 
     /// Turns `path` into an absolute, clean path, expanding `~` and reading it relative to `base`.
     public func resolve(_ path: String, relativeTo base: String) -> String {

@@ -23,7 +23,12 @@ public struct GitHubAPI: GitHub {
             "\(Self.api)/repos/\(repo)/releases/latest", accept: "application/vnd.github+json")
         guard status != Self.notFound else { return nil }
         guard status == Self.ok else { throw .refused(status: status) }
-        guard let answer = try? JSONDecoder().decode(Answer.self, from: data) else { throw .unreadable }
+        let answer: Answer
+        do {
+            answer = try JSONDecoder().decode(Answer.self, from: data)
+        } catch {
+            throw .unreadable
+        }
         return Release(
             tag: answer.tagName, assets: answer.assets.map { ReleaseAsset(name: $0.name, url: $0.browserDownloadURL) })
     }
