@@ -20,7 +20,7 @@ struct TableReader {
             case .syntax(let line, let column, let reason):
                 throw ConfigProblem(.error, file: file, line: line, column: column, MessageText(reason))
             case .unreadable(let reason):
-                throw ConfigProblem(.error, file: file, "couldn't read \(file): \(reason)")
+                throw ConfigProblem(.error, file: file, .unreadable(file, reason))
             }
         }
         lines = TOMLLines(text)
@@ -36,7 +36,7 @@ struct TableReader {
 
     /// Adds the error that the key `path` should be `expected`, such as `SettingKind.string`.
     mutating func expect(_ path: [String], _ expected: some CustomStringConvertible) {
-        add(.error, at: path, "\(Self.dotted(path)) should be \(expected.description)")
+        add(.error, at: path, .shouldBe(Self.dotted(path), expected))
     }
 
     /// The table in `value`, found at `path`, or nil and an error when it isn't one.
@@ -73,8 +73,8 @@ struct TableReader {
     /// Adds a warning for each key of `table`, found at `path`, that isn't in `known`.
     mutating func unknownKeys(_ table: ConfigTable, at path: [String], known: [String]) {
         for key in table.keys.sorted() where !known.contains(key) {
-            let kind = if case .table? = table[key] { "table" } else { "setting" }
-            add(.warn, at: path + [key], "unknown \(kind) \(Self.dotted(path + [key]))")
+            let isTable = if case .table? = table[key] { true } else { false }
+            add(.warn, at: path + [key], .unknownKey(Self.dotted(path + [key]), isTable: isTable))
         }
     }
 

@@ -78,7 +78,7 @@ public struct PackageList: Equatable, Sendable {
             let path = [releaseTable, name]
             guard let fields = reader.table(value, at: path) else { return nil }
             guard Paths.isPlainName(name) else {
-                reader.add(.error, at: path, "\(TableReader.dotted(path)): \(Paths.plainNameRule)")
+                reader.add(.error, at: path, .notPlainName(TableReader.dotted(path)))
                 return nil
             }
             reader.unknownKeys(fields, at: path, known: ["repo", "asset"])

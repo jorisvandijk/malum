@@ -20,15 +20,15 @@ public struct ConfigSchema: Equatable, Sendable {
     }
 
     /// What's wrong with `table`, keyed by the setting it's about. Empty when the table is fine.
-    func problems(in table: ConfigTable, module: String) -> [String: String] {
-        var problems: [String: String] = [:]
+    func problems(in table: ConfigTable, module: String) -> [String: MessageText] {
+        var problems: [String: MessageText] = [:]
         for (key, value) in table {
             guard let setting = settings[key] else {
-                problems[key] = "unknown setting \(module).\(key)"
+                problems[key] = .unknownKey("\(module).\(key)", isTable: false)
                 continue
             }
             if !setting.kind.accepts(value) {
-                problems[key] = "\(module).\(key) should be \(setting.kind)"
+                problems[key] = .shouldBe("\(module).\(key)", setting.kind)
             }
         }
         return problems
