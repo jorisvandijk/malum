@@ -72,19 +72,48 @@ enum FileFormat: Sendable {
     }
 }
 
-/// One block of `name value` lines in a file, written from one table.
+/// One block of `name value` lines in a file, written from one table, or the table's `text` as it is.
 struct LineBlock: Sendable {
+    /// How text values are written.
+    enum Quoting: Sendable {
+        /// As they are.
+        case none
+        /// In double quotes, so a shell still expands variables in them.
+        case double
+        /// As a shell takes them literally, in single quotes when needed.
+        case shell
+    }
+
+    /// The key that holds the text of a block written as it is.
+    static let textKey = "text"
+
     /// The table the lines come from, or nil for the table the file is written from.
     let table: String?
     /// The word written before each line, such as kitty's `map`, or nil.
     let prefix: String?
-    /// Whether text values are written in double quotes.
-    let quoted: Bool
+    /// What goes between a name and its value, such as `=` for a shell's `alias name=value`.
+    let separator: String
+    /// How text values are written.
+    let quoted: Quoting
+    /// Whether the block is the table's `text`, written as it is, instead of a line per entry.
+    let verbatim: Bool
 
-    /// Creates the block from `table`, with `prefix` before each line and text values `quoted`.
-    init(_ table: String?, prefix: String? = nil, quoted: Bool = false) {
+    /// Creates the block from `table`, with `prefix` before each line, `separator` between name and
+    /// value, and text values written as `quoted` says.
+    init(_ table: String?, prefix: String? = nil, separator: String = " ", quoted: Quoting = .none) {
+        self.init(table, prefix: prefix, separator: separator, quoted: quoted, verbatim: false)
+    }
+
+    private init(_ table: String?, prefix: String?, separator: String, quoted: Quoting, verbatim: Bool) {
         self.table = table
         self.prefix = prefix
+        self.separator = separator
         self.quoted = quoted
+        self.verbatim = verbatim
+    }
+
+    /// The block written from the `text` of `table`, as it is, such as shell lines.
+    static func text(_ table: String) -> LineBlock {
+        LineBlock(table, prefix: nil, separator: "", quoted: .none, verbatim: true)
     }
 }

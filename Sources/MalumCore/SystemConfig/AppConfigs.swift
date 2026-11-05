@@ -28,7 +28,8 @@ enum AppConfigs {
                 AppConfigFile(".config/micro/settings.json", .json(table: "settings"), always: true),
                 AppConfigFile(".config/micro/bindings.json", .json(table: "bindings")),
                 AppConfigFile(
-                    ".config/micro/colorschemes/*.micro", .lines([LineBlock(nil, prefix: "color-link", quoted: true)]),
+                    ".config/micro/colorschemes/*.micro",
+                    .lines([LineBlock(nil, prefix: "color-link", quoted: .double)]),
                     each: "colorschemes"),
             ]),
         AppConfig(
@@ -37,8 +38,8 @@ enum AppConfigs {
                 AppConfigFile(
                     ".config/newsboat/config",
                     .lines([
-                        LineBlock("settings", quoted: true), LineBlock("keybindings", prefix: "bind-key"),
-                        LineBlock("ignore_articles", prefix: "ignore-article", quoted: true),
+                        LineBlock("settings", quoted: .double), LineBlock("keybindings", prefix: "bind-key"),
+                        LineBlock("ignore_articles", prefix: "ignore-article", quoted: .double),
                     ]),
                     always: true),
                 AppConfigFile(".config/newsboat/urls", .feeds(table: "feeds")),
@@ -52,6 +53,24 @@ enum AppConfigs {
                 AppConfigFile(".vscode-oss/argv.json", .json(table: "argv")),
             ],
             extensions: true),
+        AppConfig(
+            name: "zsh",
+            files: [
+                AppConfigFile(
+                    ".zshenv", .lines([LineBlock("environment", prefix: "export", separator: "=", quoted: .double)])),
+                AppConfigFile(".zprofile", .lines([.text("profile")])),
+                // The aliases come first, so the shell's own lines can use them.
+                AppConfigFile(
+                    ".zshrc",
+                    .lines([LineBlock("aliases", prefix: "alias", separator: "=", quoted: .shell), .text("zshrc")]),
+                    always: true),
+                AppConfigFile(
+                    ".config/zsh-abbr/user-abbreviations",
+                    .lines([
+                        LineBlock("abbreviations", prefix: "abbr", separator: "=", quoted: .shell),
+                        LineBlock("global_abbreviations", prefix: "abbr -g", separator: "=", quoted: .shell),
+                    ])),
+            ]),
     ]
 
     /// The app called `name`, or nil when there's none.
