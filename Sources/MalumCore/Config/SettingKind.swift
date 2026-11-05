@@ -42,7 +42,7 @@ extension SettingKind: CustomStringConvertible {
         case .string:
             "text in quotes"
         case .strings:
-            "a list of text"
+            "a list of text in quotes"
         case .table:
             "a table"
         }

@@ -2,15 +2,11 @@
 enum IniText {
     /// The sections from `table`, found at `path`, one for each table in it in alphabetical order,
     /// or nil when there are none.
-    static func text(_ table: ConfigTable, at path: [String], problems: inout [AppProblem]) -> String? {
+    static func text(_ table: ConfigTable, at path: [String], reader: inout TableReader) -> String? {
         var text: [String] = []
         for (name, entries) in table.sorted(by: { $0.key < $1.key }) {
-            guard case .table(let entries) = entries else {
-                problems.append(
-                    AppProblem(.error, at: path + [name], "\(AppTable.dotted(path + [name])) should be a table"))
-                continue
-            }
-            text.append(section(name, entries, at: path + [name], problems: &problems))
+            guard let entries = reader.table(entries, at: path + [name]) else { continue }
+            text.append(section(name, entries, at: path + [name], reader: &reader))
         }
         return text.isEmpty ? nil : text.joined(separator: "\n")
     }
@@ -18,7 +14,7 @@ enum IniText {
     /// One section, found at `path`, with its keys in alphabetical order. A list writes its key
     /// once for each item.
     private static func section(
-        _ name: String, _ entries: ConfigTable, at path: [String], problems: inout [AppProblem]
+        _ name: String, _ entries: ConfigTable, at path: [String], reader: inout TableReader
     ) -> String {
         var text = "[\(sectionName(name))]\n"
         for (key, value) in entries.sorted(by: { $0.key < $1.key }) {
@@ -26,11 +22,7 @@ enum IniText {
             if case .array(let list) = value { items = list } else { items = [value] }
             let written = items.compactMap(self.value)
             guard written.count == items.count else {
-                let keyPath = path + [key]
-                problems.append(
-                    AppProblem(
-                        .error, at: keyPath,
-                        "\(AppTable.dotted(keyPath)) should be text, a whole number, true or false, or a list of them"))
+                reader.expect(path + [key], "text, a whole number, true or false, or a list of them")
                 continue
             }
             text += written.map { "\t\(key) = \($0)\n" }.joined()

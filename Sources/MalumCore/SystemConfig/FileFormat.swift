@@ -42,27 +42,27 @@ enum FileFormat: Sendable {
     }
 
     /// The file's text from `table`, found at `path`, or nil when there's nothing to write. Each
-    /// problem found is added to `problems`.
-    func text(from table: ConfigTable, at path: [String], problems: inout [AppProblem]) -> String? {
+    /// problem found is added to `reader`.
+    func text(from table: ConfigTable, at path: [String], reader: inout TableReader) -> String? {
         switch self {
         case .json(let name):
-            let fields = AppTable.subtable(table, name, at: path, problems: &problems)
-            return JSONText.text(fields, at: path + [name], problems: &problems)
+            let fields = reader.table(table, name, at: path)
+            return JSONText.text(fields, at: path + [name], reader: &reader)
         case .lines(let blocks):
             var texts: [String] = []
             for block in blocks {
-                let fields = block.table.map { AppTable.subtable(table, $0, at: path, problems: &problems) } ?? table
+                let fields = block.table.map { reader.table(table, $0, at: path) } ?? table
                 let blockPath = path + (block.table.map { [$0] } ?? [])
-                texts += LineText.text(fields, at: blockPath, block: block, problems: &problems).map { [$0] } ?? []
+                texts += LineText.text(fields, at: blockPath, block: block, reader: &reader).map { [$0] } ?? []
             }
             return texts.isEmpty ? nil : texts.joined(separator: "\n")
         case .ini(let name):
-            let fields = AppTable.subtable(table, name, at: path, problems: &problems)
-            return IniText.text(fields, at: path + [name], problems: &problems)
+            let fields = reader.table(table, name, at: path)
+            return IniText.text(fields, at: path + [name], reader: &reader)
         case .list(let name, let key):
-            let fields = AppTable.subtable(table, name, at: path, problems: &problems)
-            problems += AppTable.unknownKeys(fields, at: path + [name], known: [key])
-            return ListText.text(fields[key], at: path + [name, key], problems: &problems)
+            let fields = reader.table(table, name, at: path)
+            reader.unknownKeys(fields, at: path + [name], known: [key])
+            return ListText.text(fields[key], at: path + [name, key], reader: &reader)
         }
     }
 }

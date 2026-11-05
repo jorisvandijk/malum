@@ -32,6 +32,6 @@ struct SettingKindTests {
 
     @Test func descriptionUsesPlainWords() {
         #expect(SettingKind.boolean.description == "true or false")
-        #expect(SettingKind.strings.description == "a list of text")
+        #expect(SettingKind.strings.description == "a list of text in quotes")
     }
 }

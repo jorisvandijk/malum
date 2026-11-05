@@ -62,7 +62,7 @@ struct ConfigDocsTests {
 
         Apps left alone.
 
-        - Value: a list of text
+        - Value: a list of text in quotes
 
         ### `window_manager.gap`
 

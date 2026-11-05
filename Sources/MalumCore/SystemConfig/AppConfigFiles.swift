@@ -56,41 +56,24 @@ public struct AppConfigFiles {
     /// The files `app` asks for in its file at `path`, or nil when an error in it stops them.
     private func read(_ app: AppConfig, from path: String, report: (Message) -> Void) -> [AppFile]? {
         let fileName = "\(Paths.appsFolderName)/\(app.name)\(Self.tomlExtension)"
-        let text: String
-        let table: ConfigTable
+        let fixFirst = Message(.error, "couldn't write \(app.name)'s config files: fix \(private: path) first")
+        var reader: TableReader
         do {
-            text = try files.read(path)
-            table = ConfigValue.table(try TOMLReader.table(from: text))
-        } catch let error as TOMLReadError {
-            report(Self.problem(error, in: fileName).message)
-            report(Message(.error, "couldn't write \(app.name)'s config files: fix \(private: path) first"))
+            reader = try TableReader(try files.read(path), file: fileName)
+        } catch let problem as ConfigProblem {
+            report(problem.message)
+            report(fixFirst)
             return nil
         } catch {
             report(Message(.error, "couldn't write \(app.name)'s config files: \(MessageText(error: error))"))
             return nil
         }
-        let lines = TOMLLines(text)
-        let (appFiles, problems) = app.read(table)
-        for problem in problems {
-            report(
-                ConfigProblem(
-                    problem.level, file: fileName, line: lines.line(of: problem.path), MessageText(problem.text)
-                ).message)
-        }
-        guard !problems.contains(where: { $0.level == .error }) else {
-            report(Message(.error, "couldn't write \(app.name)'s config files: fix \(private: path) first"))
+        let appFiles = app.read(&reader)
+        reader.problems.map(\.message).forEach(report)
+        guard !reader.hasErrors else {
+            report(fixFirst)
             return nil
         }
         return appFiles
-    }
-
-    /// A syntax error as a problem in `fileName`, at its line and column when the parser gave them.
-    private static func problem(_ error: TOMLReadError, in fileName: String) -> ConfigProblem {
-        switch error {
-        case .syntax(let line, let column, let reason):
-            ConfigProblem(.error, file: fileName, line: line, column: column, MessageText(reason))
-        case .unreadable(let reason):
-            ConfigProblem(.error, "couldn't read \(fileName): \(reason)")
-        }
     }
 }

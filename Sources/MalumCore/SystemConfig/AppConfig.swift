@@ -6,14 +6,10 @@ struct AppConfig: Sendable {
     /// The files the app gets.
     let files: [AppConfigFile]
 
-    /// The files the app gets from `table`, its file in `apps/`, and the problems found in it.
-    func read(_ table: ConfigTable) -> (files: [AppFile], problems: [AppProblem]) {
-        let known = files.flatMap(\.tables)
-        var problems = AppTable.unknownKeys(table, at: [], known: known)
-        var written: [AppFile] = []
-        for file in files {
-            written += file.read(table, app: name, problems: &problems)
-        }
-        return (written, problems)
+    /// The files the app gets from its file in `apps/`, which `reader` holds, adding each problem
+    /// found to `reader`.
+    func read(_ reader: inout TableReader) -> [AppFile] {
+        reader.unknownKeys(reader.document, at: [], known: files.flatMap(\.tables))
+        return files.flatMap { $0.read(reader.document, app: name, reader: &reader) }
     }
 }

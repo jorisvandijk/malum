@@ -2,20 +2,21 @@
 enum LineText {
     /// The lines from `table`, found at `path`, as `block` asks, or nil when there are none.
     static func text(
-        _ table: ConfigTable, at path: [String], block: LineBlock, problems: inout [AppProblem]
+        _ table: ConfigTable, at path: [String], block: LineBlock, reader: inout TableReader
     ) -> String? {
         var named: ConfigTable = [:]
         for (name, value) in table.sorted(by: { $0.key < $1.key }) {
             guard !name.isEmpty, !name.contains(where: \.isWhitespace) else {
-                let text = "\(AppTable.dotted(path + [name])): the name can't be empty or hold spaces"
-                problems.append(AppProblem(.error, at: path + [name], text))
+                reader.add(
+                    .error, at: path + [name],
+                    "\(TableReader.dotted(path + [name])): the name can't be empty or hold spaces")
                 continue
             }
             named[name] = value
         }
-        let entries = AppTable.entries(
-            named, at: path, expected: "text on one line, a number, true or false", problems: &problems
-        ) { value(of: $0, quoted: block.quoted) }
+        let entries = reader.entries(named, at: path, expected: "text on one line, a number, true or false") {
+            value(of: $0, quoted: block.quoted)
+        }
         guard !entries.isEmpty else { return nil }
         let prefix = block.prefix.map { $0 + " " } ?? ""
         return entries.map { "\(prefix)\($0.key) \($0.value)\n" }.joined()

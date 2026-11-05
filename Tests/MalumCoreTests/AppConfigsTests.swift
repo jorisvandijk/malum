@@ -14,9 +14,11 @@ struct AppConfigsTests {
     /// What `app` makes of its TOML `text`.
     private func read(
         _ text: String, app: String = "git"
-    ) throws -> (files: [AppFile], problems: [AppProblem]) {
+    ) throws -> (files: [AppFile], problems: [Message]) {
         let config = try #require(AppConfigs.app(named: app))
-        return config.read(ConfigValue.table(try TOMLReader.table(from: text)))
+        var reader = try TableReader(text, file: "apps/\(app).toml")
+        let files = config.read(&reader)
+        return (files, reader.problems.map { Message($0.level, $0.text) })
     }
 
     @Test func settingsBecomeSectionsInOrder() throws {
@@ -94,9 +96,9 @@ struct AppConfigsTests {
             """)
         #expect(
             problems == [
-                AppProblem(.error, at: ["settings"], "settings should be a table"),
-                AppProblem(.error, at: ["ignore", "patterns"], "ignore.patterns should be a list of text in quotes"),
-                AppProblem(.error, at: ["attributes", "lines"], "attributes.lines should be a list of text in quotes"),
+                Message(.error, "settings should be a table"),
+                Message(.error, "ignore.patterns should be a list of text in quotes"),
+                Message(.error, "attributes.lines should be a list of text in quotes"),
             ])
     }
 
@@ -104,10 +106,8 @@ struct AppConfigsTests {
         let (_, problems) = try read("[settings]\nuser = 1\n\n[settings.core]\nratio = 1.5\n")
         #expect(
             problems == [
-                AppProblem(
-                    .error, at: ["settings", "core", "ratio"],
-                    "settings.core.ratio should be text, a whole number, true or false, or a list of them"),
-                AppProblem(.error, at: ["settings", "user"], "settings.user should be a table"),
+                Message(.error, "settings.core.ratio should be text, a whole number, true or false, or a list of them"),
+                Message(.error, "settings.user should be a table"),
             ])
     }
 
@@ -116,8 +116,8 @@ struct AppConfigsTests {
         #expect(files.count == 1)
         #expect(
             problems == [
-                AppProblem(.warn, at: ["colour"], "unknown setting colour"),
-                AppProblem(.warn, at: ["ignore", "files"], "unknown setting ignore.files"),
+                Message(.warn, "unknown setting colour"),
+                Message(.warn, "unknown setting ignore.files"),
             ])
     }
 
@@ -168,16 +168,10 @@ struct AppConfigsTests {
             """, app: "kitty")
         #expect(
             problems == [
-                AppProblem(.error, at: ["theme"], "theme should be a table"),
-                AppProblem(
-                    .error, at: ["settings", "two words"],
-                    "settings.\"two words\": the name can't be empty or hold spaces"),
-                AppProblem(
-                    .error, at: ["settings", "colors"],
-                    "settings.colors should be text on one line, a number, true or false"),
-                AppProblem(
-                    .error, at: ["keybindings", "cmd+b"],
-                    "keybindings.\"cmd+b\" should be text on one line, a number, true or false"),
+                Message(.error, "theme should be a table"),
+                Message(.error, "settings.\"two words\": the name can't be empty or hold spaces"),
+                Message(.error, "settings.colors should be text on one line, a number, true or false"),
+                Message(.error, "keybindings.\"cmd+b\" should be text on one line, a number, true or false"),
             ])
     }
 
@@ -250,16 +244,10 @@ struct AppConfigsTests {
             """, app: "micro")
         #expect(
             problems == [
-                AppProblem(
-                    .error, at: ["settings", "nested"],
-                    "settings.nested should be text, a number, true or false, or a list of them"),
-                AppProblem(
-                    .error, at: ["settings", "when"],
-                    "settings.when should be text, a number, true or false, or a list of them"),
-                AppProblem(
-                    .error, at: ["colorschemes", ".hidden"],
-                    "colorschemes.\".hidden\": the name can't be empty, start with a dot or hold /"),
-                AppProblem(.error, at: ["colorschemes", "plain"], "colorschemes.plain should be a table"),
+                Message(.error, "settings.nested should be text, a number, true or false, or a list of them"),
+                Message(.error, "settings.when should be text, a number, true or false, or a list of them"),
+                Message(.error, "colorschemes.\".hidden\": the name can't be empty, start with a dot or hold /"),
+                Message(.error, "colorschemes.plain should be a table"),
             ])
     }
 
