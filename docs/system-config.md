@@ -292,6 +292,46 @@ enable-crash-reporter = false
 [info] installed VSCodium extension tamasfe.even-better-toml
 ```
 
+### zsh
+
+`apps/zsh.toml` writes zsh's startup files: `~/.zshenv`, `~/.zprofile`, `~/.zshrc` and zsh-abbr's `~/.config/zsh-abbr/user-abbreviations`. New shells pick up changes; open ones keep what they started with. Malum doesn't change your login shell, and installs no plugins: list them in `packages.toml` and load them in `[zshrc]`.
+
+```toml
+[environment]
+EDITOR = "micro"
+NOTES = "$HOME/notes"
+
+[profile]
+text = '''
+eval "$(/opt/homebrew/bin/brew shellenv)"
+'''
+
+[aliases]
+".." = "cd .."
+gs = "git status"
+
+[zshrc]
+text = '''
+setopt share_history hist_ignore_space
+source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+PROMPT='%~ %# '
+'''
+
+[abbreviations]
+symlink = "ln -s"
+
+[global_abbreviations]
+pc = "| pbcopy"
+```
+
+- `[environment]`: variables, as `NAME = "value"`, each written to `~/.zshenv` as `export NAME="value"`, so every zsh gets them, scripts included. The value is in double quotes, so `$HOME` and other variables expand.
+- `[profile]`: `text` is written to `~/.zprofile` as it is, for login shells.
+- `[aliases]`: aliases, as `name = "command"`, each written at the top of `~/.zshrc` as `alias name='command'`. The command is in single quotes, so a variable in it expands when the alias runs.
+- `[zshrc]`: `text` is written to `~/.zshrc` as it is, after the aliases: options, history, plugins, the prompt, functions.
+- `[abbreviations]` and `[global_abbreviations]`: [zsh-abbr](https://zsh-abbr.olets.dev) abbreviations, which expand as you type, as `name = "text"`. Global ones expand anywhere on the line, not only as the command. Adding one with `abbr add` changes the file, so the next run overwrites it with a warning: add them here instead.
+
+`~/.zshrc` is always written; the other files only when their table has something in it. Use a TOML literal string, in `'''`, for `text`, so backslashes and quotes stay as they are.
+
 ## App preferences
 
 Some apps keep their settings as macOS preferences rather than in a file. Their file in `apps/` has one table, `[preferences]`, with each preference by the name the app stores it under, as `"Name" = value`. `defaults read <domain>` lists an app's current preferences. Malum sets them after the app config files, the way `defaults write` would:
