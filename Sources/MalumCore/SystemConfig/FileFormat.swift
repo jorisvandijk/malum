@@ -9,11 +9,13 @@ enum FileFormat: Sendable {
     case ini(table: String)
     /// One line for each text in the list `key` of `table`.
     case list(table: String, key: String)
+    /// A feed list in newsboat's urls style, one line per feed in `table`.
+    case feeds(table: String)
 
     /// The tables at the top of the TOML the format reads.
     var tables: [String] {
         switch self {
-        case .json(let table), .ini(let table), .list(let table, _):
+        case .json(let table), .ini(let table), .list(let table, _), .feeds(let table):
             [table]
         case .lines(let blocks):
             blocks.compactMap(\.table)
@@ -26,7 +28,7 @@ enum FileFormat: Sendable {
         switch self {
         case .json:
             nil
-        case .lines, .ini, .list:
+        case .lines, .ini, .list, .feeds:
             "#"
         }
     }
@@ -36,7 +38,7 @@ enum FileFormat: Sendable {
         switch self {
         case .json:
             "{}\n"
-        case .lines, .ini, .list:
+        case .lines, .ini, .list, .feeds:
             ""
         }
     }
@@ -63,6 +65,9 @@ enum FileFormat: Sendable {
             let fields = reader.table(table, name, at: path)
             reader.unknownKeys(fields, at: path + [name], known: [key])
             return ListText.text(fields[key], at: path + [name, key], reader: &reader)
+        case .feeds(let name):
+            let fields = reader.table(table, name, at: path)
+            return FeedText.text(fields, at: path + [name], reader: &reader)
         }
     }
 }

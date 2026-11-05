@@ -1,10 +1,12 @@
 /// Files of `name value` lines, such as kitty's config.
 enum LineText {
-    /// The lines from `table`, found at `path`, as `block` asks, or nil when there are none.
+    /// The lines from `table`, found at `path`, as `block` asks, or nil when there are none. A
+    /// list writes its name once for each item.
     static func text(
         _ table: ConfigTable, at path: [String], block: LineBlock, reader: inout TableReader
     ) -> String? {
-        var named: ConfigTable = [:]
+        let prefix = block.prefix.map { $0 + " " } ?? ""
+        var lines: [String] = []
         for (name, value) in table.sorted(by: { $0.key < $1.key }) {
             guard !name.isEmpty, !name.contains(where: \.isWhitespace) else {
                 reader.add(
@@ -12,14 +14,14 @@ enum LineText {
                     "\(TableReader.dotted(path + [name])): the name can't be empty or hold spaces")
                 continue
             }
-            named[name] = value
+            let written = value.items.compactMap { self.value(of: $0, quoted: block.quoted) }
+            guard written.count == value.items.count else {
+                reader.expect(path + [name], "text on one line, a number, true or false, or a list of them")
+                continue
+            }
+            lines += written.map { "\(prefix)\(name) \($0)\n" }
         }
-        let entries = reader.entries(named, at: path, expected: "text on one line, a number, true or false") {
-            value(of: $0, quoted: block.quoted)
-        }
-        guard !entries.isEmpty else { return nil }
-        let prefix = block.prefix.map { $0 + " " } ?? ""
-        return entries.map { "\(prefix)\($0.key) \($0.value)\n" }.joined()
+        return lines.isEmpty ? nil : lines.joined()
     }
 
     /// One value: text, in quotes when `quoted`, numbers, and true or false as `yes` or `no`, or
