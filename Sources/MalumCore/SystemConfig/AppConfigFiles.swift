@@ -54,7 +54,7 @@ public struct AppConfigFiles {
     }
 
     /// The files `app` asks for in its file at `path`, or nil when an error in it stops them.
-    private func read(_ app: any AppConfig, from path: String, report: (Message) -> Void) -> [AppFile]? {
+    private func read(_ app: AppConfig, from path: String, report: (Message) -> Void) -> [AppFile]? {
         let fileName = "\(Paths.appsFolderName)/\(app.name)\(Self.tomlExtension)"
         let text: String
         let table: ConfigTable

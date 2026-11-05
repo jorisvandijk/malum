@@ -195,18 +195,16 @@ lines = ["*.pdf diff=pdf"]
 
 ### kitty
 
-`apps/kitty.toml` writes kitty's config, `~/.config/kitty/kitty.conf`, and the colours to `~/.config/kitty/theme.conf` next to it. kitty reads its config when it starts; press ctrl+cmd+, in a running kitty to load the new one.
+`apps/kitty.toml` writes kitty's config, `~/.config/kitty/kitty.conf`. kitty reads its config when it starts; press ctrl+cmd+, in a running kitty to load the new one.
 
 ```toml
-[font]
-name = "CaskaydiaCove Nerd Font Mono"
-size = 14
-
 [theme]
 foreground = "#f8f8f2"
 background = "#282a36"
 
 [settings]
+font_family = "CaskaydiaCove Nerd Font Mono"
+font_size = 14
 scrollback_lines = 100000
 enable_audio_bell = false
 
@@ -214,9 +212,7 @@ enable_audio_bell = false
 "cmd+b" = "launch --location=vsplit"
 ```
 
-- `[font]`: `name` is the font family, as `kitty +list-fonts` shows it, and `size` is in points. They're written as `font_family` and `font_size`.
-- `[theme]`: one colour option of kitty's per line, written to `theme.conf`, which `kitty.conf` includes before the settings, so a setting wins over the theme. `theme.conf` is only written when the table has something in it.
-- `[settings]`: any of [kitty's options](https://sw.kovidgoyal.net/kitty/conf/), as `option = value`. `true` and `false` are written as `yes` and `no`.
+- `[theme]` and `[settings]`: any of [kitty's options](https://sw.kovidgoyal.net/kitty/conf/), as `option = value`, each written as an `option value` line. `true` and `false` are written as `yes` and `no`. The theme is written first, so a setting wins over it.
 - `[keybindings]`: keyboard shortcuts, as `"keys" = "action"`. Each becomes a `map keys action` line.
 
 ### micro
@@ -238,6 +234,6 @@ comment = "italic #6272A4"
 
 - `[settings]`: any of [micro's options](https://github.com/zyedidia/micro/blob/master/runtime/help/options.md), as `option = value`. Setting an option from inside micro with `set` changes `settings.json`, so the next run overwrites it with a warning: set options here instead.
 - `[bindings]`: [key bindings](https://github.com/zyedidia/micro/blob/master/runtime/help/keybindings.md), as `"key" = "action"`. `bindings.json` is only written when the table has something in it.
-- `[colorschemes.<name>]`: a colour scheme, with `group = "colours"` for each highlight group. Each becomes a `color-link` line in `colorschemes/<name>.micro`. Pick the scheme with the `colorscheme` setting.
+- `[colorschemes.<name>]`: a colour scheme, with `group = "colours"` for each highlight group. Each becomes a `color-link group "colours"` line in `colorschemes/<name>.micro`. Pick the scheme with the `colorscheme` setting.
 
 The messages also go to the macOS log, as the [log page](log.md) describes.
