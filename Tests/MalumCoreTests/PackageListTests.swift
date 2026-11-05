@@ -139,4 +139,13 @@ struct PackageListTests {
                 Message(.error, "release.\"../../bin/sh\": \(rule)"),
             ])
     }
+
+    @Test func packageNamesLikeAFlagAreRefused() {
+        let reading = PackageList.read("[homebrew]\n\"--force\" = \"formula\"\n")
+        #expect(reading.list == nil)
+        #expect(
+            reading.problems.map(\.message) == [
+                Message(.error, "packages.toml line 2: homebrew.--force: a package name can't start with -")
+            ])
+    }
 }

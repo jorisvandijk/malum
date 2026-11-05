@@ -76,6 +76,27 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         try decode(try state.read(fileName), at: state.path(of: fileName))
     }
 
+    /// Reads the record from `state`, or reports that `what` couldn't be done and gives nil.
+    static func read(from state: StateFolder, for what: String, report: (Message) -> Void) -> Self? {
+        do {
+            return try read(from: state)
+        } catch {
+            report(Message(.error, "couldn't \(what): \(MessageText(error: error))"))
+            return nil
+        }
+    }
+
+    /// Makes `change` to the record in `state`, reporting when it can't. Says whether it worked.
+    static func remember(in state: StateFolder, report: (Message) -> Void, _ change: (inout Self) -> Void) -> Bool {
+        do {
+            try Self.change(in: state, change)
+            return true
+        } catch {
+            report(Message(.error, "couldn't record what \(Project.name) manages: \(MessageText(error: error))"))
+            return false
+        }
+    }
+
     /// Makes `change` to the record in `state`, holding the state folder's lock from the read to
     /// the write. When the record can't be read or written, the file stays as it is.
     static func change(in state: StateFolder, _ change: (inout Self) -> Void) throws {
