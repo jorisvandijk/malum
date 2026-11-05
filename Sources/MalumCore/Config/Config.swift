@@ -29,9 +29,7 @@ public struct Config: Sendable {
         let document = reader.document
         for key in document.keys.sorted() where schemas[key] == nil {
             let text: MessageText =
-                if case .table? = document[key] { "unknown module \(key)" } else {
-                    "\(key) isn't inside a module's table"
-                }
+                if case .table? = document[key] { .unknownModule(key) } else { .outsideModule(key) }
             reader.add(.warn, at: [key], text)
         }
         var changed: Set<String> = []
@@ -44,7 +42,7 @@ public struct Config: Sendable {
             let before = reader.problems.count
             if let table = reader.table(value, at: [module]) {
                 for (key, text) in schema.problems(in: table, module: module) {
-                    reader.add(.error, at: [module, key], MessageText(text))
+                    reader.add(.error, at: [module, key], text)
                 }
             }
             guard reader.problems.count == before, case .table(let table) = value else {

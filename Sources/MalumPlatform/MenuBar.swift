@@ -26,7 +26,7 @@ public final class MenuBar: NSObject {
 
     /// Shows `menu`: the icon changes when something needs attention, and the menu is rebuilt.
     public func show(_ menu: StatusMenu) {
-        let label = menu.needsAttention ? "\(Project.name) needs attention" : Project.name
+        let label = menu.label
         let symbol = menu.needsAttention ? Self.alertSymbol : Self.calmSymbol
         item.button?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: label)
         item.button?.toolTip = label

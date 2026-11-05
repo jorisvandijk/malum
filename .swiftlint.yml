@@ -141,7 +141,7 @@ custom_rules:
 
   messages_folder:
     name: "Messages folder"
-    regex: '\bMessage\s*\(|\bvar\s+text\s*:\s*MessageText\b'
+    regex: '\bMessage\s*\(|\bvar\s+text\s*:\s*MessageText\b|\.(text|action)\((?=\s*")'
     excluded_match_kinds: [comment, doccomment, string]
     excluded: '/Tests/|/Sources/MalumCore/Messages/'
     message: "Word messages and error text in Sources/MalumCore/Messages, and ask for them by name."

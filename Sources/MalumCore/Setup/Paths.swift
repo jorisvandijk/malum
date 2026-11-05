@@ -71,9 +71,6 @@ public struct Paths: Equatable, Sendable {
     /// `packages.toml` at the top of the dots folder `dots`.
     public func packagesTOML(in dots: String) -> String { "\(dots)/\(Self.packagesTOMLName)" }
 
-    /// What `isPlainName` asks of a name, in the words a problem uses.
-    public static let plainNameRule = "the name can't be empty, start with a dot or hold /"
-
     /// Whether `name` is safe as a single file name: it isn't empty, doesn't start with a dot and
     /// holds no `/`, so it can't reach outside the folder it's put in.
     public static func isPlainName(_ name: String) -> Bool {

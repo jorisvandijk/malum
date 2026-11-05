@@ -36,7 +36,7 @@ struct AppConfigFile: Sendable {
             let path = [each, name]
             guard let value = tables[name], let fields = reader.table(value, at: path) else { return nil }
             guard Paths.isPlainName(name) else {
-                reader.add(.error, at: path, "\(TableReader.dotted(path)): \(Paths.plainNameRule)")
+                reader.add(.error, at: path, .notPlainName(TableReader.dotted(path)))
                 return nil
             }
             let filePath = self.path.replacingOccurrences(of: "*", with: name)

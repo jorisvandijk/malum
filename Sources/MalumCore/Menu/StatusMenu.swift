@@ -16,12 +16,12 @@ public struct StatusMenu: Equatable, Sendable {
     ) {
         let problems = report.map { $0.messages.filter { $0.level != .info } } ?? []
         items =
-            [.text("\(Project.name) \(Project.version)"), .separator]
+            [.text(Self.title), .separator]
             + Self.signingItems(signingProblem)
             + Self.safeModeItems(overrides.safeMode)
             + Self.moduleItems(modules) + Self.disabledItems(overrides.disabled) + [.separator]
             + Self.configItems(problems, path: configPath, exists: configExists) + [.separator]
-            + [.action("Reload \(Paths.configTOMLName)", .reload), .action("Quit \(Project.name)", .quit)]
+            + [.action(Self.reload, .reload), .action(Self.quit, .quit)]
         needsAttention =
             !problems.isEmpty || overrides.safeMode != nil || signingProblem != nil
             || modules.contains { Self.needsAttention($0.status) }
@@ -36,19 +36,19 @@ public struct StatusMenu: Equatable, Sendable {
     /// Why safe mode is on and the way out of it, or nothing while it's off.
     private static func safeModeItems(_ reason: SafeModeReason?) -> [MenuItem] {
         guard let reason else { return [] }
-        return [.text("safe mode: \(reason)"), .action("Leave safe mode", .leaveSafeMode), .separator]
+        return [.text(safeMode(reason)), .action(leaveSafeMode, .leaveSafeMode), .separator]
     }
 
     /// A way to enable each disabled module, in a steady order.
     private static func disabledItems(_ disabled: Set<String>) -> [MenuItem] {
-        disabled.sorted().map { .action("Enable \($0)", .enable($0)) }
+        disabled.sorted().map { .action(enable($0), .enable($0)) }
     }
 
     /// A line per module with its status, and a way to grant each permission it's missing.
     private static func moduleItems(_ modules: [(id: String, status: ModuleStatus)]) -> [MenuItem] {
-        guard !modules.isEmpty else { return [.text("no modules yet")] }
+        guard !modules.isEmpty else { return [.text(noModules)] }
         return modules.flatMap { module in
-            [.text("\(module.id): \(module.status)")] + permissionItems(module.status)
+            [.text(moduleLine(module.id, module.status))] + permissionItems(module.status)
         }
     }
 
@@ -56,7 +56,7 @@ public struct StatusMenu: Equatable, Sendable {
     private static func permissionItems(_ status: ModuleStatus) -> [MenuItem] {
         guard case .needsPermission(let missing) = status else { return [] }
         return missing.sorted { $0.description < $1.description }
-            .map { .action("Open \($0) settings", .openSettings($0)) }
+            .map { .action(openSettings($0), .openSettings($0)) }
     }
 
     /// The problems `malum.toml` has, and a way to get to the file: open it, or show the dots
@@ -64,10 +64,10 @@ public struct StatusMenu: Equatable, Sendable {
     private static func configItems(_ problems: [Message], path: String?, exists: Bool) -> [MenuItem] {
         let lines: [MenuItem] =
             problems.isEmpty
-            ? [.text("\(Paths.configTOMLName) has no problems")] : problems.map { .text($0.description) }
+            ? [.text(noConfigProblems)] : problems.map { .text($0.description) }
         guard let path else { return lines }
-        guard exists else { return lines + [.action("Show dots folder", .showFolder(folder(of: path)))] }
-        return lines + [.action("Open \(Paths.configTOMLName)", .openFile(path))]
+        guard exists else { return lines + [.action(showDotsFolder, .showFolder(folder(of: path)))] }
+        return lines + [.action(openConfig, .openFile(path))]
     }
 
     /// The folder that holds `path`.

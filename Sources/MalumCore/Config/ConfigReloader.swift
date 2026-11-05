@@ -36,9 +36,9 @@ public final class ConfigReloader {
         case .text(let path, let text):
             return config.load(text, from: path)
         case .noDots:
-            return failed("couldn't load \(Paths.configTOMLName): no dots folder yet, run \(Project.command) init")
+            return failed(.noDotsYet)
         case .missing(let path):
-            return failed("couldn't load \(private: path): it doesn't exist")
+            return failed(.configMissing(path))
         case .unreadable(let error):
             return failed(error.text)
         }
