@@ -57,8 +57,19 @@ jobs:
     timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The merge commit and its parent, the base branch, for the size line.
+          fetch-depth: 2
       - name: jscpd
         run: npx --yes jscpd@$JSCPD_VERSION --min-tokens 60 --threshold 0 Sources
+      - name: Sources size
+        # Not a gate: the lines of Sources the pull request adds and removes, in the log and
+        # the run summary.
+        if: github.event_name == 'pull_request'
+        run: |
+          git diff --numstat HEAD^1 HEAD -- Sources \
+            | awk '{ added += $1; removed += $2 } END { printf "Sources: +%d -%d lines\n", added, removed }' \
+            | tee -a "$GITHUB_STEP_SUMMARY"
 
   test:
     runs-on: ubuntu-24.04
