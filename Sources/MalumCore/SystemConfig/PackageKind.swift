@@ -7,17 +7,4 @@ public enum PackageKind: String, CaseIterable, Sendable {
 
     /// The flag `brew` takes for this kind.
     var flag: String { "--\(rawValue)" }
-
-    /// The kind as messages name it, with Homebrew in front, so it's clear what a cask is.
-    var label: String { "Homebrew \(rawValue)" }
-
-    /// The kind in the plural, as messages name it.
-    var plural: String {
-        switch self {
-        case .formula:
-            "Homebrew formulae"
-        case .cask:
-            "Homebrew casks"
-        }
-    }
 }

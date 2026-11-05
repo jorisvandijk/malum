@@ -20,13 +20,13 @@ public struct HomebrewPackages {
     /// Installs the packages in `packages` that Homebrew doesn't have yet, and uninstalls the ones
     /// Malum manages that aren't in it, reporting each step as it goes. Says whether everything worked.
     public func run(_ packages: [PackageKind: [String]], report: (Message) -> Void) async -> Bool {
-        guard let record = InstalledRecord.read(from: state, for: "install packages", report: report) else {
+        guard let record = InstalledRecord.read(from: state, for: .installPackages, report: report) else {
             return false
         }
         let work = PackageKind.allCases.filter { !(packages[$0] ?? []).isEmpty || !record[$0].isEmpty }
         guard !work.isEmpty else { return true }
         guard files.item(at: Brew.path) != nil else {
-            report(Message(.error, "couldn't install packages: Homebrew isn't installed at \(private: Brew.path)"))
+            report(.noHomebrew)
             return false
         }
         var succeeded = true
@@ -44,13 +44,13 @@ public struct HomebrewPackages {
         let kind: PackageKind
         let runner: any CommandRunner
 
-        var label: String { kind.label }
+        var label: MessageText { kind.label }
         func name(of item: String) -> String { item }
 
         func installed(report: (Message) -> Void) async -> ((String) -> Bool)? {
             let result = await runner.run(Brew.installed(kind))
             guard result.succeeded else {
-                report(Message(.error, "couldn't list the installed \(kind.plural): \(result.reason)"))
+                report(.unlistable(kind.plural, reason: result.reason))
                 return nil
             }
             let installed = Set(result.output.split(separator: "\n").map(String.init))

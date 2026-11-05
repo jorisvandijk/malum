@@ -77,11 +77,11 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
     }
 
     /// Reads the record from `state`, or reports that `what` couldn't be done and gives nil.
-    static func read(from state: StateFolder, for what: String, report: (Message) -> Void) -> Self? {
+    static func read(from state: StateFolder, for what: MessageText, report: (Message) -> Void) -> Self? {
         do {
             return try read(from: state)
         } catch {
-            report(Message(.error, "couldn't \(what): \(MessageText(error: error))"))
+            report(.failed(what, error))
             return nil
         }
     }
@@ -92,7 +92,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
             try Self.change(in: state, change)
             return true
         } catch {
-            report(Message(.error, "couldn't record what \(Project.name) manages: \(MessageText(error: error))"))
+            report(.failed(.recordManaged, error))
             return false
         }
     }

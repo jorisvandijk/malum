@@ -37,7 +37,7 @@ public struct GitHubReleases {
     /// Installs or updates each release in `releases`, and removes each one Malum installed that
     /// isn't listed anymore, reporting each step as it goes. Says whether everything worked.
     public func run(_ releases: [ReleaseEntry], report: (Message) -> Void) async -> Bool {
-        guard let record = InstalledRecord.read(from: state, for: "install GitHub releases", report: report) else {
+        guard let record = InstalledRecord.read(from: state, for: .installReleases, report: report) else {
             return false
         }
         let listed = Set(releases.map(\.name))
@@ -56,16 +56,14 @@ public struct GitHubReleases {
                     succeeded = false
                     continue
                 }
-                report(
-                    Message(
-                        .info, "installed GitHub release \(entry.name) \(installed.tag) at \(private: installed.path)"))
+                report(.installed(release: entry.name, tag: installed.tag, at: installed.path))
                 changed = true
             } catch {
-                report(Message(.error, "couldn't install GitHub release \(entry.name): \(MessageText(error: error))"))
+                report(.installFailed(release: entry.name, error))
                 succeeded = false
             }
         }
-        if succeeded && !changed { report(Message(.info, "every listed GitHub release is up to date")) }
+        if succeeded && !changed { report(.releasesUpToDate) }
         return succeeded
     }
 
@@ -75,11 +73,11 @@ public struct GitHubReleases {
         do {
             if files.item(at: installed.path) != nil { try files.remove(installed.path) }
         } catch {
-            report(Message(.error, "couldn't remove GitHub release \(name): \(MessageText(error: error))"))
+            report(.removeFailed(release: name, error))
             return false
         }
         guard InstalledRecord.remember(in: state, report: report, { $0.releases[name] = nil }) else { return false }
-        report(Message(.info, "removed GitHub release \(name) from \(private: installed.path)"))
+        report(.removed(release: name, from: installed.path))
         return true
     }
 
@@ -95,7 +93,7 @@ public struct GitHubReleases {
             return nil
         }
         let asset = try ReleaseFiles.asset(for: entry, in: latest)
-        report(Message(.info, "installing GitHub release \(entry.name) \(latest.tag) (\(asset.name))"))
+        report(.installing(release: entry.name, tag: latest.tag, asset: asset.name))
         let scratch = state.path(of: Self.downloadsName)
         try? files.remove(scratch)  // A leftover from an earlier run; usually there's none.
         try files.createDirectory(scratch)

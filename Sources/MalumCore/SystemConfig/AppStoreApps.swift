@@ -23,7 +23,7 @@ public struct AppStoreApps {
     /// Installs the apps in `apps` that aren't installed yet, and uninstalls the ones Malum manages
     /// that aren't in it, reporting each step as it goes. Says whether everything worked.
     public func run(_ apps: [AppStoreApp], report: (Message) -> Void) async -> Bool {
-        guard let record = InstalledRecord.read(from: state, for: "install App Store apps", report: report) else {
+        guard let record = InstalledRecord.read(from: state, for: .installAppStoreApps, report: report) else {
             return false
         }
         let managed = record.appStore.sorted { $0.key < $1.key }.map { AppStoreApp($0.key, id: $0.value) }
@@ -37,7 +37,7 @@ public struct AppStoreApps {
         let files: any FileSystem
         let sudo: SudoSession
 
-        var label: String { "App Store app" }
+        var label: MessageText { .appStoreApp }
 
         func key(of item: AppStoreApp) -> String { String(item.id) }
 
@@ -47,18 +47,12 @@ public struct AppStoreApps {
 
         func installed(report: (Message) -> Void) async -> ((AppStoreApp) -> Bool)? {
             guard files.item(at: Mas.path) != nil else {
-                report(
-                    Message(
-                        .error,
-                        """
-                        couldn't install App Store apps: mas isn't installed at \(private: Mas.path), \
-                        add mas = "formula" to [homebrew] in \(Paths.packagesTOMLName)
-                        """))
+                report(.noMas)
                 return nil
             }
             let result = await runner.run(Mas.installed)
             guard result.succeeded else {
-                report(Message(.error, "couldn't list the installed App Store apps: \(result.reason)"))
+                report(.unlistable(.appStoreApps, reason: result.reason))
                 return nil
             }
             let ids = Mas.ids(in: result.output)
@@ -67,8 +61,7 @@ public struct AppStoreApps {
 
         /// Asks for the password once, since mas installs and uninstalls as root.
         func prepare(installing: Bool, removing: Bool, report: (Message) -> Void) async -> Bool {
-            let actions = [installing ? "install" : nil, removing ? "uninstall" : nil].compactMap { $0 }
-            return await sudo.authorize(for: "\(actions.joined(separator: " and ")) App Store apps", report: report)
+            await sudo.authorize(for: .changeAppStoreApps(installing: installing, removing: removing), report: report)
         }
 
         func install(_ item: AppStoreApp) async -> CommandResult {

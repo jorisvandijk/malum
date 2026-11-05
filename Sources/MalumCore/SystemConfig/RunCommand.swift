@@ -36,14 +36,11 @@ public struct RunCommand {
         config.problems.map(\.message).forEach(report)
         guard let loaded = config.loaded else { return false }
         guard !config.kept.contains(SystemConfig.id) else {
-            report(Message(.error, "couldn't run \(SystemConfig.id): fix its table in \(private: loaded) first"))
+            report(.systemConfigNeedsFix(in: loaded))
             return false
         }
         guard reloader.enabled.contains(SystemConfig.id) else {
-            report(
-                Message(
-                    .error,
-                    "couldn't run \(SystemConfig.id): it's off, set enabled = true in its table in \(private: loaded)"))
+            report(.systemConfigOff(in: loaded))
             return false
         }
         let folders = ReleaseFolders(reloader.settings[SystemConfig.id] ?? [:], paths: paths)
@@ -55,13 +52,10 @@ public struct RunCommand {
             let apps = AppConfigFiles(files: files, state: state, paths: paths).run(dots: dots, report: report)
             succeeded = packages && apps
         } catch {
-            report(Message(.error, error.text))
+            report(.failed(error))
             return false
         }
-        report(
-            succeeded
-                ? Message(.info, "\(SystemConfig.id) is done")
-                : Message(.error, "\(SystemConfig.id) finished with errors"))
+        report(.systemConfigFinished(succeeded: succeeded))
         return succeeded
     }
 
@@ -73,13 +67,13 @@ public struct RunCommand {
         let file = paths.packagesTOML(in: dots)
         do {
             guard files.item(at: file) != nil else {
-                report(Message(.info, "nothing to install: \(private: file) doesn't exist"))
+                report(.nothingToInstall(missing: file))
                 return true
             }
             let (list, problems) = PackageList.read(try files.read(file))
             problems.map(\.message).forEach(report)
             guard let list else {
-                report(Message(.error, "couldn't install packages: fix \(private: file) first"))
+                report(.needsFix(.installPackages, file))
                 return false
             }
             let sudo = SudoSession(runner: runner, canAsk: canAsk)
@@ -93,7 +87,7 @@ public struct RunCommand {
             ).run(list.releases, report: report)
             return homebrew && appStore && releases
         } catch {
-            report(Message(.error, error.text))
+            report(.failed(error))
             return false
         }
     }
