@@ -193,4 +193,47 @@ lines = ["*.pdf diff=pdf"]
 
 `ignore` and `attributes` are only written when their list has something in it.
 
+### kitty
+
+`apps/kitty.toml` writes kitty's config, `~/.config/kitty/kitty.conf`. kitty reads its config when it starts; press ctrl+cmd+, in a running kitty to load the new one.
+
+```toml
+[theme]
+foreground = "#f8f8f2"
+background = "#282a36"
+
+[settings]
+font_family = "CaskaydiaCove Nerd Font Mono"
+font_size = 14
+scrollback_lines = 100000
+enable_audio_bell = false
+
+[keybindings]
+"cmd+b" = "launch --location=vsplit"
+```
+
+- `[theme]` and `[settings]`: any of [kitty's options](https://sw.kovidgoyal.net/kitty/conf/), as `option = value`, each written as an `option value` line. `true` and `false` are written as `yes` and `no`. The theme is written first, so a setting wins over it.
+- `[keybindings]`: keyboard shortcuts, as `"keys" = "action"`. Each becomes a `map keys action` line.
+
+### micro
+
+`apps/micro.toml` writes micro's options to `~/.config/micro/settings.json`, its key bindings to `bindings.json`, and each colour scheme to its own file in `colorschemes/`, all in `~/.config/micro/`. JSON has no comments, so `settings.json` and `bindings.json` don't start with the line that says where they come from.
+
+```toml
+[settings]
+colorscheme = "dracula"
+softwrap = true
+
+[bindings]
+"Alt-/" = "lua:comment.comment"
+
+[colorschemes.dracula]
+default = "#F8F8F2,#282A36"
+comment = "italic #6272A4"
+```
+
+- `[settings]`: any of [micro's options](https://github.com/zyedidia/micro/blob/master/runtime/help/options.md), as `option = value`. Setting an option from inside micro with `set` changes `settings.json`, so the next run overwrites it with a warning: set options here instead.
+- `[bindings]`: [key bindings](https://github.com/zyedidia/micro/blob/master/runtime/help/keybindings.md), as `"key" = "action"`. `bindings.json` is only written when the table has something in it.
+- `[colorschemes.<name>]`: a colour scheme, with `group = "colours"` for each highlight group. Each becomes a `color-link group "colours"` line in `colorschemes/<name>.micro`. Pick the scheme with the `colorscheme` setting.
+
 The messages also go to the macOS log, as the [log page](log.md) describes.
