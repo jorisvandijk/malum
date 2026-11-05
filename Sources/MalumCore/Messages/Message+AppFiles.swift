@@ -1,7 +1,11 @@
-/// The words for the app config files that system config writes from `apps/` in dots.
+/// The words for the app config files and preferences that system config writes from `apps/` in
+/// dots.
 extension MessageText {
     /// Writing every app's config files.
     static let writeAppFiles: MessageText = "write app config files"
+
+    /// Setting every app's preferences.
+    static let setPreferences: MessageText = "set app preferences"
 
     /// Writing the config files of `app`.
     static func writeAppFiles(of app: String) -> MessageText {
@@ -82,5 +86,40 @@ extension Message {
     /// `path` was removed, since `source` doesn't write it anymore.
     static func removed(_ path: String, source: String) -> Message {
         Message(.info, "removed \(private: path), \(source) doesn't write it anymore")
+    }
+
+    /// Every app preference already holds what dots says.
+    static var preferencesUpToDate: Message {
+        Message(.info, "every app preference is up to date")
+    }
+
+    /// The preference `key` in `domain` was set from `source`.
+    static func preferenceSet(_ key: String, in domain: String, from source: String) -> Message {
+        Message(.info, "set \(key) in \(domain) from \(source)")
+    }
+
+    /// The preference `key` was removed from `domain`, since `source` doesn't set it anymore.
+    static func preferenceRemoved(_ key: String, from domain: String, source: String) -> Message {
+        Message(.info, "removed \(key) from \(domain), \(source) doesn't set it anymore")
+    }
+
+    /// `app` reads its preferences only when it starts.
+    static func reopenToApply(_ app: String) -> Message {
+        Message(.info, "\(app) reads its preferences when it starts: quit and reopen it to use the new ones")
+    }
+
+    /// The preferences in `domain` couldn't be read.
+    static func preferencesUnreadable(_ domain: String, reason: String) -> Message {
+        couldnt("read the preferences in \(domain)", "\(reason)")
+    }
+
+    /// Setting the preference `key` in `domain` failed.
+    static func preferenceNotSet(_ key: String, in domain: String, reason: String) -> Message {
+        couldnt("set \(key) in \(domain)", "\(reason)")
+    }
+
+    /// Removing the preference `key` from `domain` failed.
+    static func preferenceNotRemoved(_ key: String, from domain: String, reason: String) -> Message {
+        couldnt("remove \(key) from \(domain)", "\(reason)")
     }
 }

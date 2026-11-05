@@ -1,7 +1,8 @@
 import Foundation
 
 /// What Malum installed or took over, kept in the state folder and shaped like `packages.toml`,
-/// plus the app config files it wrote. Only what's in here is ever uninstalled or removed.
+/// plus the app config files it wrote and the app preferences it set. Only what's in here is ever
+/// uninstalled or removed.
 public struct InstalledRecord: Codable, Equatable, Sendable {
     /// The record's file in the state folder.
     static let fileName = "installed.json"
@@ -16,6 +17,8 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
     public var releases: [String: InstalledRelease] = [:]
     /// The app config files Malum wrote, by their full path.
     public var files: [String: ManagedFile] = [:]
+    /// The app preferences Malum set, by their domain.
+    public var preferences: [String: ManagedPreferences] = [:]
 
     /// Creates an empty record.
     public init() {}
@@ -26,6 +29,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         case appStore = "app_store"
         case releases = "release"
         case files
+        case preferences
     }
 
     /// The Homebrew packages' keys, named like the values in `packages.toml`.
@@ -45,6 +49,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         appStore = try container.decodeIfPresent([String: Int].self, forKey: .appStore) ?? [:]
         releases = try container.decodeIfPresent([String: InstalledRelease].self, forKey: .releases) ?? [:]
         files = try container.decodeIfPresent([String: ManagedFile].self, forKey: .files) ?? [:]
+        preferences = try container.decodeIfPresent([String: ManagedPreferences].self, forKey: .preferences) ?? [:]
     }
 
     /// Writes the record, sorted, so the file only changes when the record does.
@@ -56,6 +61,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         try container.encode(appStore, forKey: .appStore)
         try container.encode(releases, forKey: .releases)
         try container.encode(files, forKey: .files)
+        try container.encode(preferences, forKey: .preferences)
     }
 
     /// The Homebrew packages of `kind`.

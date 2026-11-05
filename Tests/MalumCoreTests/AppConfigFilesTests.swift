@@ -19,9 +19,11 @@ struct AppConfigFilesTests {
     }
 
     /// Runs the part on `files`, and gives back whether it worked and what it said.
-    private func run(_ files: FakeFileSystem) -> (Bool, [Message]) {
+    private func run(_ files: FakeFileSystem) async -> (Bool, [Message]) {
         var messages: [Message] = []
-        let succeeded = AppConfigFiles(files: files, state: state(files), paths: Paths(home: home)).run(
+        let succeeded = await AppConfigFiles(
+            files: files, runner: FakeRunner(), state: state(files), paths: Paths(home: home)
+        ).run(
             dots: "/Users/joris/dots"
         ) { messages.append($0) }
         return (succeeded, messages)
@@ -31,48 +33,48 @@ struct AppConfigFilesTests {
         ((try? InstalledRecord.read(from: state(files))) ?? InstalledRecord()).files
     }
 
-    @Test func missingFolderWritesNothing() {
-        let (succeeded, messages) = run(FakeFileSystem())
+    @Test func missingFolderWritesNothing() async {
+        let (succeeded, messages) = await run(FakeFileSystem())
         #expect(succeeded)
         #expect(messages == [Message(.info, "no app config files to write: /Users/joris/dots/apps doesn't exist")])
     }
 
-    @Test func newFileIsWrittenAndRecorded() {
+    @Test func newFileIsWrittenAndRecorded() async {
         let files = FakeFileSystem(texts: [toml: settings])
-        let (succeeded, messages) = run(files)
+        let (succeeded, messages) = await run(files)
         #expect(succeeded)
         #expect(messages == [Message(.info, "wrote \(config) from apps/git.toml")])
         #expect(files.text(at: config) == written)
         #expect(managed(files)[config] == ManagedFile(app: "git", text: written))
     }
 
-    @Test func secondRunChangesNothing() {
+    @Test func secondRunChangesNothing() async {
         let files = FakeFileSystem(texts: [toml: settings])
-        _ = run(files)
-        let (succeeded, messages) = run(files)
+        _ = await run(files)
+        let (succeeded, messages) = await run(files)
         #expect(succeeded)
         #expect(messages == [Message(.info, "every app config file is up to date")])
     }
 
-    @Test func changedSettingUpdatesTheFile() {
+    @Test func changedSettingUpdatesTheFile() async {
         let files = FakeFileSystem(texts: [toml: settings])
-        _ = run(files)
+        _ = await run(files)
         try? files.write("[settings.init]\ndefaultBranch = \"trunk\"\n", to: toml)
-        let (_, messages) = run(files)
+        let (_, messages) = await run(files)
         #expect(messages == [Message(.info, "updated \(config) from apps/git.toml")])
         #expect(files.text(at: config) == header + "[init]\n\tdefaultBranch = \"trunk\"\n")
     }
 
-    @Test func matchingFileIsTakenOverQuietly() {
+    @Test func matchingFileIsTakenOverQuietly() async {
         let files = FakeFileSystem(texts: [toml: settings, config: written])
-        let (_, messages) = run(files)
+        let (_, messages) = await run(files)
         #expect(messages == [Message(.info, "\(config) already matched apps/git.toml, Malum manages it now")])
         #expect(managed(files)[config] != nil)
     }
 
-    @Test func differentFileIsTakenOverAndKept() {
+    @Test func differentFileIsTakenOverAndKept() async {
         let files = FakeFileSystem(texts: [toml: settings, config: "[user]\n\tname = me\n"])
-        let (succeeded, messages) = run(files)
+        let (succeeded, messages) = await run(files)
         #expect(succeeded)
         #expect(
             messages == [
@@ -85,11 +87,11 @@ struct AppConfigFilesTests {
         #expect(files.text(at: backup) == "[user]\n\tname = me\n")
     }
 
-    @Test func fileChangedOutsideMalumIsOverwrittenAndKept() {
+    @Test func fileChangedOutsideMalumIsOverwrittenAndKept() async {
         let files = FakeFileSystem(texts: [toml: settings])
-        _ = run(files)
+        _ = await run(files)
         try? files.write("changed\n", to: config)
-        let (_, messages) = run(files)
+        let (_, messages) = await run(files)
         #expect(
             messages == [
                 Message(
@@ -101,18 +103,18 @@ struct AppConfigFilesTests {
         #expect(files.text(at: backup) == "changed\n")
     }
 
-    @Test func deletedFileIsWrittenAgain() {
+    @Test func deletedFileIsWrittenAgain() async {
         let files = FakeFileSystem(texts: [toml: settings])
-        _ = run(files)
+        _ = await run(files)
         try? files.remove(config)
-        let (_, messages) = run(files)
+        let (_, messages) = await run(files)
         #expect(messages == [Message(.warn, "\(config) was deleted outside Malum, wrote it again from apps/git.toml")])
         #expect(files.text(at: config) == written)
     }
 
-    @Test func linkIsReplacedByTheFile() {
+    @Test func linkIsReplacedByTheFile() async {
         let files = FakeFileSystem(items: [config: .link(to: "/Users/joris/dots/gitconfig")], texts: [toml: settings])
-        let (_, messages) = run(files)
+        let (_, messages) = await run(files)
         #expect(
             messages == [
                 Message(.info, "wrote \(config) from apps/git.toml, replacing a link to /Users/joris/dots/gitconfig")
@@ -120,19 +122,19 @@ struct AppConfigFilesTests {
         #expect(files.item(at: config) == .file)
     }
 
-    @Test func folderInTheWayIsAnError() {
+    @Test func folderInTheWayIsAnError() async {
         let files = FakeFileSystem(items: [config + "/x": .file], texts: [toml: settings])
-        let (succeeded, messages) = run(files)
+        let (succeeded, messages) = await run(files)
         #expect(!succeeded)
         #expect(
             messages == [Message(.error, "couldn't write git's config file: couldn't write \(config): it's a folder")])
     }
 
-    @Test func droppedFileIsRemoved() {
+    @Test func droppedFileIsRemoved() async {
         let files = FakeFileSystem(texts: [toml: "[ignore]\npatterns = [\"*.swp\"]\n"])
-        _ = run(files)
+        _ = await run(files)
         try? files.write("", to: toml)
-        let (succeeded, messages) = run(files)
+        let (succeeded, messages) = await run(files)
         #expect(succeeded)
         #expect(
             messages == [
@@ -142,14 +144,14 @@ struct AppConfigFilesTests {
         #expect(managed(files)["/Users/joris/.config/git/ignore"] == nil)
     }
 
-    @Test func droppedFileChangedOutsideMalumStays() {
+    @Test func droppedFileChangedOutsideMalumStays() async {
         let ignore = "/Users/joris/.config/git/ignore"
         let files = FakeFileSystem(texts: [toml: "[ignore]\npatterns = [\"*.swp\"]\n"])
-        _ = run(files)
+        _ = await run(files)
         try? files.write("mine\n", to: ignore)
         try? files.remove(toml)
         try? files.createDirectory("/Users/joris/dots/apps")
-        let (_, messages) = run(files)
+        let (_, messages) = await run(files)
         let warning: MessageText = """
             \(ignore) isn't written from apps/git.toml anymore, but it was changed outside Malum, so it stays \
             and Malum no longer manages it
@@ -163,11 +165,11 @@ struct AppConfigFilesTests {
         #expect(managed(files).isEmpty)
     }
 
-    @Test func errorKeepsTheAppsFiles() {
+    @Test func errorKeepsTheAppsFiles() async {
         let files = FakeFileSystem(texts: [toml: settings])
-        _ = run(files)
+        _ = await run(files)
         try? files.write("settings = 1\n", to: toml)
-        let (succeeded, messages) = run(files)
+        let (succeeded, messages) = await run(files)
         #expect(!succeeded)
         #expect(
             messages == [
@@ -177,29 +179,30 @@ struct AppConfigFilesTests {
         #expect(files.text(at: config) == written)
     }
 
-    @Test func syntaxErrorIsReportedWithItsLine() {
+    @Test func syntaxErrorIsReportedWithItsLine() async {
         let files = FakeFileSystem(texts: [toml: "[settings\n"])
-        let (succeeded, messages) = run(files)
+        let (succeeded, messages) = await run(files)
         #expect(!succeeded)
         #expect(messages.last == Message(.error, "couldn't write git's config files: fix \(toml) first"))
         #expect(messages.first?.text.description.hasPrefix("apps/git.toml line 1") == true)
     }
 
-    @Test func unknownAppIsAWarning() {
+    @Test func unknownAppIsAWarning() async {
         let files = FakeFileSystem(texts: [
             "/Users/joris/dots/apps/vim.toml": "", "/Users/joris/dots/apps/notes.txt": "",
         ])
-        let (succeeded, messages) = run(files)
+        let (succeeded, messages) = await run(files)
         #expect(succeeded)
         #expect(messages == [Message(.warn, "apps/vim.toml: Malum has no app called vim")])
     }
 
-    @Test func pathWithSpacesIsQuotedInTheDiffCommand() {
+    @Test func pathWithSpacesIsQuotedInTheDiffCommand() async {
         let toml = "/Users/joris/dots/apps/git.toml"
         let files = FakeFileSystem(texts: [toml: settings, "/Users/jo ris/.config/git/config": "old\n"])
         var messages: [Message] = []
-        _ = AppConfigFiles(
-            files: files, state: StateFolder(files: files, locks: FakeFileLocks(), paths: Paths(home: "/Users/jo ris")),
+        _ = await AppConfigFiles(
+            files: files, runner: FakeRunner(),
+            state: StateFolder(files: files, locks: FakeFileLocks(), paths: Paths(home: "/Users/jo ris")),
             paths: Paths(home: "/Users/jo ris")
         ).run(dots: "/Users/joris/dots") { messages.append($0) }
         #expect(

@@ -49,7 +49,8 @@ public struct RunCommand {
             guard let dots = try DotsPointer(files: files, paths: paths).read() else { return false }
             let state = StateFolder(files: files, locks: locks, paths: paths)
             let packages = await installPackages(dots: dots, folders: folders, state: state, report: report)
-            let apps = AppConfigFiles(files: files, state: state, paths: paths).run(dots: dots, report: report)
+            let apps = await AppConfigFiles(files: files, runner: runner, state: state, paths: paths).run(
+                dots: dots, report: report)
             succeeded = packages && apps
         } catch {
             report(.failed(error))
