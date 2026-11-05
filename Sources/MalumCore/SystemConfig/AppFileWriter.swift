@@ -38,7 +38,7 @@ struct AppFileWriter {
     /// Writes each file in `wanted` for its app, and removes each file Malum wrote that isn't in it,
     /// except those of the apps in `keeping`. Says whether everything worked.
     func write(_ wanted: [(app: String, file: AppFile)], keeping: Set<String>, report: (Message) -> Void) -> Bool {
-        guard let record = InstalledRecord.read(from: state, for: "write app config files", report: report) else {
+        guard let record = InstalledRecord.read(from: state, for: .writeAppFiles, report: report) else {
             return false
         }
         var outcomes: [Outcome] = []
@@ -52,7 +52,7 @@ struct AppFileWriter {
             outcomes.append(remove(path, managed, report: report))
         }
         if !wanted.isEmpty && outcomes.allSatisfy({ $0 == .unchanged }) {
-            report(Message(.info, "every app config file is up to date"))
+            report(.appFilesUpToDate)
         }
         return !outcomes.contains(.failed)
     }
@@ -74,7 +74,7 @@ struct AppFileWriter {
             if case .link = item { try files.remove(path) }
             try files.write(file.text, to: path)
         } catch {
-            report(Message(.error, "couldn't write \(app)'s config file: \(MessageText(error: error))"))
+            report(.writeFailed(app: app, error))
             return .failed
         }
         report(message)
@@ -88,10 +88,7 @@ struct AppFileWriter {
         let managed = ManagedFile(app: app, text: text)
         guard known != managed else { return .unchanged }
         if known == nil {
-            report(
-                Message(
-                    .info,
-                    "\(private: path) already matched \(Paths.appFile(named: app)), \(Project.name) manages it now"))
+            report(.adopted(file: path, source: Paths.appFile(named: app)))
         }
         return remember(path, managed, report: report)
     }
@@ -103,25 +100,17 @@ struct AppFileWriter {
     ) throws -> Message {
         if case .directory = item { throw FileSystemError.unwritable(path: path, reason: "it's a folder") }
         if case .link(let destination) = item {
-            return Message(.info, "wrote \(private: path) from \(source), replacing a link to \(private: destination)")
+            return .wrote(path, from: source, replacingLinkTo: destination)
         }
         guard let current else {
-            guard known == nil else {
-                return Message(
-                    .warn, "\(private: path) was deleted outside \(Project.name), wrote it again from \(source)")
-            }
-            return Message(.info, "wrote \(private: path) from \(source)")
+            return known == nil ? .wrote(path, from: source) : .wroteAgain(path, from: source)
         }
         guard let known, known.fingerprint == ManagedFile.fingerprint(of: current) else {
             let backup = try backUp(path, current)
-            let why =
-                known == nil
-                ? "was already there and differed from"
-                : "was changed outside \(Project.name), so it was overwritten from"
             let diff = "diff \(Escaping.shell(backup)) \(Escaping.shell(path))"
-            return Message(.warn, "\(private: path) \(why) \(source), see what changed with: \(private: diff)")
+            return .overwrote(path, from: source, changed: known != nil, diff: diff)
         }
-        return Message(.info, "updated \(private: path) from \(source)")
+        return .updated(path, from: source)
     }
 
     /// Removes the file at `path`, which no app asks for anymore, unless it was changed since
@@ -131,21 +120,16 @@ struct AppFileWriter {
             return remember(path, nil, report: report)
         }
         guard ManagedFile.fingerprint(of: current) == managed.fingerprint else {
-            let text: MessageText = """
-                \(private: path) isn't written from \(Paths.appFile(named: managed.app)) anymore, but it was changed \
-                outside \(Project.name), so it stays and \(Project.name) no longer manages it
-                """
-            report(Message(.warn, text))
+            report(.keptChanged(path, source: Paths.appFile(named: managed.app)))
             return remember(path, nil, report: report)
         }
         do {
             try files.remove(path)
         } catch {
-            report(Message(.error, "couldn't remove \(managed.app)'s config file: \(MessageText(error: error))"))
+            report(.removeFailed(app: managed.app, error))
             return .failed
         }
-        report(
-            Message(.info, "removed \(private: path), \(Paths.appFile(named: managed.app)) doesn't write it anymore"))
+        report(.removed(path, source: Paths.appFile(named: managed.app)))
         return remember(path, nil, report: report)
     }
 
