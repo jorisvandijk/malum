@@ -267,4 +267,32 @@ Lobsters = { url = "https://lobste.rs/rss", tags = ["tech"] }
 - `[ignore_articles]`: articles to hide, as `feed = "filter"`, or a list of filters. Each filter becomes an `ignore-article feed "filter"` line. The feed is its address, or `"*"` for every feed, and the filter is in [newsboat's filter language](https://newsboat.org/releases/2.42/docs/newsboat.html#_filter_language).
 - `[feeds]`: the feeds, as `title = "address"`. The title is shown in newsboat's feed list instead of the feed's own. Use `{ url = "...", tags = [...] }` to give a feed tags. The feeds are written in alphabetical order of title, and `urls` is only written when there's at least one.
 
+## App preferences
+
+Some apps keep their settings as macOS preferences rather than in a file. Their file in `apps/` has one table, `[preferences]`, with each preference by the name the app stores it under, as `"Name" = value`. `defaults read <domain>` lists an app's current preferences. Malum sets them after the app config files, the way `defaults write` would:
+
+```
+[info] set Hide Dock Icon in com.if.Amphetamine from apps/amphetamine.toml
+[info] amphetamine reads its preferences when it starts: quit and reopen it to use the new ones
+[info] every app preference is up to date
+```
+
+A value is text, a number, `true` or `false`, or a list or table of them; a table becomes a dictionary. Malum owns each preference it sets: one you change in the app is set back on the next run. When you take a preference out of the file, or remove the file, the next run removes it, so the app falls back to its own default. Preferences that aren't in the file are left alone. Malum keeps the names of the preferences it set in `installed.json`.
+
+| App | File | Domain | Install with |
+| --- | --- | --- | --- |
+| Amphetamine | `apps/amphetamine.toml` | `com.if.Amphetamine` | the App Store app 937984704 |
+| Command X | `apps/command-x.toml` | `com.sindresorhus.Command-X` | the App Store app 6448461551 |
+| Cursorcerer | `apps/cursorcerer.toml` | `com.doomlaser.cursorcerer` | the `cursorcerer` cask |
+| OverSight | `apps/oversight.toml` | `com.objective-see.oversight` | the `oversight` cask |
+
+```toml
+# apps/amphetamine.toml
+[preferences]
+"Hide Dock Icon" = true
+"Default Duration" = 0
+```
+
+Command X stores a shortcut as text holding JSON: `KeyboardShortcuts_cut = '{"carbonKeyCode":7,"carbonModifiers":256}'` is ⌘X.
+
 The messages also go to the macOS log, as the [log page](log.md) describes.

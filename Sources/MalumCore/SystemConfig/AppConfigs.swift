@@ -1,8 +1,11 @@
-/// Every app system config writes config files for, each described by its files and their
-/// formats.
+/// Every app system config writes config files or preferences for, each described by its files
+/// and their formats, or its preferences domain.
 enum AppConfigs {
     /// The apps, each read from `apps/<name>.toml`.
     static let all = [
+        AppConfig(name: "amphetamine", domain: "com.if.Amphetamine"),
+        AppConfig(name: "command-x", domain: "com.sindresorhus.Command-X"),
+        AppConfig(name: "cursorcerer", domain: "com.doomlaser.cursorcerer"),
         AppConfig(
             name: "git",
             files: [
@@ -40,6 +43,7 @@ enum AppConfigs {
                     always: true),
                 AppConfigFile(".config/newsboat/urls", .feeds(table: "feeds")),
             ]),
+        AppConfig(name: "oversight", domain: "com.objective-see.oversight"),
     ]
 
     /// The app called `name`, or nil when there's none.
