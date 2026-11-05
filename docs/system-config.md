@@ -53,7 +53,7 @@ Every problem in the file is reported with its line, and `malum run` then instal
 [error] couldn't install packages: fix /Users/you/dots/packages.toml first
 ```
 
-A table Malum doesn't know only gets a warning. Without a `packages.toml`, there's nothing to install.
+A table or setting Malum doesn't know only gets a warning. Without a `packages.toml`, there's nothing to install.
 
 ## Installing
 

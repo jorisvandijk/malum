@@ -8,10 +8,9 @@ enum JSONText {
     private static let hexRadix = 16
 
     /// The object from `table`, found at `path`, one entry per line, or nil when it's empty.
-    static func text(_ table: ConfigTable, at path: [String], problems: inout [AppProblem]) -> String? {
-        let entries = AppTable.entries(
-            table, at: path, expected: "text, a number, true or false, or a list of them",
-            problems: &problems, write: value)
+    static func text(_ table: ConfigTable, at path: [String], reader: inout TableReader) -> String? {
+        let entries = reader.entries(
+            table, at: path, expected: "text, a number, true or false, or a list of them", write: value)
         guard !entries.isEmpty else { return nil }
         let lines = entries.map { indent + quoted($0.key) + ": " + $0.value }
         return "{\n" + lines.joined(separator: ",\n") + "\n}\n"

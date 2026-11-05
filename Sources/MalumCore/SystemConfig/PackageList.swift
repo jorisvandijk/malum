@@ -26,128 +26,75 @@ public struct PackageList: Equatable, Sendable {
 
     /// Reads `text`, the contents of `packages.toml`.
     public static func read(_ text: String) -> Reading {
-        let document: ConfigTable
+        var reader: TableReader
         do {
-            document = ConfigValue.table(try TOMLReader.table(from: text))
+            reader = try TableReader(text, file: Paths.packagesTOMLName)
         } catch {
-            return (nil, [problem(error)])
+            return (nil, [error])
         }
-        let lines = TOMLLines(text)
-        let known = [homebrewTable, appStoreTable, releaseTable]
-        let unknown = document.keys.sorted().filter { !known.contains($0) }.map { key in
-            ConfigProblem(.warn, file: Paths.packagesTOMLName, line: lines.line(of: [key]), "unknown table \(key)")
-        }
-        let (homebrew, homebrewProblems) = homebrewPackages(document[homebrewTable], lines: lines)
-        let (appStore, appStoreProblems) = appStoreApps(document[appStoreTable], lines: lines)
-        let (releases, releaseProblems) = releaseEntries(document[releaseTable], lines: lines)
-        let problems = homebrewProblems + appStoreProblems + releaseProblems
-        let all = (unknown + problems).sorted { ($0.line ?? Int.max) < ($1.line ?? Int.max) }
-        guard problems.isEmpty else { return (nil, all) }
-        return (Self(homebrew: homebrew, appStore: appStore, releases: releases), all)
+        let document = reader.document
+        reader.unknownKeys(document, at: [], known: [homebrewTable, appStoreTable, releaseTable])
+        let homebrew = homebrewPackages(reader.table(document, homebrewTable, at: []), reader: &reader)
+        let appStore = appStoreApps(reader.table(document, appStoreTable, at: []), reader: &reader)
+        let releases = releaseEntries(reader.table(document, releaseTable, at: []), reader: &reader)
+        let problems = reader.problems.sorted { ($0.line ?? Int.max) < ($1.line ?? Int.max) }
+        guard !reader.hasErrors else { return (nil, problems) }
+        return (Self(homebrew: homebrew, appStore: appStore, releases: releases), problems)
     }
 
-    /// The packages in the `homebrew` table, each written as `name = "formula"` or `name = "cask"`,
-    /// and the errors in it.
-    private static func homebrewPackages(
-        _ value: ConfigValue?, lines: TOMLLines
-    ) -> ([PackageKind: [String]], [ConfigProblem]) {
-        let (entries, notATable) = entries(of: homebrewTable, in: value, lines: lines)
+    /// The packages in the `homebrew` table, each written as `name = "formula"` or `name = "cask"`.
+    private static func homebrewPackages(_ table: ConfigTable, reader: inout TableReader) -> [PackageKind: [String]] {
         var packages: [PackageKind: [String]] = [:]
-        var problems = notATable
-        for (name, kind) in entries {
+        for (name, kind) in table.sorted(by: { $0.key < $1.key }) {
             guard case .string(let word) = kind, let kind = PackageKind(rawValue: word) else {
-                let text = "\(homebrewTable).\(ConfigValue.key(name)) should be \"formula\" or \"cask\""
-                problems.append(problem(text, at: [homebrewTable, name], lines: lines))
+                reader.expect([homebrewTable, name], "\"formula\" or \"cask\"")
                 continue
             }
             packages[kind, default: []].append(name)
         }
-        return (packages, problems)
+        return packages
     }
 
-    /// The apps in the `app_store` table, each written as `name = id`, and the errors in it.
-    private static func appStoreApps(_ value: ConfigValue?, lines: TOMLLines) -> ([AppStoreApp], [ConfigProblem]) {
-        let (entries, notATable) = entries(of: appStoreTable, in: value, lines: lines)
-        var apps: [AppStoreApp] = []
-        var problems = notATable
-        for (name, id) in entries {
+    /// The apps in the `app_store` table, each written as `name = id`.
+    private static func appStoreApps(_ table: ConfigTable, reader: inout TableReader) -> [AppStoreApp] {
+        table.sorted { $0.key < $1.key }.compactMap { name, id in
             guard case .integer(let id) = id, id > 0 else {
-                let text = "\(appStoreTable).\(ConfigValue.key(name)) should be the app's App Store ID, a whole number"
-                problems.append(problem(text, at: [appStoreTable, name], lines: lines))
-                continue
+                reader.expect([appStoreTable, name], "the app's App Store ID, \(SettingKind.integer)")
+                return nil
             }
-            apps.append(AppStoreApp(name, id: id))
+            return AppStoreApp(name, id: id)
         }
-        return (apps, problems)
     }
 
-    /// The releases in the `release` table, each a table with `repo` and maybe `asset`, and the
-    /// errors in them.
-    private static func releaseEntries(_ value: ConfigValue?, lines: TOMLLines) -> ([ReleaseEntry], [ConfigProblem]) {
-        let (entries, notATable) = entries(of: releaseTable, in: value, lines: lines)
-        var releases: [ReleaseEntry] = []
-        var problems = notATable
-        for (name, table) in entries {
-            let path = "\(releaseTable).\(ConfigValue.key(name))"
-            guard case .table(let fields) = table else {
-                problems.append(problem("\(path) should be a table", at: [releaseTable, name], lines: lines))
-                continue
-            }
+    /// The releases in the `release` table, each a table with `repo` and maybe `asset`.
+    private static func releaseEntries(_ table: ConfigTable, reader: inout TableReader) -> [ReleaseEntry] {
+        table.sorted { $0.key < $1.key }.compactMap { name, value in
+            let path = [releaseTable, name]
+            guard let fields = reader.table(value, at: path) else { return nil }
             guard Paths.isPlainName(name) else {
-                let text = "\(path): the name can't be empty, start with a dot or hold /"
-                problems.append(problem(text, at: [releaseTable, name], lines: lines))
-                continue
+                reader.add(.error, at: path, "\(TableReader.dotted(path)): \(Paths.plainNameRule)")
+                return nil
             }
-            for key in fields.keys.sorted() where !["repo", "asset"].contains(key) {
-                problems.append(problem("unknown setting \(path).\(key)", at: [releaseTable, name, key], lines: lines))
-            }
+            reader.unknownKeys(fields, at: path, known: ["repo", "asset"])
             guard case .string(let repo) = fields["repo"], isRepository(repo) else {
-                let text = "\(path).repo should be the repository, as \"owner/name\""
-                problems.append(problem(text, at: [releaseTable, name], lines: lines))
-                continue
+                reader.expect(path + ["repo"], "the repository, as \"owner/name\"")
+                return nil
             }
             switch fields["asset"] {
             case nil:
-                releases.append(ReleaseEntry(name, repo: repo))
+                return ReleaseEntry(name, repo: repo)
             case .string(let asset):
-                releases.append(ReleaseEntry(name, repo: repo, asset: asset))
+                return ReleaseEntry(name, repo: repo, asset: asset)
             default:
-                problems.append(
-                    problem("\(path).asset should be text in quotes", at: [releaseTable, name, "asset"], lines: lines))
+                reader.expect(path + ["asset"], SettingKind.string)
+                return nil
             }
         }
-        return (releases, problems)
     }
 
     /// Whether `text` names a repository as `owner/name`.
     private static func isRepository(_ text: String) -> Bool {
         let parts = text.split(separator: "/", omittingEmptySubsequences: false)
         return parts.count == ["owner", "name"].count && parts.allSatisfy { !$0.isEmpty && !$0.hasPrefix(".") }
-    }
-
-    /// The entries of the table `name`, sorted by key, or an error when `value` isn't a table.
-    private static func entries(
-        of name: String, in value: ConfigValue?, lines: TOMLLines
-    ) -> ([(key: String, value: ConfigValue)], [ConfigProblem]) {
-        guard let value else { return ([], []) }
-        guard case .table(let entries) = value else {
-            return ([], [problem("\(name) should be a table", at: [name], lines: lines)])
-        }
-        return (entries.sorted { $0.key < $1.key }, [])
-    }
-
-    /// An error at the line of the key `path`.
-    private static func problem(_ text: String, at path: [String], lines: TOMLLines) -> ConfigProblem {
-        ConfigProblem(.error, file: Paths.packagesTOMLName, line: lines.line(of: path), MessageText(text))
-    }
-
-    /// A syntax error as a problem, at its line and column when the parser gave them.
-    private static func problem(_ error: TOMLReadError) -> ConfigProblem {
-        switch error {
-        case .syntax(let line, let column, let reason):
-            ConfigProblem(.error, file: Paths.packagesTOMLName, line: line, column: column, MessageText(reason))
-        case .unreadable(let reason):
-            ConfigProblem(.error, "couldn't read \(Paths.packagesTOMLName): \(reason)")
-        }
     }
 }

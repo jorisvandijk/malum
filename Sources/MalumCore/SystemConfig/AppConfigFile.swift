@@ -26,34 +26,30 @@ struct AppConfigFile: Sendable {
     }
 
     /// The files written from `table`, the app's whole TOML, with each problem found added to
-    /// `problems`.
-    func read(_ table: ConfigTable, app: String, problems: inout [AppProblem]) -> [AppFile] {
+    /// `reader`.
+    func read(_ table: ConfigTable, app: String, reader: inout TableReader) -> [AppFile] {
         guard let each else {
-            return file(path, from: table, at: [], app: app, problems: &problems).map { [$0] } ?? []
+            return file(path, from: table, at: [], app: app, reader: &reader).map { [$0] } ?? []
         }
-        let tables = AppTable.subtable(table, each, at: [], problems: &problems)
+        let tables = reader.table(table, each, at: [])
         return tables.keys.sorted().compactMap { name in
             let path = [each, name]
-            guard case .table(let fields)? = tables[name] else {
-                problems.append(AppProblem(.error, at: path, "\(AppTable.dotted(path)) should be a table"))
-                return nil
-            }
+            guard let value = tables[name], let fields = reader.table(value, at: path) else { return nil }
             guard Paths.isPlainName(name) else {
-                let text = "\(AppTable.dotted(path)): the name can't be empty, start with a dot or hold /"
-                problems.append(AppProblem(.error, at: path, text))
+                reader.add(.error, at: path, "\(TableReader.dotted(path)): \(Paths.plainNameRule)")
                 return nil
             }
             let filePath = self.path.replacingOccurrences(of: "*", with: name)
-            return file(filePath, from: fields, at: path, app: app, problems: &problems)
+            return file(filePath, from: fields, at: path, app: app, reader: &reader)
         }
     }
 
     /// The file at `path` written from `table`, found at `tablePath`, or nil when it would be empty
     /// and isn't written `always`.
     private func file(
-        _ path: String, from table: ConfigTable, at tablePath: [String], app: String, problems: inout [AppProblem]
+        _ path: String, from table: ConfigTable, at tablePath: [String], app: String, reader: inout TableReader
     ) -> AppFile? {
-        let text = format.text(from: table, at: tablePath, problems: &problems)
+        let text = format.text(from: table, at: tablePath, reader: &reader)
         guard always || text != nil else { return nil }
         let header = format.comment.map { mark in
             "\(mark) Written by \(Project.name) from \(Paths.appsFolderName)/\(app).toml in dots. "

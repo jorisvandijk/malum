@@ -1,5 +1,5 @@
 /// Something wrong with one of Malum's TOML files in dots, with the line it's on when that's known.
-public struct ConfigProblem: Equatable, Sendable {
+public struct ConfigProblem: Error, Equatable, Sendable {
     /// How serious it is.
     public let level: Level
     /// The line the problem is on.

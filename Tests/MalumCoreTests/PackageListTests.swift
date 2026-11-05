@@ -116,9 +116,9 @@ struct PackageListTests {
         #expect(reading.list == nil)
         #expect(
             reading.problems.map(\.message) == [
-                Message(.error, "packages.toml line 1: release.mpv.repo should be the repository, as \"owner/name\""),
+                Message(.error, "packages.toml line 2: release.mpv.repo should be the repository, as \"owner/name\""),
                 Message(.error, "packages.toml line 6: release.tool.asset should be text in quotes"),
-                Message(.error, "packages.toml line 7: unknown setting release.tool.colour"),
+                Message(.warn, "packages.toml line 7: unknown setting release.tool.colour"),
             ])
     }
 

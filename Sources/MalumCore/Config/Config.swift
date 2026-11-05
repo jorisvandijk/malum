@@ -20,69 +20,49 @@ public struct Config: Sendable {
 
     /// Checks `text`, read from `path`, and takes the settings of every module whose table is fine.
     public mutating func load(_ text: String, from path: String) -> ConfigReport {
-        let document: ConfigTable
+        var reader: TableReader
         do {
-            document = ConfigValue.table(try TOMLReader.table(from: text))
+            reader = try TableReader(text, file: Paths.configTOMLName)
         } catch {
-            return ConfigReport(loaded: nil, changed: [], kept: modules, problems: [Self.problem(error)])
+            return ConfigReport(loaded: nil, changed: [], kept: modules, problems: [error])
         }
-        let lines = TOMLLines(text)
+        let document = reader.document
+        for key in document.keys.sorted() where schemas[key] == nil {
+            let text: MessageText =
+                if case .table? = document[key] { "unknown module \(key)" } else {
+                    "\(key) isn't inside a module's table"
+                }
+            reader.add(.warn, at: [key], text)
+        }
         var changed: Set<String> = []
         var kept: Set<String> = []
-        var problems = strayTables(in: document, lines: lines)
         for (module, schema) in schemas {
-            let found = Self.problems(in: document[module], of: module, schema: schema, lines: lines)
-            guard found.isEmpty else {
-                problems += found
+            guard let value = document[module] else {
+                take([:], for: module, changed: &changed)
+                continue
+            }
+            let before = reader.problems.count
+            if let table = reader.table(value, at: [module]) {
+                for (key, text) in schema.problems(in: table, module: module) {
+                    reader.add(.error, at: [module, key], MessageText(text))
+                }
+            }
+            guard reader.problems.count == before, case .table(let table) = value else {
                 kept.insert(module)
                 continue
             }
-            var table = document[module].flatMap(Self.table) ?? [:]
-            let switchedOn = table.removeValue(forKey: ConfigSchema.switchKey) == .boolean(true)
-            if settings[module] != table { changed.insert(module) }
-            settings[module] = table
-            if switchedOn { enabled.insert(module) } else { enabled.remove(module) }
+            take(table, for: module, changed: &changed)
         }
-        return ConfigReport(loaded: path, changed: changed, kept: kept, problems: problems)
+        return ConfigReport(loaded: path, changed: changed, kept: kept, problems: reader.problems)
     }
 
-    /// Top-level keys that aren't the table of a known module.
-    private func strayTables(in document: ConfigTable, lines: TOMLLines) -> [ConfigProblem] {
-        document.keys.filter { schemas[$0] == nil }.map { key in
-            let line = lines.line(of: [key])
-            guard case .table = document[key] else {
-                return ConfigProblem(.warn, line: line, "\(key) isn't inside a module's table")
-            }
-            return ConfigProblem(.warn, line: line, "unknown module \(key)")
-        }
-    }
-
-    /// What's wrong with one module's table, each with its line.
-    private static func problems(
-        in value: ConfigValue?, of module: String, schema: ConfigSchema, lines: TOMLLines
-    ) -> [ConfigProblem] {
-        guard let value else { return [] }
-        guard let table = table(value) else {
-            return [ConfigProblem(.error, line: lines.line(of: [module]), "\(module) should be a table")]
-        }
-        return schema.problems(in: table, module: module).map { key, text in
-            ConfigProblem(.error, line: lines.line(of: [module, key]), MessageText(text))
-        }
-    }
-
-    /// The table inside `value`, or nil when it isn't one.
-    private static func table(_ value: ConfigValue) -> ConfigTable? {
-        guard case .table(let table) = value else { return nil }
-        return table
-    }
-
-    /// A parse error as a problem, at its line and column when the parser gave them.
-    private static func problem(_ error: TOMLReadError) -> ConfigProblem {
-        switch error {
-        case .syntax(let line, let column, let reason):
-            ConfigProblem(.error, line: line, column: column, MessageText(reason))
-        case .unreadable(let reason):
-            ConfigProblem(.error, "couldn't read \(Paths.configTOMLName): \(reason)")
-        }
+    /// Takes `table` as the settings of `module`, adding it to `changed` when they differ from the
+    /// last ones.
+    private mutating func take(_ table: ConfigTable, for module: String, changed: inout Set<String>) {
+        var table = table
+        let switchedOn = table.removeValue(forKey: ConfigSchema.switchKey) == .boolean(true)
+        if settings[module] != table { changed.insert(module) }
+        settings[module] = table
+        if switchedOn { enabled.insert(module) } else { enabled.remove(module) }
     }
 }
