@@ -22,18 +22,18 @@ public final class SudoSession {
 
     /// Asks for the password the first time, saying it's for `reason`, and gives the same answer
     /// after that. Says whether root was granted.
-    public func authorize(for reason: String, report: (Message) -> Void) async -> Bool {
+    public func authorize(for reason: MessageText, report: (Message) -> Void) async -> Bool {
         if let granted { return granted }
         guard canAsk else {
-            report(Message(.error, "couldn't \(reason): it needs your password, so run it from a terminal"))
+            report(.passwordNeedsTerminal(for: reason))
             granted = false
             return false
         }
-        report(Message(.info, "asking for your password to \(reason)"))
+        report(.askingForPassword(for: reason))
         let result = await runner.run(Sudo.authorize)
         granted = result.succeeded
         guard result.succeeded else {
-            report(Message(.error, "couldn't \(reason): sudo wasn't granted"))
+            report(.passwordRefused(for: reason))
             return false
         }
         keepAlive = Task { [runner] in

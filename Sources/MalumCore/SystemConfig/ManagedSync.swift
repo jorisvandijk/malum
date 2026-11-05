@@ -19,7 +19,7 @@ struct ManagedSync<Kind: Installer> {
         let adopted = listed.filter { isInstalled($0) && !managedKeys.contains(installer.key(of: $0)) }
         var succeeded = adopt(adopted, report: report)
         let missing = listed.filter { !isInstalled($0) }
-        if missing.isEmpty && !listed.isEmpty { report(Message(.info, "every listed \(installer.label) is installed")) }
+        if missing.isEmpty && !listed.isEmpty { report(.allInstalled(installer.label)) }
         let removing = unlisted.filter(isInstalled)
         if !missing.isEmpty || !removing.isEmpty {
             let ready = await installer.prepare(
@@ -39,45 +39,39 @@ struct ManagedSync<Kind: Installer> {
     private func adopt(_ items: [Kind.Item], report: (Message) -> Void) -> Bool {
         guard !items.isEmpty else { return true }
         guard remember(items, managed: true, report: report) else { return false }
-        for item in items {
-            let text =
-                "\(installer.label) \(installer.name(of: item)) was already installed, \(Project.name) manages it now"
-            report(Message(.info, MessageText(text)))
-        }
+        for item in items { report(.adopted(installer.label, installer.name(of: item))) }
         return true
     }
 
     /// Installs one item and records it. Says whether it worked.
     private func install(_ item: Kind.Item, report: (Message) -> Void) async -> Bool {
-        let label = "\(installer.label) \(installer.name(of: item))"
-        report(Message(.info, "installing \(installer.label) \(installer.shown(item))"))
+        let name = installer.name(of: item)
+        report(.installing(installer.label, installer.shown(item)))
         let result = await installer.install(item)
         guard result.succeeded else {
-            report(Message(.error, "couldn't install \(label): \(result.reason)"))
+            report(.installFailed(installer.label, name, reason: result.reason))
             return false
         }
-        report(Message(.info, "installed \(label)"))
+        report(.installed(installer.label, name))
         return remember([item], managed: true, report: report)
     }
 
     /// Uninstalls one item Malum manages, when it's still `installed`, and takes it out of the
     /// record. Says whether it worked.
     private func uninstall(_ item: Kind.Item, installed: Bool, report: (Message) -> Void) async -> Bool {
-        let label = "\(installer.label) \(installer.name(of: item))"
+        let name = installer.name(of: item)
         guard installed else {
-            report(Message(.info, "\(label) was already uninstalled"))
+            report(.alreadyUninstalled(installer.label, name))
             return remember([item], managed: false, report: report)
         }
-        report(Message(.info, "uninstalling \(installer.label) \(installer.shown(item))"))
+        report(.uninstalling(installer.label, installer.shown(item)))
         switch await installer.uninstall(item) {
         case .done:
-            report(Message(.info, "uninstalled \(label)"))
+            report(.uninstalled(installer.label, name))
         case .needed:
-            let text =
-                "\(label) is still needed by other packages, so it stays and \(Project.name) no longer manages it"
-            report(Message(.warn, MessageText(text)))
+            report(.stillNeeded(installer.label, name))
         case .failed(let reason):
-            report(Message(.error, "couldn't uninstall \(label): \(reason)"))
+            report(.uninstallFailed(installer.label, name, reason: reason))
             return false
         }
         return remember([item], managed: false, report: report)
