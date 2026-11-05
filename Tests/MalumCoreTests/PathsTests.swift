@@ -22,6 +22,10 @@ struct PathsTests {
         #expect(paths.installedExecutable == "/Users/joris/Applications/Malum.app/Contents/MacOS/Malum")
     }
 
+    @Test func appFileIsInAppsFolder() {
+        #expect(Paths.appFile(named: "git") == "apps/git.toml")
+    }
+
     @Test func installedBundleAndKeychainAreInHome() {
         #expect(paths.installedBundle == "/Users/joris/Applications/Malum.app")
         #expect(paths.loginKeychain == "/Users/joris/Library/Keychains/login.keychain-db")

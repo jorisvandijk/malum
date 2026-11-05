@@ -1,7 +1,7 @@
 /// Every way Malum runs `codesign`.
 public enum Codesign {
     /// The tool.
-    private static let path = "/usr/bin/codesign"
+    static let path = "/usr/bin/codesign"
     /// Seconds signing may take: the first time, macOS asks for the login password before codesign
     /// may use the key.
     private static let signingTimeoutSeconds = 300

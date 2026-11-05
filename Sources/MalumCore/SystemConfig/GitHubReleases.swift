@@ -145,8 +145,7 @@ public struct GitHubReleases {
             let staged = "\(destination).\(Project.command)-new"
             try? files.remove(staged)  // A leftover from an interrupted update; usually there's none.
             try files.copy(payload, to: staged)
-            try files.exchange(destination, staged)
-            try files.remove(staged)
+            try files.replace(destination, with: staged)
         }
         guard let previous, previous != destination, files.item(at: previous) != nil else { return }
         try files.remove(previous)

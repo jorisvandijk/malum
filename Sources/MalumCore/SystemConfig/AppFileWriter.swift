@@ -10,8 +10,6 @@ import Foundation
 struct AppFileWriter {
     /// What's added to a file's name for the copy of what was there before Malum overwrote it.
     private static let backupExtension = ".backup"
-    /// The characters a path may hold and still be pasted into a shell without quotes.
-    private static let shellSafe = Set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/._-+@:,=")
 
     /// What writing or removing one file did.
     private enum Outcome {
@@ -70,7 +68,8 @@ struct AppFileWriter {
             guard current != file.text else {
                 return adopt(path, app: app, text: file.text, known: known, report: report)
             }
-            message = try change(at: path, item: item, current: current, known: known, source: Self.source(app))
+            message = try change(
+                at: path, item: item, current: current, known: known, source: Paths.appFile(named: app))
             try files.createDirectory(Self.parent(of: path))
             if case .link = item { try files.remove(path) }
             try files.write(file.text, to: path)
@@ -90,7 +89,9 @@ struct AppFileWriter {
         guard known != managed else { return .unchanged }
         if known == nil {
             report(
-                Message(.info, "\(private: path) already matched \(Self.source(app)), \(Project.name) manages it now"))
+                Message(
+                    .info,
+                    "\(private: path) already matched \(Paths.appFile(named: app)), \(Project.name) manages it now"))
         }
         return remember(path, managed, report: report)
     }
@@ -117,7 +118,7 @@ struct AppFileWriter {
                 known == nil
                 ? "was already there and differed from"
                 : "was changed outside \(Project.name), so it was overwritten from"
-            let diff = "diff \(Self.shellQuoted(backup)) \(Self.shellQuoted(path))"
+            let diff = "diff \(Escaping.shell(backup)) \(Escaping.shell(path))"
             return Message(.warn, "\(private: path) \(why) \(source), see what changed with: \(private: diff)")
         }
         return Message(.info, "updated \(private: path) from \(source)")
@@ -131,7 +132,7 @@ struct AppFileWriter {
         }
         guard ManagedFile.fingerprint(of: current) == managed.fingerprint else {
             let text: MessageText = """
-                \(private: path) isn't written from \(Self.source(managed.app)) anymore, but it was changed \
+                \(private: path) isn't written from \(Paths.appFile(named: managed.app)) anymore, but it was changed \
                 outside \(Project.name), so it stays and \(Project.name) no longer manages it
                 """
             report(Message(.warn, text))
@@ -143,7 +144,8 @@ struct AppFileWriter {
             report(Message(.error, "couldn't remove \(managed.app)'s config file: \(MessageText(error: error))"))
             return .failed
         }
-        report(Message(.info, "removed \(private: path), \(Self.source(managed.app)) doesn't write it anymore"))
+        report(
+            Message(.info, "removed \(private: path), \(Paths.appFile(named: managed.app)) doesn't write it anymore"))
         return remember(path, nil, report: report)
     }
 
@@ -154,20 +156,9 @@ struct AppFileWriter {
         return backup
     }
 
-    /// `path` as it's pasted into a shell: as it is when that's safe, in single quotes otherwise.
-    private static func shellQuoted(_ path: String) -> String {
-        guard !path.allSatisfy(shellSafe.contains) else { return path }
-        return "'" + path.replacingOccurrences(of: "'", with: "'\\''") + "'"
-    }
-
     /// Records `managed` as the file at `path`, or takes the path out of the record when it's nil.
     private func remember(_ path: String, _ managed: ManagedFile?, report: (Message) -> Void) -> Outcome {
         InstalledRecord.remember(in: state, report: report) { $0.files[path] = managed } ? .changed : .failed
-    }
-
-    /// `apps/<app>.toml`, where an app's files come from.
-    private static func source(_ app: String) -> String {
-        "\(Paths.appsFolderName)/\(app).toml"
     }
 
     /// The folder `path` is in.

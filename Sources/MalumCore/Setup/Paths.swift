@@ -10,7 +10,7 @@ public struct Paths: Equatable, Sendable {
     /// The name of the file that records where dots is.
     private static let configName = "config"
     /// The folder for the user's commands, relative to home. Getting it on `PATH` is dots' job.
-    private static let binRoot = ".local/bin"
+    static let binRoot = ".local/bin"
     /// The extension of Malum's config files in dots.
     static let tomlExtension = "toml"
     /// The folder for apps' own data, relative to home.
@@ -59,6 +59,9 @@ public struct Paths: Equatable, Sendable {
     /// `apps`, the folder in dots that holds one file for each app whose config Malum writes.
     public static let appsFolderName = "apps"
 
+    /// `apps/<name>.toml`, the file in dots for the app called `name`.
+    public static func appFile(named name: String) -> String { "\(appsFolderName)/\(name).\(tomlExtension)" }
+
     /// The `apps` folder at the top of the dots folder `dots`.
     public func appsFolder(in dots: String) -> String { "\(dots)/\(Self.appsFolderName)" }
 
@@ -75,6 +78,13 @@ public struct Paths: Equatable, Sendable {
     /// holds no `/`, so it can't reach outside the folder it's put in.
     public static func isPlainName(_ name: String) -> Bool {
         !name.isEmpty && !name.hasPrefix(".") && !name.contains("/")
+    }
+
+    /// Whether `executable`, the running executable with its links resolved, is the installed
+    /// app's, or false when it's nil because Malum doesn't run from an app bundle.
+    public func isInstalled(executable: String?, files: any FileSystem) -> Bool {
+        guard let executable else { return false }
+        return files.canonicalPath(executable) == files.canonicalPath(installedExecutable)
     }
 
     /// Turns `path` into an absolute, clean path, expanding `~` and reading it relative to `base`.

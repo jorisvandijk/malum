@@ -27,9 +27,7 @@ public struct SelfSigning: Sendable {
     /// app bundle. An installed app that isn't signed with the certificate is signed in place,
     /// with the certificate made first when the keychain doesn't have it.
     public func check(executable: String?) async -> SigningOutcome {
-        guard let executable,
-            files.canonicalPath(executable) == files.canonicalPath(paths.installedExecutable)
-        else { return .notInstalled }
+        guard paths.isInstalled(executable: executable, files: files) else { return .notInstalled }
         let bundle = files.canonicalPath(paths.installedBundle)
         let found = await certificate.find()
         if let found, await signer.isSigned(bundle, by: found) {

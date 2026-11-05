@@ -26,9 +26,7 @@ public struct LoginAgent: Sendable {
     /// from an app bundle. Only the installed app writes the agent, so a build elsewhere never
     /// points login at an app that isn't there.
     public func update(executable: String?) throws(FileSystemError) -> LoginAgentChange {
-        guard let executable,
-            files.canonicalPath(executable) == files.canonicalPath(paths.installedExecutable)
-        else { return .notInstalled }
+        guard paths.isInstalled(executable: executable, files: files) else { return .notInstalled }
         let wanted = Self.plist(program: paths.installedExecutable)
         guard current() != wanted else { return .unchanged }
         try files.createDirectory(paths.launchAgentsDirectory)
@@ -51,10 +49,10 @@ public struct LoginAgent: Sendable {
         <plist version="1.0">
         <dict>
             <key>Label</key>
-            <string>\(escaped(Project.bundleID))</string>
+            <string>\(Escaping.xml(Project.bundleID))</string>
             <key>ProgramArguments</key>
             <array>
-                <string>\(escaped(program))</string>
+                <string>\(Escaping.xml(program))</string>
             </array>
             <key>RunAtLoad</key>
             <true/>
@@ -73,12 +71,5 @@ public struct LoginAgent: Sendable {
         </plist>
 
         """
-    }
-
-    /// `text` made safe to put between XML tags.
-    private static func escaped(_ text: String) -> String {
-        text.replacingOccurrences(of: "&", with: "&amp;")
-            .replacingOccurrences(of: "<", with: "&lt;")
-            .replacingOccurrences(of: ">", with: "&gt;")
     }
 }

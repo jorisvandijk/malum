@@ -1,7 +1,9 @@
 /// Every way Malum runs Homebrew's `brew`.
 public enum Brew {
-    /// Where Homebrew puts `brew` on Apple silicon.
-    public static let path = "/opt/homebrew/bin/brew"
+    /// Where Homebrew puts its commands on Apple silicon.
+    static let binFolder = "/opt/homebrew/bin"
+    /// Where Homebrew puts `brew`.
+    public static let path = "\(binFolder)/brew"
     /// Seconds one install may take: a big cask downloads hundreds of megabytes.
     private static let installTimeoutSeconds = 1800
 

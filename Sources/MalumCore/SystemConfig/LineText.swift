@@ -28,7 +28,7 @@ enum LineText {
         switch value {
         case .string(let text):
             guard !text.contains("\n") else { return nil }
-            return quoted ? self.quoted(text) : text
+            return quoted ? Escaping.quoted(text, controls: .none) : text
         case .integer(let number):
             return String(number)
         case .float(let number):
@@ -38,10 +38,5 @@ enum LineText {
         case .date, .array, .table:
             return nil
         }
-    }
-
-    /// `text` in double quotes, with backslashes and quotes escaped.
-    private static func quoted(_ text: String) -> String {
-        "\"" + text.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"") + "\""
     }
 }
