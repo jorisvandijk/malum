@@ -25,6 +25,7 @@ concurrency:
 
 env:
   SWIFTLINT_VERSION: "0.65.1"
+  JSCPD_VERSION: "4.3.0"
 
 jobs:
   lint:
@@ -48,6 +49,16 @@ jobs:
           # SwiftLint's Linux build loads SourceKit from the toolchain for the rules that need it.
           LINUX_SOURCEKIT_LIB_PATH: /usr/lib
         run: swiftlint lint --strict --quiet
+
+  duplicates:
+    # Fails on any copied block of 60 tokens or more in Sources. Its own job because the
+    # Swift container has no Node.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: jscpd
+        run: npx --yes jscpd@$JSCPD_VERSION --min-tokens 60 --threshold 0 Sources
 
   test:
     runs-on: ubuntu-24.04
