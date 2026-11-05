@@ -58,11 +58,11 @@ enum AppConfigs {
             files: [
                 AppConfigFile(
                     ".zshenv", .lines([LineBlock("environment", prefix: "export", separator: "=", quoted: .double)])),
-                AppConfigFile(".zprofile", .lines([.text("profile")])),
+                AppConfigFile(".zprofile", .lines([.verbatim("profile")])),
                 // The aliases come first, so the shell's own lines can use them.
                 AppConfigFile(
                     ".zshrc",
-                    .lines([LineBlock("aliases", prefix: "alias", separator: "=", quoted: .shell), .text("zshrc")]),
+                    .lines([LineBlock("aliases", prefix: "alias", separator: "=", quoted: .shell), .verbatim("zshrc")]),
                     always: true),
                 AppConfigFile(
                     ".config/zsh-abbr/user-abbreviations",

@@ -113,7 +113,7 @@ struct LineBlock: Sendable {
     }
 
     /// The block written from the `text` of `table`, as it is, such as shell lines.
-    static func text(_ table: String) -> LineBlock {
+    static func verbatim(_ table: String) -> LineBlock {
         LineBlock(table, prefix: nil, separator: "", quoted: .none, verbatim: true)
     }
 }
