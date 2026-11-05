@@ -84,22 +84,12 @@ struct GitConfig: AppConfig {
         }
         problems += unknownKeys(fields, at: [name], known: [key])
         guard let items = fields[key] else { return [] }
-        let lines = Self.texts(items)
+        let lines = texts(items)
         guard let lines else {
             problems.append(AppProblem(.error, at: [name, key], "\(name).\(key) should be a list of text in quotes"))
             return []
         }
         return lines
-    }
-
-    /// The texts in `value`, or nil when it isn't a list of them.
-    private static func texts(_ value: ConfigValue) -> [String]? {
-        guard case .array(let items) = value else { return nil }
-        let texts = items.compactMap { item -> String? in
-            guard case .string(let text) = item else { return nil }
-            return text
-        }
-        return texts.count == items.count ? texts : nil
     }
 
     /// A section's header name. A dot names a subsection, so `url.git@github.com:` becomes
