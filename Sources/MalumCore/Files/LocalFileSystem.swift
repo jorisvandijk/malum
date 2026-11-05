@@ -8,8 +8,7 @@ public struct LocalFileSystem: FileSystem {
     /// What sits at `path`, without following a link.
     public func item(at path: String) -> FileItem? {
         let manager = FileManager.default
-        // Failing here is the expected answer when the path isn't a link.
-        if let destination = try? manager.destinationOfSymbolicLink(atPath: path) {
+        if let destination = try? manager.destinationOfSymbolicLink(atPath: path) {  // Fails when it isn't a link.
             return .link(to: destination)
         }
         var isDirectory: ObjCBool = false
@@ -33,8 +32,12 @@ public struct LocalFileSystem: FileSystem {
         }
     }
 
-    /// Writes to a temporary file first, then moves it over `path`.
+    /// Writes to a temporary file first, then moves it over `path`. Never writes a TOML file,
+    /// since those are the user's.
     public func write(_ text: String, to path: String) throws(FileSystemError) {
+        guard (path as NSString).pathExtension.lowercased() != Paths.tomlExtension else {
+            throw .userFile(path: path)
+        }
         do {
             try Data(text.utf8).write(to: URL(fileURLWithPath: path), options: .atomic)
         } catch {

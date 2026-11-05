@@ -89,7 +89,7 @@ public struct GitHubReleases {
         _ entry: ReleaseEntry, previous: InstalledRelease?, report: (Message) -> Void
     ) async throws -> InstalledRelease? {
         guard let latest = try await github.latestRelease(of: entry.repo) else {
-            throw ReleaseError("\(entry.repo) has no published release on GitHub, or it's private")
+            throw ReleaseError.noRelease(repo: entry.repo)
         }
         if let previous, previous.repo == entry.repo, previous.tag == latest.tag, files.item(at: previous.path) != nil {
             return nil
@@ -97,9 +97,9 @@ public struct GitHubReleases {
         let asset = try ReleaseFiles.asset(for: entry, in: latest)
         report(Message(.info, "installing GitHub release \(entry.name) \(latest.tag) (\(asset.name))"))
         let scratch = state.path(of: Self.downloadsName)
-        try? files.remove(scratch)
+        try? files.remove(scratch)  // A leftover from an earlier run; usually there's none.
         try files.createDirectory(scratch)
-        defer { try? files.remove(scratch) }
+        defer { try? files.remove(scratch) }  // Best effort: the next download clears it first.
         let download = "\(scratch)/\(asset.name)"
         try await github.download(asset, to: download)
         let (payload, isApp) = try await unpack(download, name: entry.name, in: scratch)
@@ -121,14 +121,14 @@ public struct GitHubReleases {
             let isZip = ReleaseFiles.ends(archive, with: [ReleaseFiles.zip])
             let result = await runner.run(
                 isZip ? Ditto.unzip(archive, into: folder) : Tar.unpack(archive, into: folder))
-            guard result.succeeded else { throw ReleaseError("couldn't unpack \(private: archive): \(result.reason)") }
+            guard result.succeeded else { throw ReleaseError.unpackable(path: archive, reason: result.reason) }
             let found = try ReleaseFiles.contents(of: folder, files: files)
-            guard found.apps.isEmpty, found.programs.isEmpty, found.archives.count == 1 else {
-                return try ReleaseFiles.payload(in: found, name: name)
-            }
-            archive = found.archives[0]
+            guard found.apps.isEmpty, found.programs.isEmpty, found.archives.count == 1,
+                let inner = found.archives.first
+            else { return try ReleaseFiles.payload(in: found, name: name) }
+            archive = inner
         }
-        guard archive == download else { throw ReleaseError("it holds archives inside archives") }
+        guard archive == download else { throw ReleaseError.nestedArchives }
         return (download, false)
     }
 
@@ -140,10 +140,10 @@ public struct GitHubReleases {
             try files.copy(payload, to: destination)
         } else {
             guard previous == destination else {
-                throw ReleaseError("\(private: destination) is already there, and Malum didn't install it")
+                throw ReleaseError.taken(path: destination)
             }
             let staged = "\(destination).\(Project.command)-new"
-            try? files.remove(staged)
+            try? files.remove(staged)  // A leftover from an interrupted update; usually there's none.
             try files.copy(payload, to: staged)
             try files.exchange(destination, staged)
             try files.remove(staged)

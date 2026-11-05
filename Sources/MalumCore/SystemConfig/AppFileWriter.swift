@@ -93,7 +93,8 @@ struct AppFileWriter {
         let managed = ManagedFile(app: app, text: text)
         guard known != managed else { return .unchanged }
         if known == nil {
-            report(Message(.info, "\(private: path) already matched \(Self.source(app)), Malum manages it now"))
+            report(
+                Message(.info, "\(private: path) already matched \(Self.source(app)), \(Project.name) manages it now"))
         }
         return remember(path, managed, report: report)
     }
@@ -109,7 +110,8 @@ struct AppFileWriter {
         }
         guard let current else {
             guard known == nil else {
-                return Message(.warn, "\(private: path) was deleted outside Malum, wrote it again from \(source)")
+                return Message(
+                    .warn, "\(private: path) was deleted outside \(Project.name), wrote it again from \(source)")
             }
             return Message(.info, "wrote \(private: path) from \(source)")
         }
@@ -117,7 +119,8 @@ struct AppFileWriter {
             let backup = try backUp(path, current)
             let why =
                 known == nil
-                ? "was already there and differed from" : "was changed outside Malum, so it was overwritten from"
+                ? "was already there and differed from"
+                : "was changed outside \(Project.name), so it was overwritten from"
             let diff = "diff \(Self.shellQuoted(backup)) \(Self.shellQuoted(path))"
             return Message(.warn, "\(private: path) \(why) \(source), see what changed with: \(private: diff)")
         }
@@ -127,13 +130,13 @@ struct AppFileWriter {
     /// Removes the file at `path`, which no app asks for anymore, unless it was changed since
     /// Malum wrote it, and takes it out of the record.
     private func remove(_ path: String, _ managed: ManagedFile, report: (Message) -> Void) -> Outcome {
-        guard files.item(at: path) == .file, let current = try? files.read(path) else {
+        guard files.item(at: path) == .file, let current = try? files.read(path) else {  // Unreadable counts as gone.
             return remember(path, nil, report: report)
         }
         guard ManagedFile.fingerprint(of: current) == managed.fingerprint else {
             let text: MessageText = """
                 \(private: path) isn't written from \(Self.source(managed.app)) anymore, but it was changed \
-                outside Malum, so it stays and Malum no longer manages it
+                outside \(Project.name), so it stays and \(Project.name) no longer manages it
                 """
             report(Message(.warn, text))
             return remember(path, nil, report: report)
@@ -167,7 +170,7 @@ struct AppFileWriter {
             try InstalledRecord.change(in: state) { $0.files[path] = managed }
             return .changed
         } catch {
-            report(Message(.error, "couldn't record what Malum wrote: \(MessageText(error: error))"))
+            report(Message(.error, "couldn't record what \(Project.name) wrote: \(MessageText(error: error))"))
             return .failed
         }
     }

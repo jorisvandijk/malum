@@ -121,4 +121,22 @@ struct PackageListTests {
                 Message(.error, "packages.toml line 7: unknown setting release.tool.colour"),
             ])
     }
+
+    @Test func releaseNamesCantLeaveTheFolder() {
+        let reading = PackageList.read(
+            """
+            [release."sub/tool"]
+            repo = "a/tool"
+
+            [release."../../bin/sh"]
+            repo = "a/tool"
+            """)
+        #expect(reading.list == nil)
+        let rule = "the name can't be empty, start with a dot or hold /"
+        #expect(
+            reading.problems.map(\.message) == [
+                Message(.error, "packages.toml line 1: release.\"sub/tool\": \(rule)"),
+                Message(.error, "release.\"../../bin/sh\": \(rule)"),
+            ])
+    }
 }

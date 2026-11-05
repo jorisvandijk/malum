@@ -16,6 +16,8 @@ public enum FileSystemError: Error, Equatable, Sendable {
     case unremovable(path: String, reason: String)
     /// The folder at the path couldn't be listed.
     case unlistable(path: String, reason: String)
+    /// The file at the path is a TOML file, which only the user writes.
+    case userFile(path: String)
 }
 
 // MARK: - ReportableError
@@ -40,6 +42,8 @@ extension FileSystemError: ReportableError {
             "couldn't remove \(private: path): \(reason)"
         case .unlistable(let path, let reason):
             "couldn't list \(private: path): \(reason)"
+        case .userFile(let path):
+            "won't write \(private: path): \(Project.name) never writes TOML files"
         }
     }
 }

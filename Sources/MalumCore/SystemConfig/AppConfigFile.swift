@@ -38,7 +38,7 @@ struct AppConfigFile: Sendable {
                 problems.append(AppProblem(.error, at: path, "\(AppTable.dotted(path)) should be a table"))
                 return nil
             }
-            guard !name.isEmpty, !name.hasPrefix("."), !name.contains("/") else {
+            guard Paths.isPlainName(name) else {
                 let text = "\(AppTable.dotted(path)): the name can't be empty, start with a dot or hold /"
                 problems.append(AppProblem(.error, at: path, text))
                 return nil

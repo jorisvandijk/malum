@@ -77,17 +77,17 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
     }
 
     /// Makes `change` to the record in `state`, holding the state folder's lock from the read to
-    /// the write.
+    /// the write. When the record can't be read or written, the file stays as it is.
     static func change(in state: StateFolder, _ change: (inout Self) -> Void) throws {
-        var failure: (any Error)?
+        var failure: RecordError?
         try state.update(fileName) { text in
-            do {
+            do throws(RecordError) {
                 var record = try decode(text, at: state.path(of: fileName))
                 change(&record)
-                return record.text
+                return try record.text()
             } catch {
                 failure = error
-                return text ?? ""
+                return nil
             }
         }
         if let failure { throw failure }
@@ -99,17 +99,21 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         do {
             return try JSONDecoder().decode(Self.self, from: Data(text.utf8))
         } catch {
-            throw RecordError("couldn't read \(private: path), the record of what Malum installed")
+            throw .unreadable(path: path)
         }
     }
 
     /// The record as text.
-    private var text: String {
+    private func text() throws(RecordError) -> String {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        guard let data = try? encoder.encode(self), let text = String(bytes: data, encoding: .utf8) else {
-            return "{}\n"
+        let data: Data
+        do {
+            data = try encoder.encode(self)
+        } catch {
+            throw .unwritable(reason: error.localizedDescription)
         }
+        guard let text = String(bytes: data, encoding: .utf8) else { throw .unwritable(reason: "it isn't UTF-8") }
         return text + "\n"
     }
 }

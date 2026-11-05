@@ -21,7 +21,7 @@ extension GitHubError: ReportableError {
         case .refused(let status):
             "GitHub answered with HTTP \(status)"
         case .unreadable:
-            "GitHub sent an answer Malum can't read"
+            "GitHub sent an answer \(Project.name) can't read"
         case .unsaved(let path, let reason):
             "couldn't save \(private: path): \(reason)"
         }

@@ -39,8 +39,7 @@ public struct LoginAgent: Sendable {
     /// The text of the agent that's there now, or nil when there's none.
     private func current() -> String? {
         guard files.item(at: paths.loginAgent) == .file else { return nil }
-        // An agent that can't be read is written again, the same as a missing one.
-        return try? files.read(paths.loginAgent)
+        return try? files.read(paths.loginAgent)  // One that can't be read is written again, like a missing one.
     }
 
     /// The agent's file, starting `program` at login. `KeepAlive` with `SuccessfulExit` false

@@ -108,3 +108,33 @@ custom_rules:
     excluded: '/Sources/MalumPlatform/Logging/'
     message: "Log through the log wrapper."
     severity: error
+
+  project_name_literal:
+    name: "Project name literal"
+    regex: '\bMalum\b'
+    match_kinds: [string]
+    excluded: '/Tests/|/Package\.swift$|/Sources/MalumCore/Project\.swift$'
+    message: "Use Project.name instead of typing the name."
+    severity: error
+
+  string_error:
+    name: "String errors"
+    regex: '\bstruct\s+\w+Error\b'
+    excluded_match_kinds: [comment, doccomment, string]
+    message: "Errors are enums with a case for each failure."
+    severity: error
+
+  silent_try:
+    name: "Silent try?"
+    regex: 'try\?(?!.*//)'
+    excluded_match_kinds: [comment, doccomment, string]
+    excluded: '/Tests/'
+    message: "Say why the error can be ignored in a comment on the same line, or handle it."
+    severity: error
+
+  no_index_zero:
+    name: "No [0]"
+    regex: '\[0\]'
+    excluded_match_kinds: [comment, doccomment, string]
+    message: "Use .first, which can't crash."
+    severity: error

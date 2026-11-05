@@ -21,7 +21,7 @@ extension SetupError: ReportableError {
         case .occupied(let path):
             "couldn't link \(private: path): something that isn't a link is there, move it away and run init again"
         case .notInApp(let path):
-            "couldn't link \(private: path): Malum isn't running from \(Project.name).app"
+            "couldn't link \(private: path): \(Project.name) isn't running from \(Project.name).app"
         case .file(let error):
             error.text
         }

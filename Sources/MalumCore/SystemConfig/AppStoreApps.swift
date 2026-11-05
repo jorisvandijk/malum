@@ -86,7 +86,7 @@ public struct AppStoreApps {
         }
         guard recorded else { return false }
         for app in apps {
-            report(Message(.info, "App Store app \(app.name) was already installed, Malum manages it now"))
+            report(Message(.info, "App Store app \(app.name) was already installed, \(Project.name) manages it now"))
         }
         return true
     }
@@ -121,7 +121,7 @@ public struct AppStoreApps {
             try InstalledRecord.change(in: state, change)
             return true
         } catch {
-            report(Message(.error, "couldn't record what Malum installed: \(MessageText(error: error))"))
+            report(Message(.error, "couldn't record what \(Project.name) installed: \(MessageText(error: error))"))
             return false
         }
     }

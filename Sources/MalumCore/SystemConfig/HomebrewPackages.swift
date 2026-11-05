@@ -74,7 +74,7 @@ public struct HomebrewPackages {
         guard !names.isEmpty else { return true }
         guard remember(kind, report: report, { $0.formUnion(names) }) else { return false }
         for name in names {
-            report(Message(.info, "\(kind.label) \(name) was already installed, Malum manages it now"))
+            report(Message(.info, "\(kind.label) \(name) was already installed, \(Project.name) manages it now"))
         }
         return true
     }
@@ -113,7 +113,7 @@ public struct HomebrewPackages {
             report(
                 Message(
                     .warn,
-                    "\(kind.label) \(name) is still needed by other packages, so it stays and Malum no longer manages it"
+                    "\(kind.label) \(name) is still needed by other packages, so it stays and \(Project.name) no longer manages it"
                 ))
         case (false, false):
             report(Message(.error, "couldn't uninstall \(kind.label) \(name): \(result.reason)"))
@@ -130,7 +130,7 @@ public struct HomebrewPackages {
             try InstalledRecord.change(in: state) { change(&$0[kind]) }
             return true
         } catch {
-            report(Message(.error, "couldn't record what Malum installed: \(MessageText(error: error))"))
+            report(Message(.error, "couldn't record what \(Project.name) installed: \(MessageText(error: error))"))
             return false
         }
     }

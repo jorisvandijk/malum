@@ -59,4 +59,12 @@ struct StateFolderTests {
         try StateFolder(files: files, locks: FakeFileLocks(), paths: paths).update("disabled") { $0 ?? "new\n" }
         #expect(files.text(at: "\(folder)/disabled") == "new\n")
     }
+
+    @Test func updateGivingNilLeavesTheFile() throws {
+        let files = FakeFileSystem(texts: ["\(folder)/disabled": "samba\n"])
+        try StateFolder(files: files, locks: FakeFileLocks(), paths: paths).update("disabled") { _ in nil }
+        try StateFolder(files: files, locks: FakeFileLocks(), paths: paths).update("missing") { _ in nil }
+        #expect(files.text(at: "\(folder)/disabled") == "samba\n")
+        #expect(files.item(at: "\(folder)/missing") == nil)
+    }
 }

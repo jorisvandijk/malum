@@ -38,7 +38,7 @@ public final class SudoSession {
         }
         keepAlive = Task { [runner] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(Self.refreshSeconds))
+                try? await Task.sleep(for: .seconds(Self.refreshSeconds))  // Only fails when cancelled.
                 guard !Task.isCancelled else { return }
                 _ = await runner.run(Sudo.refresh)
             }

@@ -40,7 +40,7 @@ public struct AppConfigFiles {
         for fileName in names {
             let name = String(fileName.dropLast(Self.tomlExtension.count))
             guard let app = AppConfigs.app(named: name) else {
-                report(Message(.warn, "\(Paths.appsFolderName)/\(fileName): Malum has no app called \(name)"))
+                report(Message(.warn, "\(Paths.appsFolderName)/\(fileName): \(Project.name) has no app called \(name)"))
                 continue
             }
             guard let appFiles = read(app, from: "\(folder)/\(fileName)", report: report) else {
