@@ -37,11 +37,7 @@ public struct GitHubReleases {
     /// Installs or updates each release in `releases`, and removes each one Malum installed that
     /// isn't listed anymore, reporting each step as it goes. Says whether everything worked.
     public func run(_ releases: [ReleaseEntry], report: (Message) -> Void) async -> Bool {
-        let record: InstalledRecord
-        do {
-            record = try InstalledRecord.read(from: state)
-        } catch {
-            report(Message(.error, "couldn't install GitHub releases: \(MessageText(error: error))"))
+        guard let record = InstalledRecord.read(from: state, for: "install GitHub releases", report: report) else {
             return false
         }
         let listed = Set(releases.map(\.name))
@@ -55,7 +51,11 @@ public struct GitHubReleases {
             do {
                 guard let installed = try await update(entry, previous: record.releases[entry.name], report: report)
                 else { continue }
-                try InstalledRecord.change(in: state) { $0.releases[entry.name] = installed }
+                guard InstalledRecord.remember(in: state, report: report, { $0.releases[entry.name] = installed })
+                else {
+                    succeeded = false
+                    continue
+                }
                 report(
                     Message(
                         .info, "installed GitHub release \(entry.name) \(installed.tag) at \(private: installed.path)"))
@@ -74,13 +74,13 @@ public struct GitHubReleases {
     private func remove(_ name: String, _ installed: InstalledRelease, report: (Message) -> Void) -> Bool {
         do {
             if files.item(at: installed.path) != nil { try files.remove(installed.path) }
-            try InstalledRecord.change(in: state) { $0.releases[name] = nil }
-            report(Message(.info, "removed GitHub release \(name) from \(private: installed.path)"))
-            return true
         } catch {
             report(Message(.error, "couldn't remove GitHub release \(name): \(MessageText(error: error))"))
             return false
         }
+        guard InstalledRecord.remember(in: state, report: report, { $0.releases[name] = nil }) else { return false }
+        report(Message(.info, "removed GitHub release \(name) from \(private: installed.path)"))
+        return true
     }
 
     /// Installs the latest release of `entry`, unless `previous` is it already. Gives back what it

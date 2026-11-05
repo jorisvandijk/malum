@@ -20,123 +20,56 @@ public struct HomebrewPackages {
     /// Installs the packages in `packages` that Homebrew doesn't have yet, and uninstalls the ones
     /// Malum manages that aren't in it, reporting each step as it goes. Says whether everything worked.
     public func run(_ packages: [PackageKind: [String]], report: (Message) -> Void) async -> Bool {
-        let record: InstalledRecord
-        do {
-            record = try InstalledRecord.read(from: state)
-        } catch {
-            report(Message(.error, "couldn't install packages: \(MessageText(error: error))"))
+        guard let record = InstalledRecord.read(from: state, for: "install packages", report: report) else {
             return false
         }
-        let work = PackageKind.allCases.map { kind in
-            let listed = packages[kind] ?? []
-            return (kind, listed, record[kind].subtracting(listed).sorted())
-        }.filter { !$0.1.isEmpty || !$0.2.isEmpty }
+        let work = PackageKind.allCases.filter { !(packages[$0] ?? []).isEmpty || !record[$0].isEmpty }
         guard !work.isEmpty else { return true }
         guard files.item(at: Brew.path) != nil else {
             report(Message(.error, "couldn't install packages: Homebrew isn't installed at \(private: Brew.path)"))
             return false
         }
         var succeeded = true
-        for (kind, listed, unlisted) in work {
+        for kind in work {
+            let sync = ManagedSync(installer: Kind(kind: kind, runner: runner), state: state)
             succeeded =
-                await sync(kind, listed: listed, unlisted: unlisted, managed: record[kind], report: report)
+                await sync.run(listed: packages[kind] ?? [], managed: record[kind].sorted(), report: report)
                 && succeeded
         }
         return succeeded
     }
 
-    /// Installs the packages of `kind` among `listed` that Homebrew doesn't have yet, takes over the
-    /// ones it has that Malum doesn't manage yet, and uninstalls `unlisted`.
-    private func sync(
-        _ kind: PackageKind, listed: [String], unlisted: [String], managed: Set<String>, report: (Message) -> Void
-    ) async -> Bool {
-        let result = await runner.run(Brew.installed(kind))
-        guard result.succeeded else {
-            report(Message(.error, "couldn't list the installed \(kind.plural): \(result.reason)"))
-            return false
-        }
-        let installed = Set(result.output.split(separator: "\n").map(String.init))
-        let isInstalled = { (name: String) in installed.contains(Self.shortName(name)) }
-        var succeeded = adopt(listed.filter { isInstalled($0) && !managed.contains($0) }, kind: kind, report: report)
-        let missing = listed.filter { !isInstalled($0) }
-        if missing.isEmpty && !listed.isEmpty { report(Message(.info, "every listed \(kind.label) is installed")) }
-        for name in missing {
-            succeeded = await install(name, kind: kind, report: report) && succeeded
-        }
-        for name in unlisted {
-            succeeded = await uninstall(name, kind: kind, installed: isInstalled(name), report: report) && succeeded
-        }
-        return succeeded
-    }
+    /// How packages of one kind are installed with `brew`.
+    private struct Kind: Installer {
+        let kind: PackageKind
+        let runner: any CommandRunner
 
-    /// Records `names` as managed by Malum, since they were installed already.
-    private func adopt(_ names: [String], kind: PackageKind, report: (Message) -> Void) -> Bool {
-        guard !names.isEmpty else { return true }
-        guard remember(kind, report: report, { $0.formUnion(names) }) else { return false }
-        for name in names {
-            report(Message(.info, "\(kind.label) \(name) was already installed, \(Project.name) manages it now"))
-        }
-        return true
-    }
+        var label: String { kind.label }
+        func name(of item: String) -> String { item }
 
-    /// Installs one package and records it. Says whether it worked.
-    private func install(_ name: String, kind: PackageKind, report: (Message) -> Void) async -> Bool {
-        guard !name.hasPrefix("-") else {
-            report(Message(.error, "couldn't install \(kind.label) \(name): it isn't a package name"))
-            return false
+        func installed(report: (Message) -> Void) async -> ((String) -> Bool)? {
+            let result = await runner.run(Brew.installed(kind))
+            guard result.succeeded else {
+                report(Message(.error, "couldn't list the installed \(kind.plural): \(result.reason)"))
+                return nil
+            }
+            let installed = Set(result.output.split(separator: "\n").map(String.init))
+            // brew lists a tapped package as `name`, without its `owner/tap/`.
+            return { installed.contains($0.split(separator: "/").last.map(String.init) ?? $0) }
         }
-        report(Message(.info, "installing \(kind.label) \(name)"))
-        let result = await runner.run(Brew.install(name, kind: kind))
-        guard result.succeeded else {
-            report(Message(.error, "couldn't install \(kind.label) \(name): \(result.reason)"))
-            return false
-        }
-        report(Message(.info, "installed \(kind.label) \(name)"))
-        return remember(kind, report: report) { $0.insert(name) }
-    }
 
-    /// Uninstalls one package Malum manages, when it's still `installed`, and takes it out of the
-    /// record. Says whether it worked.
-    private func uninstall(
-        _ name: String, kind: PackageKind, installed: Bool, report: (Message) -> Void
-    ) async -> Bool {
-        guard installed else {
-            report(Message(.info, "\(kind.label) \(name) was already uninstalled"))
-            return remember(kind, report: report) { $0.remove(name) }
+        func install(_ item: String) async -> CommandResult {
+            await runner.run(Brew.install(item, kind: kind))
         }
-        report(Message(.info, "uninstalling \(kind.label) \(name)"))
-        let result = await runner.run(Brew.uninstall(name, kind: kind))
-        switch (result.succeeded, Brew.isNeeded(result.errors)) {
-        case (true, _):
-            report(Message(.info, "uninstalled \(kind.label) \(name)"))
-        case (false, true):
-            report(
-                Message(
-                    .warn,
-                    "\(kind.label) \(name) is still needed by other packages, so it stays and \(Project.name) no longer manages it"
-                ))
-        case (false, false):
-            report(Message(.error, "couldn't uninstall \(kind.label) \(name): \(result.reason)"))
-            return false
-        }
-        return remember(kind, report: report) { $0.remove(name) }
-    }
 
-    /// Makes `change` to the packages of `kind` in the record. Says whether it worked.
-    private func remember(
-        _ kind: PackageKind, report: (Message) -> Void, _ change: (inout Set<String>) -> Void
-    ) -> Bool {
-        do {
-            try InstalledRecord.change(in: state) { change(&$0[kind]) }
-            return true
-        } catch {
-            report(Message(.error, "couldn't record what \(Project.name) installed: \(MessageText(error: error))"))
-            return false
+        func uninstall(_ item: String) async -> Uninstalled {
+            let result = await runner.run(Brew.uninstall(item, kind: kind))
+            guard !result.succeeded else { return .done }
+            return Brew.isNeeded(result.errors) ? .needed : .failed(reason: result.reason)
         }
-    }
 
-    /// The name `brew list` shows for `name`: without the tap, when it's written as `owner/tap/name`.
-    private static func shortName(_ name: String) -> String {
-        name.split(separator: "/").last.map(String.init) ?? name
+        func record(_ item: String, managed: Bool, in record: inout InstalledRecord) {
+            if managed { record[kind].insert(item) } else { record[kind].remove(item) }
+        }
     }
 }

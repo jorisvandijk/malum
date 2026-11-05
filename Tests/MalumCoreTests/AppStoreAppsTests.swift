@@ -102,12 +102,12 @@ struct AppStoreAppsTests {
             runner.commands == [Mas.installed, Sudo.authorize, Mas.install(497_799_835), Mas.uninstall(937_984_704)])
         #expect(
             messages == [
-                Message(.info, "App Store app pages was already uninstalled"),
                 Message(.info, "asking for your password to install and uninstall App Store apps"),
                 Message(.info, "installing App Store app xcode (497799835)"),
                 Message(.info, "installed App Store app xcode"),
                 Message(.info, "uninstalling App Store app amphetamine (937984704)"),
                 Message(.info, "uninstalled App Store app amphetamine"),
+                Message(.info, "App Store app pages was already uninstalled"),
             ])
         #expect(managed == ["xcode": 497_799_835])
     }

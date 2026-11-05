@@ -172,14 +172,6 @@ struct HomebrewPackagesTests {
         #expect(messages.last == Message(.info, "installed Homebrew formula bat"))
     }
 
-    @Test func nameLikeAFlagIsRefused() async {
-        let runner = brew()
-        let (succeeded, messages) = await run([.formula: ["--force"]], runner: runner)
-        #expect(!succeeded)
-        #expect(messages == [Message(.error, "couldn't install Homebrew formula --force: it isn't a package name")])
-        #expect(runner.commands.count == 1)
-    }
-
     @Test func missingHomebrewIsReported() async {
         let runner = brew()
         let (succeeded, messages) = await run(

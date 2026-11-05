@@ -40,11 +40,7 @@ struct AppFileWriter {
     /// Writes each file in `wanted` for its app, and removes each file Malum wrote that isn't in it,
     /// except those of the apps in `keeping`. Says whether everything worked.
     func write(_ wanted: [(app: String, file: AppFile)], keeping: Set<String>, report: (Message) -> Void) -> Bool {
-        let record: InstalledRecord
-        do {
-            record = try InstalledRecord.read(from: state)
-        } catch {
-            report(Message(.error, "couldn't write app config files: \(MessageText(error: error))"))
+        guard let record = InstalledRecord.read(from: state, for: "write app config files", report: report) else {
             return false
         }
         var outcomes: [Outcome] = []
@@ -166,13 +162,7 @@ struct AppFileWriter {
 
     /// Records `managed` as the file at `path`, or takes the path out of the record when it's nil.
     private func remember(_ path: String, _ managed: ManagedFile?, report: (Message) -> Void) -> Outcome {
-        do {
-            try InstalledRecord.change(in: state) { $0.files[path] = managed }
-            return .changed
-        } catch {
-            report(Message(.error, "couldn't record what \(Project.name) wrote: \(MessageText(error: error))"))
-            return .failed
-        }
+        InstalledRecord.remember(in: state, report: report) { $0.files[path] = managed } ? .changed : .failed
     }
 
     /// `apps/<app>.toml`, where an app's files come from.

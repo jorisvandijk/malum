@@ -46,6 +46,12 @@ public struct PackageList: Equatable, Sendable {
     private static func homebrewPackages(_ table: ConfigTable, reader: inout TableReader) -> [PackageKind: [String]] {
         var packages: [PackageKind: [String]] = [:]
         for (name, kind) in table.sorted(by: { $0.key < $1.key }) {
+            guard !name.hasPrefix("-") else {
+                reader.add(
+                    .error, at: [homebrewTable, name],
+                    "\(TableReader.dotted([homebrewTable, name])): a package name can't start with -")
+                continue
+            }
             guard case .string(let word) = kind, let kind = PackageKind(rawValue: word) else {
                 reader.expect([homebrewTable, name], "\"formula\" or \"cask\"")
                 continue
