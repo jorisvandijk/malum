@@ -69,11 +69,28 @@ struct TOMLLines {
 
     /// The parts of a dotted key such as `window_manager.gap` or `"a b".c`, or nil when it isn't one.
     private static func keyPath(_ text: Substring) -> [String]? {
-        let parts = text.split(separator: ".", omittingEmptySubsequences: false).map {
-            $0.trimmingCharacters(in: .whitespaces)
-        }
+        let parts = parts(of: text).map { $0.trimmingCharacters(in: .whitespaces) }
         let keys = parts.compactMap(key)
         return keys.count == parts.count && !keys.isEmpty ? keys : nil
+    }
+
+    /// `text` split at each dot outside quotes, so `"com.apple.dock".x` is two parts.
+    private static func parts(of text: Substring) -> [String] {
+        var parts = [""]
+        var quote: Character?
+        for character in text {
+            switch character {
+            case "." where quote == nil:
+                parts.append("")
+                continue
+            case "\"", "'":
+                quote = quote == nil ? character : (quote == character ? nil : quote)
+            default:
+                break
+            }
+            parts[parts.count - 1].append(character)
+        }
+        return parts
     }
 
     /// One part of a key, without its quotes, or nil when it isn't a key.

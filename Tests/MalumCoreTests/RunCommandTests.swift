@@ -45,6 +45,7 @@ struct RunCommandTests {
             messages == [
                 Message(.info, "nothing to install: \(packages) doesn't exist"),
                 Message(.info, "no app config files to write: /Users/joris/dots/apps doesn't exist"),
+                Message(.info, "no macOS settings to set: /Users/joris/dots/macos.toml doesn't exist"),
                 Message(.info, "system_config is done"),
             ])
         #expect(runner.commands.isEmpty)
@@ -60,6 +61,7 @@ struct RunCommandTests {
                 Message(.error, "packages.toml line 3: homebrew.kitty should be \"formula\" or \"cask\""),
                 Message(.error, "couldn't install packages: fix \(packages) first"),
                 Message(.info, "no app config files to write: /Users/joris/dots/apps doesn't exist"),
+                Message(.info, "no macOS settings to set: /Users/joris/dots/macos.toml doesn't exist"),
                 Message(.error, "system_config finished with errors"),
             ])
         #expect(runner.commands.isEmpty)
@@ -123,6 +125,7 @@ struct RunCommandTests {
                     "couldn't install GitHub release ghost: nobody/ghost has no published release on GitHub, or it's private"
                 ),
                 Message(.info, "no app config files to write: /Users/joris/dots/apps doesn't exist"),
+                Message(.info, "no macOS settings to set: /Users/joris/dots/macos.toml doesn't exist"),
                 Message(.error, "system_config finished with errors"),
             ])
     }
@@ -135,6 +138,26 @@ struct RunCommandTests {
             messages == [
                 Message(.info, "nothing to install: \(packages) doesn't exist"),
                 Message(.info, "wrote /Users/joris/.config/git/config from apps/git.toml"),
+                Message(.info, "no macOS settings to set: /Users/joris/dots/macos.toml doesn't exist"),
+                Message(.info, "system_config is done"),
+            ])
+    }
+
+    @Test func macOSSettingsAreSetLast() async {
+        let runner = FakeRunner { command in
+            guard command.arguments.first == "export" else { return CommandResult(status: 0) }
+            return CommandResult(status: 0, output: "<plist version=\"1.0\"><dict/></plist>")
+        }
+        let (succeeded, messages) = await run(
+            switchedOn, runner: runner,
+            more: ["/Users/joris/dots/macos.toml": "[preferences.\"com.apple.dock\"]\nautohide = true\n"])
+        #expect(succeeded)
+        #expect(
+            messages == [
+                Message(.info, "nothing to install: \(packages) doesn't exist"),
+                Message(.info, "no app config files to write: /Users/joris/dots/apps doesn't exist"),
+                Message(.info, "set autohide in com.apple.dock from macos.toml"),
+                Message(.info, "restarted Dock to use the new settings"),
                 Message(.info, "system_config is done"),
             ])
     }

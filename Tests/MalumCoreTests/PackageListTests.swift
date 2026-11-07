@@ -136,7 +136,7 @@ struct PackageListTests {
         #expect(
             reading.problems.map(\.message) == [
                 Message(.error, "packages.toml line 1: release.\"sub/tool\": \(rule)"),
-                Message(.error, "release.\"../../bin/sh\": \(rule)"),
+                Message(.error, "packages.toml line 4: release.\"../../bin/sh\": \(rule)"),
             ])
     }
 

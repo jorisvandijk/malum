@@ -360,4 +360,39 @@ A value is text, a number, `true` or `false`, or a list or table of them; a tabl
 
 Command X stores a shortcut as text holding JSON: `KeyboardShortcuts_cut = '{"carbonKeyCode":7,"carbonModifiers":256}'` is ⌘X.
 
+## macOS settings
+
+macOS's own settings are set from `macos.toml`, at the top of your dots folder, last in the run. Each domain has its own table inside `[preferences]`, with each setting by the name macOS stores it under, the way `defaults write` takes them. `defaults read <domain>` lists a domain's current settings; quote a domain with dots in it.
+
+```toml
+[preferences.NSGlobalDomain]
+AppleInterfaceStyle = "Dark"
+KeyRepeat = 2
+InitialKeyRepeat = 30
+
+[preferences."com.apple.finder"]
+ShowPathbar = true
+FXPreferredViewStyle = "Nlsv"
+
+[preferences."com.apple.dock"]
+autohide = true
+
+[current_host."com.apple.controlcenter"]
+Timer = 8
+```
+
+`[current_host]` holds the few settings macOS keeps for this Mac only, the ones `defaults -currentHost` reads, in the same shape.
+
+A value is text, a number, `true` or `false`, or a list or table of them. Malum owns each setting it sets, as with [app preferences](#app-preferences): one you change in System Settings is set back on the next run, and one you take out of the file is removed, so macOS goes back to its own default. Settings the file doesn't name are left alone. When `macos.toml` is missing or has an error, no setting is touched. Malum keeps the names of the settings it set in `installed.json`, under `macos`.
+
+After a change, Malum tells running apps about it, and restarts Finder, the Dock, the menu bar or Control Center when their settings changed:
+
+```
+[info] set autohide in com.apple.dock from macos.toml
+[info] restarted Dock to use the new settings
+[info] some macOS settings, such as key repeat, take full effect after you log out and back in
+```
+
+The last line shows when a setting changed that nothing can be restarted for.
+
 The messages also go to the macOS log, as the [log page](log.md) describes.
