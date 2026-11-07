@@ -31,6 +31,11 @@ extension MessageText {
         "\(path): a preferences domain can't start with -"
     }
 
+    /// The hosts entry at `path`, written dotted, has an empty name or address or one with spaces.
+    static func notHostsEntry(_ path: String) -> MessageText {
+        "\(path): a host name and its address can't be empty or hold spaces"
+    }
+
     /// `file` couldn't be read, for `reason`.
     static func unreadable(_ file: String, _ reason: String) -> MessageText {
         "couldn't read \(file): \(reason)"

@@ -1,8 +1,9 @@
 import Foundation
 
 /// What Malum installed or took over, kept in the state folder and shaped like `packages.toml`,
-/// plus the app config files it wrote, the app preferences and macOS settings it set and the
-/// VSCodium extensions it installed. Only what's in here is ever uninstalled or removed.
+/// plus the app config files it wrote, the app preferences and macOS settings it set, the files in
+/// `/etc` it wrote and the VSCodium extensions it installed. Only what's in here is ever
+/// uninstalled or removed.
 public struct InstalledRecord: Codable, Equatable, Sendable {
     /// The record's file in the state folder.
     static let fileName = "installed.json"
@@ -21,6 +22,9 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
     public var preferences: [String: ManagedPreferences] = [:]
     /// The macOS settings Malum set from `macos.toml`, by their domain.
     public var macOS: [String: ManagedPreferences] = [:]
+    /// The files only root can change that Malum wrote from `macos.toml`, by path, with the
+    /// fingerprint of what it wrote.
+    public var systemFiles: [String: String] = [:]
     /// The VSCodium extensions, as `apps/vscodium.toml` lists them.
     public var extensions: Set<String> = []
 
@@ -35,6 +39,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         case files
         case preferences
         case macOS = "macos"
+        case systemFiles = "system_files"
         case extensions = "vscodium_extensions"
     }
 
@@ -57,6 +62,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         files = try container.decodeIfPresent([String: ManagedFile].self, forKey: .files) ?? [:]
         preferences = try container.decodeIfPresent([String: ManagedPreferences].self, forKey: .preferences) ?? [:]
         macOS = try container.decodeIfPresent([String: ManagedPreferences].self, forKey: .macOS) ?? [:]
+        systemFiles = try container.decodeIfPresent([String: String].self, forKey: .systemFiles) ?? [:]
         extensions = Set(try container.decodeIfPresent([String].self, forKey: .extensions) ?? [])
     }
 
@@ -71,6 +77,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         try container.encode(files, forKey: .files)
         try container.encode(preferences, forKey: .preferences)
         try container.encode(macOS, forKey: .macOS)
+        try container.encode(systemFiles, forKey: .systemFiles)
         try container.encode(extensions.sorted(), forKey: .extensions)
     }
 

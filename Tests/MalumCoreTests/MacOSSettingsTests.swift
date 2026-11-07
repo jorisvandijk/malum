@@ -17,9 +17,8 @@ struct MacOSSettingsTests {
     private func run(_ files: FakeFileSystem, runner: FakeRunner) async -> (Bool, [Message]) {
         var messages: [Message] = []
         let state = StateFolder(files: files, locks: FakeFileLocks(), paths: paths)
-        let succeeded = await MacOSSettings(
-            files: files, runner: runner, sudo: SudoSession(runner: runner, canAsk: false), state: state, paths: paths
-        ).run(
+        let sudo = SudoSession(runner: runner, canAsk: true)
+        let succeeded = await MacOSSettings(files: files, runner: runner, sudo: sudo, state: state, paths: paths).run(
             dots: "/Users/joris/dots"
         ) { messages.append($0) }
         return (succeeded, messages)
@@ -31,7 +30,7 @@ struct MacOSSettingsTests {
     }
 
     @Test func readsEachDomainAndTheCurrentHostOnes() {
-        let (preferences, problems) = MacOSSettings.read(
+        let (wanted, problems) = MacOSSettings.read(
             """
             [preferences.NSGlobalDomain]
             KeyRepeat = 2
@@ -42,21 +41,21 @@ struct MacOSSettingsTests {
             """)
         #expect(problems.isEmpty)
         #expect(
-            preferences?.map { "\($0.domain) \($0.key)" } == [
+            wanted?.preferences.map { "\($0.domain) \($0.key)" } == [
                 "NSGlobalDomain KeyRepeat", "com.apple.finder ShowPathbar",
                 "com.apple.controlcenter (current host) Timer",
             ])
     }
 
     @Test func badDomainsAreErrors() {
-        let (preferences, problems) = MacOSSettings.read(
+        let (wanted, problems) = MacOSSettings.read(
             """
             [preferences."-g"]
             KeyRepeat = 2
             [preferences]
             NSGlobalDomain = 2
             """)
-        #expect(preferences == nil)
+        #expect(wanted == nil)
         #expect(
             problems.map(\.message) == [
                 Message(.error, "macos.toml line 1: preferences.-g: a preferences domain can't start with -"),
@@ -64,9 +63,58 @@ struct MacOSSettingsTests {
             ])
     }
 
+    @Test func readsHostsAndTouchID() {
+        let (wanted, problems) = MacOSSettings.read(
+            """
+            [hosts]
+            "nas.home" = "10.0.0.2"
+            "ha.home" = "10.0.0.3"
+            [sudo]
+            touch_id = true
+            """)
+        #expect(problems.isEmpty)
+        #expect(wanted?.files[SystemFile.sudoLocal.path] == SystemFile.touchID)
+        #expect(
+            wanted?.files[SystemFile.hosts.path]?.hasSuffix(
+                "::1             localhost\n\n10.0.0.3\tha.home\n10.0.0.2\tnas.home\n") == true)
+    }
+
+    @Test func touchIDOffAndNoHostsWriteNothing() {
+        let (wanted, problems) = MacOSSettings.read("[sudo]\ntouch_id = false\n")
+        #expect(problems.isEmpty)
+        #expect(wanted == MacOSSettings.Wanted())
+    }
+
+    @Test func emptyHostsKeepsOnlyMacOSLines() {
+        let (wanted, _) = MacOSSettings.read("[hosts]\n")
+        #expect(wanted?.files[SystemFile.hosts.path]?.hasSuffix("::1             localhost\n") == true)
+    }
+
+    @Test func badHostsAndSudoAreErrors() {
+        let (wanted, problems) = MacOSSettings.read(
+            """
+            [hosts]
+            "nas home" = "10.0.0.2"
+            printer = 3
+            [sudo]
+            touch_id = "yes"
+            face_id = true
+            """)
+        #expect(wanted == nil)
+        #expect(
+            problems.map(\.message) == [
+                Message(
+                    .error,
+                    "macos.toml line 2: hosts.\"nas home\": a host name and its address can't be empty or hold spaces"),
+                Message(.error, "macos.toml line 3: hosts.printer should be text in quotes"),
+                Message(.error, "macos.toml line 5: sudo.touch_id should be true or false"),
+                Message(.warn, "macos.toml line 6: unknown setting sudo.face_id"),
+            ])
+    }
+
     @Test func unknownTableIsAWarning() {
-        let (preferences, problems) = MacOSSettings.read("[dock]\nautohide = true\n")
-        #expect(preferences == [])
+        let (wanted, problems) = MacOSSettings.read("[dock]\nautohide = true\n")
+        #expect(wanted == MacOSSettings.Wanted())
         #expect(problems.map(\.message.level) == [.warn])
     }
 
