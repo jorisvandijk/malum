@@ -43,7 +43,7 @@ struct AppConfig: Sendable {
         guard let domain else { return [] }
         let table = reader.table(reader.document, Self.preferencesTable, at: [])
         let entries = reader.entries(
-            table, at: [Self.preferencesTable], expected: "text, a number, true or false, or a list or table of them",
+            table, at: [Self.preferencesTable], expected: PlistText.expected,
             write: PlistText.document)
         return entries.map { AppPreference(domain: domain, key: $0.key, value: $0.value) }
     }

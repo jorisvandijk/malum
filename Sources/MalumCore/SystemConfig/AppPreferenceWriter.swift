@@ -1,6 +1,7 @@
 import Foundation
 
-/// Sets the preferences apps ask for in their files in `apps/`, through `defaults`.
+/// Sets the preferences apps ask for in their files in `apps/`, or macOS's settings from
+/// `macos.toml`, through `defaults`.
 ///
 /// Malum owns each preference it sets: one changed in the app is set back on the next run, and one
 /// an app's file doesn't set anymore is removed, so the app falls back to its own default. Other
@@ -21,47 +22,55 @@ struct AppPreferenceWriter {
     private let runner: any CommandRunner
     /// Where the record is kept.
     private let state: StateFolder
+    /// Whose preferences it sets.
+    private let scope: PreferenceScope
 
-    /// Creates the writer, which runs `defaults` with `runner` and keeps its record in `state`.
-    init(runner: any CommandRunner, state: StateFolder) {
+    /// Creates the writer of the preferences in `scope`, which runs `defaults` with `runner` and
+    /// keeps its record in `state`.
+    init(runner: any CommandRunner, state: StateFolder, scope: PreferenceScope = .apps) {
         self.runner = runner
         self.state = state
+        self.scope = scope
     }
 
     /// Sets each preference in `wanted` for its app, and removes each one Malum set that isn't in
-    /// it, except those of the apps in `keeping`. Says whether everything worked.
+    /// it, except those of the apps in `keeping`, telling `changed` each domain it changed. Says
+    /// whether everything worked.
     func write(
-        _ wanted: [(app: String, preference: AppPreference)], keeping: Set<String>, report: (Message) -> Void
+        _ wanted: [(app: String, preference: AppPreference)], keeping: Set<String>,
+        changed: (String) -> Void = { _ in }, report: (Message) -> Void
     ) async -> Bool {
-        guard let record = InstalledRecord.read(from: state, for: .setPreferences, report: report) else {
+        guard let record = InstalledRecord.read(from: state, for: scope.action, report: report) else {
             return false
         }
         var domains: [String: (app: String, wanted: [AppPreference])] = [:]
         for (app, preference) in wanted {
             domains[preference.domain, default: (app, [])].wanted.append(preference)
         }
-        for (domain, managed) in record.preferences where domains[domain] == nil && !keeping.contains(managed.app) {
+        let known = scope.managed(in: record)
+        for (domain, managed) in known where domains[domain] == nil && !keeping.contains(managed.app) {
             domains[domain] = (managed.app, [])
         }
-        var managed = record.preferences
+        var managed = known
         var succeeded = true
-        var changed = false
+        var anyChanged = false
         for (domain, entry) in domains.sorted(by: { $0.key < $1.key }) {
-            let source = Paths.appFile(named: entry.app)
+            let source = scope.source(of: entry.app)
             let result = await sync(
-                domain, entry.wanted, known: record.preferences[domain]?.keys ?? [], source: source, report: report)
+                domain, entry.wanted, known: known[domain]?.keys ?? [], source: source, report: report)
             managed[domain] = result.keys.isEmpty ? nil : ManagedPreferences(app: entry.app, keys: result.keys)
             succeeded = succeeded && result.succeeded
             if result.changed {
-                changed = true
-                report(.reopenToApply(entry.app))
+                anyChanged = true
+                changed(domain)
+                scope.changed(entry.app).map(report)
             }
         }
-        if !wanted.isEmpty && !changed && succeeded {
-            report(.preferencesUpToDate)
+        if !wanted.isEmpty && !anyChanged && succeeded {
+            report(scope.upToDate)
         }
-        guard managed != record.preferences else { return succeeded }
-        return InstalledRecord.remember(in: state, report: report) { $0.preferences = managed } && succeeded
+        guard managed != known else { return succeeded }
+        return InstalledRecord.remember(in: state, report: report) { scope.set(managed, in: &$0) } && succeeded
     }
 
     /// Sets the preferences in `wanted` in `domain`, and removes those in `known` that aren't

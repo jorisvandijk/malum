@@ -26,6 +26,11 @@ extension MessageText {
         "\(path): the name can't be empty, start with a dot or hold /"
     }
 
+    /// The domain at `path`, written dotted, starts with `-`, which `defaults` would take as an option.
+    static func notDomain(_ path: String) -> MessageText {
+        "\(path): a preferences domain can't start with -"
+    }
+
     /// `file` couldn't be read, for `reason`.
     static func unreadable(_ file: String, _ reason: String) -> MessageText {
         "couldn't read \(file): \(reason)"

@@ -27,7 +27,6 @@ public struct RunCommand {
         self.canAsk = canAsk
     }
 
-    // TODO: macOS settings, as a further part.
     /// Loads `malum.toml` and runs each part of system config in order, reporting as it goes. Says
     /// whether everything worked.
     public func run(report: (Message) -> Void) async -> Bool {
@@ -51,7 +50,9 @@ public struct RunCommand {
             let packages = await installPackages(dots: dots, folders: folders, state: state, report: report)
             let apps = await AppConfigFiles(files: files, runner: runner, state: state, paths: paths).run(
                 dots: dots, report: report)
-            succeeded = packages && apps
+            let macOS = await MacOSSettings(files: files, runner: runner, state: state, paths: paths).run(
+                dots: dots, report: report)
+            succeeded = packages && apps && macOS
         } catch {
             report(.failed(error))
             return false

@@ -1,9 +1,8 @@
 import Foundation
 
 /// What Malum installed or took over, kept in the state folder and shaped like `packages.toml`,
-/// plus the app config files it wrote, the app preferences it set and the VSCodium extensions it
-/// installed. Only what's in here is ever
-/// uninstalled or removed.
+/// plus the app config files it wrote, the app preferences and macOS settings it set and the
+/// VSCodium extensions it installed. Only what's in here is ever uninstalled or removed.
 public struct InstalledRecord: Codable, Equatable, Sendable {
     /// The record's file in the state folder.
     static let fileName = "installed.json"
@@ -20,6 +19,8 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
     public var files: [String: ManagedFile] = [:]
     /// The app preferences Malum set, by their domain.
     public var preferences: [String: ManagedPreferences] = [:]
+    /// The macOS settings Malum set from `macos.toml`, by their domain.
+    public var macOS: [String: ManagedPreferences] = [:]
     /// The VSCodium extensions, as `apps/vscodium.toml` lists them.
     public var extensions: Set<String> = []
 
@@ -33,6 +34,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         case releases = "release"
         case files
         case preferences
+        case macOS = "macos"
         case extensions = "vscodium_extensions"
     }
 
@@ -54,6 +56,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         releases = try container.decodeIfPresent([String: InstalledRelease].self, forKey: .releases) ?? [:]
         files = try container.decodeIfPresent([String: ManagedFile].self, forKey: .files) ?? [:]
         preferences = try container.decodeIfPresent([String: ManagedPreferences].self, forKey: .preferences) ?? [:]
+        macOS = try container.decodeIfPresent([String: ManagedPreferences].self, forKey: .macOS) ?? [:]
         extensions = Set(try container.decodeIfPresent([String].self, forKey: .extensions) ?? [])
     }
 
@@ -67,6 +70,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         try container.encode(releases, forKey: .releases)
         try container.encode(files, forKey: .files)
         try container.encode(preferences, forKey: .preferences)
+        try container.encode(macOS, forKey: .macOS)
         try container.encode(extensions.sorted(), forKey: .extensions)
     }
 
