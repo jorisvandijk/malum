@@ -78,11 +78,12 @@ struct MacOSSettingsTests {
 
     @Test func brokenFileTouchesNothing() async {
         let runner = FakeRunner()
-        let files = FakeFileSystem(texts: [file: "[preferences.NSGlobalDomain]\nKeyRepeat = 1979-05-27\n"])
+        let files = FakeFileSystem(texts: [file: "[preferences.\"com.apple.dock\"]\nautohide = 1979-05-27\n"])
         let (succeeded, messages) = await run(files, runner: runner)
         #expect(!succeeded)
         #expect(runner.commands.isEmpty)
         #expect(messages.last == Message(.error, "couldn't set macOS settings: fix \(file) first"))
+        #expect(messages.first?.text.description.hasPrefix("macos.toml line 2: ") == true)
     }
 
     @Test func changedSettingsAreShownAndRecorded() async {

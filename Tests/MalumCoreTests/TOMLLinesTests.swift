@@ -19,6 +19,13 @@ struct TOMLLinesTests {
         #expect(lines.line(of: ["missing"]) == nil)
     }
 
+    @Test func dotsInsideQuotesStayInTheKey() {
+        let lines = TOMLLines("[preferences.\"com.apple.dock\"]\nautohide = true\n'a.b'.c = 1\n")
+        #expect(lines.line(of: ["preferences", "com.apple.dock"]) == 1)
+        #expect(lines.line(of: ["preferences", "com.apple.dock", "autohide"]) == 2)
+        #expect(lines.line(of: ["preferences", "com.apple.dock", "a.b", "c"]) == 3)
+    }
+
     @Test func dottedAndQuotedKeysAreSplit() {
         let lines = TOMLLines("launcher.size = 3\n[\"window manager\" . inner]\n'gap' = 1\n")
         #expect(lines.line(of: ["launcher", "size"]) == 1)
