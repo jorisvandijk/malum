@@ -8,16 +8,21 @@ public struct AppConfigFiles {
     private let files: any FileSystem
     /// Runs `defaults` and `codium`.
     private let runner: any CommandRunner
+    /// Gets root for system-wide preferences.
+    private let sudo: SudoSession
     /// Where the record of what Malum wrote is kept.
     private let state: StateFolder
     /// Where the home folder is.
     private let paths: Paths
 
-    /// Creates the part, which works on `files`, sets preferences with `runner` and keeps its
-    /// record in `state`.
-    public init(files: any FileSystem, runner: any CommandRunner, state: StateFolder, paths: Paths) {
+    /// Creates the part, which works on `files`, sets preferences with `runner`, as root through
+    /// `sudo` when they're system-wide, and keeps its record in `state`.
+    public init(
+        files: any FileSystem, runner: any CommandRunner, sudo: SudoSession, state: StateFolder, paths: Paths
+    ) {
         self.files = files
         self.runner = runner
+        self.sudo = sudo
         self.state = state
         self.paths = paths
     }
@@ -59,7 +64,7 @@ public struct AppConfigFiles {
         }
         let wrote = AppFileWriter(files: files, state: state, paths: paths).write(
             wanted, keeping: broken, report: report)
-        let set = await AppPreferenceWriter(runner: runner, state: state).write(
+        let set = await AppPreferenceWriter(runner: runner, files: files, sudo: sudo, state: state).write(
             preferences, keeping: broken, report: report)
         let installed = await install(extensions, keeping: broken, report: report)
         return wrote && set && installed && broken.isEmpty

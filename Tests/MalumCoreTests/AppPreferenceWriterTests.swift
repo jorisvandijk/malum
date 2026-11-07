@@ -33,9 +33,10 @@ struct AppPreferenceWriterTests {
         _ wanted: [(app: String, preference: AppPreference)], runner: FakeRunner, keeping: Set<String> = []
     ) async -> (Bool, [Message]) {
         var messages: [Message] = []
-        let succeeded = await AppPreferenceWriter(runner: runner, state: state).write(wanted, keeping: keeping) {
-            messages.append($0)
-        }
+        let sudo = SudoSession(runner: runner, canAsk: true)
+        defer { sudo.end() }
+        let writer = AppPreferenceWriter(runner: runner, files: files, sudo: sudo, state: state)
+        let succeeded = await writer.write(wanted, keeping: keeping) { messages.append($0) }
         return (succeeded, messages)
     }
 
@@ -114,5 +115,32 @@ struct AppPreferenceWriterTests {
                 "<plist version=\"1.0\"><dict><key>a</key><string>&lt;&amp;&gt;</string>"
                     + "<key>b</key><array><integer>1</integer><real>1.5</real></array></dict></plist>") == true)
         #expect(PlistText.document(.date("2026-11-05")) == nil)
+    }
+
+    @Test func systemWidePreferenceIsSetAsRoot() async {
+        let domain = "/Library/Preferences/net.librewolf.librewolf"
+        let value = PlistText.document(.boolean(true)) ?? ""
+        let runner = FakeRunner()
+        let (succeeded, messages) = await write(
+            [("librewolf", AppPreference(domain: domain, key: "DisableTelemetry", value: value))], runner: runner)
+        #expect(succeeded)
+        #expect(runner.commands == [Sudo.authorize, Sudo.asRoot(Defaults.write(domain, "DisableTelemetry", value))])
+        #expect(
+            messages.prefix(2) == [
+                Message(.info, "asking for your password to set system-wide app preferences"),
+                Message(.info, "set DisableTelemetry in \(domain) from apps/librewolf.toml"),
+            ])
+        #expect(managed == [domain: ManagedPreferences(app: "librewolf", keys: ["DisableTelemetry"])])
+    }
+
+    @Test func refusedPasswordSetsNoSystemWidePreference() async {
+        let domain = "/Library/Preferences/net.librewolf.librewolf"
+        let runner = FakeRunner { $0 == Sudo.authorize ? CommandResult(status: 1) : CommandResult(status: 0) }
+        let (succeeded, messages) = await write(
+            [("librewolf", AppPreference(domain: domain, key: "DisableTelemetry", value: ""))], runner: runner)
+        #expect(!succeeded)
+        #expect(runner.commands == [Sudo.authorize])
+        #expect(messages.last == Message(.error, "couldn't set system-wide app preferences: sudo wasn't granted"))
+        #expect(managed.isEmpty)
     }
 }

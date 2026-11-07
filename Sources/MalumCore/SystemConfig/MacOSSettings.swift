@@ -22,16 +22,19 @@ struct MacOSSettings {
     private let files: any FileSystem
     /// Runs `defaults` and restarts what shows the settings.
     private let runner: any CommandRunner
+    /// Gets root, should a setting be system-wide.
+    private let sudo: SudoSession
     /// Where the record of what Malum set is kept.
     private let state: StateFolder
     /// Where `macos.toml` is.
     private let paths: Paths
 
-    /// Creates the part, which reads `macos.toml` on `files`, sets the settings with `runner`, and
-    /// keeps its record in `state`.
-    init(files: any FileSystem, runner: any CommandRunner, state: StateFolder, paths: Paths) {
+    /// Creates the part, which reads `macos.toml` on `files`, sets the settings with `runner`, as
+    /// root through `sudo` when they're system-wide, and keeps its record in `state`.
+    init(files: any FileSystem, runner: any CommandRunner, sudo: SudoSession, state: StateFolder, paths: Paths) {
         self.files = files
         self.runner = runner
+        self.sudo = sudo
         self.state = state
         self.paths = paths
     }
@@ -58,7 +61,7 @@ struct MacOSSettings {
             return false
         }
         var changed: Set<String> = []
-        let writer = AppPreferenceWriter(runner: runner, state: state, scope: .macOS)
+        let writer = AppPreferenceWriter(runner: runner, files: files, sudo: sudo, state: state, scope: .macOS)
         let succeeded = await writer.write(
             preferences.map { (Paths.macOSTOMLName, $0) }, keeping: [], changed: { changed.insert($0) }, report: report)
         await show(changed, report: report)

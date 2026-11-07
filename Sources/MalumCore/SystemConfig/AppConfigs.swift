@@ -1,6 +1,23 @@
 /// Every app system config writes config files or preferences for, each described by its files
 /// and their formats, its preferences domain, or whether it lists extensions.
 enum AppConfigs {
+    /// LibreWolf's folder, which holds its profiles.
+    private static let libreWolf = "Library/Application Support/LibreWolf"
+
+    /// LibreWolf's list of profiles, which makes it start with the one Malum writes to. LibreWolf
+    /// keeps the list up to date itself.
+    private static let libreWolfProfiles = """
+        [General]
+        StartWithLastProfile=1
+
+        [Profile0]
+        Default=1
+        IsRelative=1
+        Name=default
+        Path=Profiles/default
+
+        """
+
     /// The apps, each read from `apps/<name>.toml`.
     static let all = [
         AppConfig(name: "amphetamine", domain: "com.if.Amphetamine"),
@@ -21,6 +38,15 @@ enum AppConfigs {
                     ".config/kitty/kitty.conf",
                     .lines([LineBlock("theme"), LineBlock("settings"), LineBlock("keybindings", prefix: "map")]),
                     always: true)
+            ]),
+        AppConfig(
+            name: "librewolf",
+            policies: "/Library/Preferences/net.librewolf.librewolf",
+            files: [
+                AppConfigFile("\(libreWolf)/profiles.ini", .fixed(libreWolfProfiles), onlyWhenMissing: true),
+                AppConfigFile(
+                    "\(libreWolf)/Profiles/default/user.js", .calls(table: "settings", function: "user_pref")),
+                AppConfigFile("\(libreWolf)/Profiles/default/chrome/userChrome.css", .css(table: "user_chrome")),
             ]),
         AppConfig(
             name: "micro",

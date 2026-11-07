@@ -5,7 +5,8 @@ import Foundation
 ///
 /// Malum owns each preference it sets: one changed in the app is set back on the next run, and one
 /// an app's file doesn't set anymore is removed, so the app falls back to its own default. Other
-/// preferences in the domain are left alone.
+/// preferences in the domain are left alone. A system-wide domain is changed as root, through the
+/// run's one password prompt.
 @MainActor
 struct AppPreferenceWriter {
     /// What syncing one domain did.
@@ -20,15 +21,24 @@ struct AppPreferenceWriter {
 
     /// Runs `defaults`.
     private let runner: any CommandRunner
+    /// The disk, where a system-wide domain's file is.
+    private let files: any FileSystem
+    /// Gets root for a system-wide domain.
+    private let sudo: SudoSession
     /// Where the record is kept.
     private let state: StateFolder
     /// Whose preferences it sets.
     private let scope: PreferenceScope
 
-    /// Creates the writer of the preferences in `scope`, which runs `defaults` with `runner` and
-    /// keeps its record in `state`.
-    init(runner: any CommandRunner, state: StateFolder, scope: PreferenceScope = .apps) {
+    /// Creates the writer of the preferences in `scope`, which runs `defaults` with `runner`, as
+    /// root through `sudo` for a system-wide domain on `files`, and keeps its record in `state`.
+    init(
+        runner: any CommandRunner, files: any FileSystem, sudo: SudoSession, state: StateFolder,
+        scope: PreferenceScope = .apps
+    ) {
         self.runner = runner
+        self.files = files
+        self.sudo = sudo
         self.state = state
         self.scope = scope
     }
@@ -78,9 +88,7 @@ struct AppPreferenceWriter {
     private func sync(
         _ domain: String, _ wanted: [AppPreference], known: [String], source: String, report: (Message) -> Void
     ) async -> Outcome {
-        let export = await runner.run(Defaults.export(domain))
-        guard export.succeeded, let current = Defaults.preferences(in: export.output) else {
-            report(.preferencesUnreadable(domain, reason: export.reason))
+        guard let current = await current(domain, report: report) else {
             return Outcome(keys: known, succeeded: false)
         }
         var outcome = Outcome()
@@ -89,30 +97,50 @@ struct AppPreferenceWriter {
                 outcome.keys.append(preference.key)
                 continue
             }
-            let result = await runner.run(Defaults.write(domain, preference.key, preference.value))
-            if result.succeeded {
+            let result = await change(Defaults.write(domain, preference.key, preference.value), in: domain, report)
+            if let result, result.succeeded {
                 report(.preferenceSet(preference.key, in: domain, from: source))
                 outcome.keys.append(preference.key)
                 outcome.changed = true
             } else {
-                report(.preferenceNotSet(preference.key, in: domain, reason: result.reason))
+                if let result { report(.preferenceNotSet(preference.key, in: domain, reason: result.reason)) }
                 outcome.keys += known.contains(preference.key) ? [preference.key] : []
                 outcome.succeeded = false
             }
         }
         let wantedKeys = Set(wanted.map(\.key))
         for key in known where !wantedKeys.contains(key) && current[key] != nil {
-            let result = await runner.run(Defaults.delete(domain, key))
-            if result.succeeded {
+            let result = await change(Defaults.delete(domain, key), in: domain, report)
+            if let result, result.succeeded {
                 report(.preferenceRemoved(key, from: domain, source: source))
                 outcome.changed = true
             } else {
-                report(.preferenceNotRemoved(key, from: domain, reason: result.reason))
+                if let result { report(.preferenceNotRemoved(key, from: domain, reason: result.reason)) }
                 outcome.keys.append(key)
                 outcome.succeeded = false
             }
         }
         return outcome
+    }
+
+    /// The preferences in `domain`, none when it's a system-wide one without a file, or nil when
+    /// they can't be read.
+    private func current(_ domain: String, report: (Message) -> Void) async -> [String: Any]? {
+        if Defaults.isSystemWide(domain) && files.item(at: domain + Defaults.fileExtension) == nil { return [:] }
+        let export = await runner.run(Defaults.export(domain))
+        guard export.succeeded, let current = Defaults.preferences(in: export.output) else {
+            report(.preferencesUnreadable(domain, reason: export.reason))
+            return nil
+        }
+        return current
+    }
+
+    /// Runs `command`, which changes `domain`, as root when it's a system-wide one, or gives nil
+    /// when root wasn't granted, which the password prompt has already reported.
+    private func change(_ command: Command, in domain: String, _ report: (Message) -> Void) async -> CommandResult? {
+        guard Defaults.isSystemWide(domain) else { return await runner.run(command) }
+        guard await sudo.authorize(for: .setSystemPreferences, report: report) else { return nil }
+        return await runner.run(Sudo.asRoot(command))
     }
 
     /// Whether `document`, a property list document, holds the value `current`.

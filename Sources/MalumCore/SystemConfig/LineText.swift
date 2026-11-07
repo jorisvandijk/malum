@@ -27,7 +27,7 @@ enum LineText {
     }
 
     /// The `text` of `table`, found at `path`, ending in a line break, or nil when there's none.
-    private static func verbatim(_ table: ConfigTable, at path: [String], reader: inout TableReader) -> String? {
+    static func verbatim(_ table: ConfigTable, at path: [String], reader: inout TableReader) -> String? {
         reader.unknownKeys(table, at: path, known: [LineBlock.textKey])
         guard let value = table[LineBlock.textKey] else { return nil }
         guard case .string(let text) = value else {
