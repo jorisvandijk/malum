@@ -32,6 +32,15 @@ public struct LocalFileSystem: FileSystem {
         }
     }
 
+    /// The bytes of the file at `path`.
+    public func data(at path: String) throws(FileSystemError) -> Data {
+        do {
+            return try Data(contentsOf: URL(fileURLWithPath: path))
+        } catch {
+            throw .unreadable(path: path, reason: error.localizedDescription)
+        }
+    }
+
     /// Writes to a temporary file first, then moves it over `path`.
     public func write(_ text: String, to path: String) throws(FileSystemError) {
         try refuseTOML(path)

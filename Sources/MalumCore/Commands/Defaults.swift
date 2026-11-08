@@ -33,12 +33,6 @@ public enum Defaults {
         Command(path, target(domain) + ["write", name(of: domain), key, value])
     }
 
-    /// Prints the value of `key` in the property list at `file`, given without `.plist`, such as an
-    /// app's `Contents/Info`.
-    public static func read(_ file: String, _ key: String) -> Command {
-        Command(path, ["read", file, key])
-    }
-
     /// Removes the preference `key` from `domain`, so the app falls back to its own default.
     public static func delete(_ domain: String, _ key: String) -> Command {
         Command(path, target(domain) + ["delete", name(of: domain), key])

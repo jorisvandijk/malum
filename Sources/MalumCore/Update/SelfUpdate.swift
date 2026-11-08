@@ -14,10 +14,6 @@ public struct SelfUpdate {
     static let assetName = "\(Project.name)-macos-arm64.zip"
     /// What the checksum file adds to the asset's name.
     private static let checksumExtension = ".sha256"
-    /// The key in `Info.plist` that holds the bundle ID.
-    private static let bundleIDKey = "CFBundleIdentifier"
-    /// The key in `Info.plist` that holds the version.
-    private static let versionKey = "CFBundleShortVersionString"
 
     /// Looks up and downloads the releases.
     private let github: any GitHub
@@ -107,8 +103,8 @@ public struct SelfUpdate {
             guard await BundleSigner(runner: runner, files: files).isSigned(kept, by: identity) else {
                 throw UpdateError.keptUnsigned
             }
-            let from = await version(of: installed)
-            let back = await version(of: kept)
+            let from = version(of: installed)
+            let back = version(of: kept)
             try files.exchange(kept, installed)
             report(.rolledBack(to: back, kept: from))
         } catch {
@@ -158,8 +154,7 @@ public struct SelfUpdate {
     /// Checks that `app` is Malum, signs it with Malum's certificate, and checks that it says it's
     /// `version`.
     private func check(_ app: String, version: Version) async throws {
-        let read = await runner.run(Defaults.read(Paths.info(of: app), Self.bundleIDKey))
-        let bundleID = read.succeeded ? read.output.trimmingCharacters(in: .whitespacesAndNewlines) : nil
+        let bundleID = AppBundle.bundleID(of: app, files: files)
         guard bundleID == Project.bundleID else { throw UpdateError.otherApp(bundleID: bundleID) }
         guard let identity = await certificate.find() else { throw UpdateError.noCertificate }
         try await BundleSigner(runner: runner, files: files).install(app, at: app, identity: identity)
@@ -193,10 +188,8 @@ public struct SelfUpdate {
     }
 
     /// The version the app `bundle` says it is, as its `Info.plist` has it.
-    private func version(of bundle: String) async -> String {
-        let read = await runner.run(Defaults.read(Paths.info(of: bundle), Self.versionKey))
-        let text = read.output.trimmingCharacters(in: .whitespacesAndNewlines)
-        return read.succeeded && !text.isEmpty ? text : Self.unknownVersion
+    private func version(of bundle: String) -> String {
+        AppBundle.version(of: bundle, files: files) ?? Self.unknownVersion
     }
 
     /// Restarts the app so the swapped-in version runs. The new version is in place either way, so

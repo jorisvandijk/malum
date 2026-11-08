@@ -23,8 +23,8 @@ public struct Paths: Equatable, Sendable {
     private static let loginKeychainPath = "Library/Keychains/login.keychain-db"
     /// The folder inside an app bundle that holds its executable.
     private static let executableFolder = "Contents/MacOS"
-    /// An app bundle's `Info.plist`, without `.plist`, the way `defaults read` takes it.
-    private static let infoFile = "Contents/Info"
+    /// An app bundle's `Info.plist`.
+    private static let infoFile = "Contents/Info.plist"
     /// The state folder's folder that keeps the version an update replaced.
     private static let previousFolder = "previous"
 
@@ -55,7 +55,7 @@ public struct Paths: Equatable, Sendable {
         "\(bundle)/\(executableFolder)/\(Project.name)"
     }
 
-    /// The `Info.plist` of the app bundle `bundle`, without `.plist`, for `Defaults.read`.
+    /// The `Info.plist` of the app bundle `bundle`.
     public static func info(of bundle: String) -> String { "\(bundle)/\(infoFile)" }
     /// `~/Library/Keychains/login.keychain-db`, where Malum's signing certificate goes.
     public var loginKeychain: String { "\(home)/\(Self.loginKeychainPath)" }

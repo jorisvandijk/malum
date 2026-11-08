@@ -7,37 +7,33 @@ import Testing
 struct AppleAppsTests {
     private static let garageBand = "/Applications/GarageBand.app"
     private static let pages = "/Applications/Pages.app"
-    private static let files = FakeFileSystem(
-        items: ["\(garageBand)/Contents": .directory, "\(pages)/Contents": .directory])
 
-    /// A runner that gives each app at `path` the bundle ID in `ids`.
-    private static func runner(_ ids: [String: String]) -> FakeRunner {
-        FakeRunner { command in
-            guard
-                let path = ids.keys.first(where: {
-                    command == Defaults.read("\($0)/Contents/Info", "CFBundleIdentifier")
-                })
-            else { return CommandResult(status: 0) }
-            return CommandResult(status: 0, output: (ids[path] ?? "") + "\n")
+    /// A disk where each app at a path in `ids` has that bundle ID.
+    private static func files(_ ids: [String: String]) -> FakeFileSystem {
+        var texts: [String: String] = [:]
+        for (path, id) in ids {
+            texts["\(path)/Contents/Info.plist"] = AppBundleTests.info(bundleID: id, version: "1.0")
         }
+        return FakeFileSystem(texts: texts)
     }
 
-    /// Removes `names` with `runner`, and gives back whether it worked and what it said.
-    private func remove(_ names: [String], runner: FakeRunner) async -> (Bool, [Message]) {
+    /// Removes `names` from a disk with the bundle IDs `ids`, and gives back whether it worked and
+    /// what it said.
+    private func remove(_ names: [String], ids: [String: String], runner: FakeRunner) async -> (Bool, [Message]) {
         var messages: [Message] = []
-        let apps = AppleApps(runner: runner, files: Self.files, sudo: SudoSession(runner: runner, canAsk: true))
+        let apps = AppleApps(runner: runner, files: Self.files(ids), sudo: SudoSession(runner: runner, canAsk: true))
         let succeeded = await apps.remove(names) { messages.append($0) }
         return (succeeded, messages)
     }
 
     @Test func removesAppleAppsAsRootAndSkipsMissingOnes() async {
-        let runner = Self.runner([Self.garageBand: "com.apple.garageband10"])
-        let (succeeded, messages) = await remove(["iMovie", "GarageBand"], runner: runner)
+        let runner = FakeRunner()
+        let ids = [Self.garageBand: "com.apple.garageband10"]
+        let (succeeded, messages) = await remove(["iMovie", "GarageBand"], ids: ids, runner: runner)
         #expect(succeeded)
         #expect(
             runner.commands == [
-                Defaults.read("\(Self.garageBand)/Contents/Info", "CFBundleIdentifier"), Sudo.authorize,
-                Sudo.asRoot(Command("/bin/rm", ["-rf", Self.garageBand])),
+                Sudo.authorize, Sudo.asRoot(Command("/bin/rm", ["-rf", Self.garageBand])),
             ])
         #expect(
             messages == [
@@ -47,10 +43,10 @@ struct AppleAppsTests {
     }
 
     @Test func appThatIsntApplesStays() async {
-        let runner = Self.runner([Self.pages: "com.example.pages"])
-        let (succeeded, messages) = await remove(["Pages"], runner: runner)
+        let runner = FakeRunner()
+        let (succeeded, messages) = await remove(["Pages"], ids: [Self.pages: "com.example.pages"], runner: runner)
         #expect(!succeeded)
-        #expect(runner.commands.count == 1)
+        #expect(runner.commands.isEmpty)
         #expect(
             messages == [
                 Message(

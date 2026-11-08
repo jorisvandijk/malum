@@ -1,3 +1,5 @@
+import Foundation
+
 /// The files Malum reads and writes, behind a protocol so tests never touch the disk.
 public protocol FileSystem: Sendable {
     /// What sits at `path`, or nil when nothing does. A link is reported as a link, not followed.
@@ -7,6 +9,8 @@ public protocol FileSystem: Sendable {
     func canonicalPath(_ path: String) -> String
     /// The text of the file at `path`.
     func read(_ path: String) throws(FileSystemError) -> String
+    /// The bytes of the file at `path`, for a file that may not be text, such as a binary property list.
+    func data(at path: String) throws(FileSystemError) -> Data
     /// Replaces the file at `path` with `text` in one step.
     func write(_ text: String, to path: String) throws(FileSystemError)
     /// Creates the folder at `path` and any missing folders above it.
