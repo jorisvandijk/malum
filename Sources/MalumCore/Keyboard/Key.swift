@@ -35,7 +35,7 @@ struct Key: Hashable, Sendable {
         byName[name]
     }
 
-    /// The keys `hyper_key` can be, in the order the docs list them.
+    /// The keys `hyper_key` can be, in the order `all` lists them.
     static var hyperKeys: [Key] { all.filter(\.canBeHyper) }
 
     /// Every key, by name.
