@@ -5,8 +5,6 @@
 /// macOS's own, unless it was changed outside Malum: then it stays, and Malum lets it go.
 @MainActor
 struct SystemFileWriter {
-    /// What's added to a file's name for the copy of what was there before Malum overwrote it.
-    private static let backupExtension = ".backup"
     /// The file in the state folder that's copied into place.
     private static let stagedName = "system-file.staged"
 
@@ -83,10 +81,9 @@ struct SystemFileWriter {
             case (_?, _): .updated(path, from: source)
             }
         if let current, ManagedFile.fingerprint(of: current) != known {
-            let backup = path + Self.backupExtension
+            let backup = ManagedFile.backupPath(of: path)
             guard await asRoot(Install.rootFile(path, to: backup), doing: path, report: report) else { return false }
-            let diff = "diff \(Escaping.shell(backup)) \(Escaping.shell(path))"
-            message = .overwrote(path, from: source, changed: known != nil, diff: diff)
+            message = .overwrote(path, from: source, changed: known != nil, backup: backup)
         }
         guard await install(text, at: path, report: report) else { return false }
         report(message)

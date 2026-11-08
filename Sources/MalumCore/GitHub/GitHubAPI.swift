@@ -87,7 +87,7 @@ public struct GitHubAPI: GitHub {
 
     /// Sends a GET to `address`, and gives back the HTTP status and the body.
     private func fetch(_ address: String, accept: String) async throws(GitHubError) -> (Int, Data) {
-        guard let url = URL(string: address) else { throw .unreachable(reason: "\(address) isn't a link") }
+        guard let url = URL(string: address) else { throw .notALink(address: address) }
         var request = URLRequest(url: url)
         request.setValue(accept, forHTTPHeaderField: "Accept")
         request.setValue(Project.command, forHTTPHeaderField: "User-Agent")

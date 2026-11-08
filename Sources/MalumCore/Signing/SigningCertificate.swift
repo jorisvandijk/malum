@@ -61,15 +61,15 @@ public struct SigningCertificate: Sendable {
         let password = UUID().uuidString
         return [
             (
-                "make the certificate",
+                Self.makeStep,
                 OpenSSL.makeCertificate(key: key, certificate: certificate, config: "\(folder)/openssl.cnf")
             ),
             (
-                "bundle it",
+                Self.bundleStep,
                 OpenSSL.bundle(key: key, certificate: certificate, name: Self.name, password: password, output: bundle)
             ),
             (
-                "add it to the login keychain",
+                Self.keychainStep,
                 Security.importIdentity(bundle, password: password, keychain: paths.loginKeychain)
             ),
         ]

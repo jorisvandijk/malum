@@ -18,4 +18,8 @@ public enum FileSystemError: Error, Equatable, Sendable {
     case unlistable(path: String, reason: String)
     /// The file at the path is a TOML file, which only the user writes.
     case userFile(path: String)
+    /// A file was to be written at the path, but a folder is there.
+    case isFolder(path: String)
+    /// What's at the two paths can't be swapped on this system.
+    case swapUnsupported(path: String, other: String)
 }

@@ -28,3 +28,10 @@ extension Invocation {
           --help       show this help
         """
 }
+
+extension Invocation {
+    /// What `disable` needs when it's given nothing.
+    static let needsModule = "a module"
+    /// What `init` needs when it's given nothing.
+    static let needsDots = "the path to dots"
+}

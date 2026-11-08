@@ -6,6 +6,8 @@ public struct ManagedFile: Codable, Equatable, Sendable {
     private static let prime: UInt64 = 0x0000_0100_0000_01B3
     /// The base the fingerprint is written in.
     private static let hexRadix = 16
+    /// What's added to a file's name for the copy of what was there before Malum overwrote it.
+    private static let backupExtension = ".backup"
 
     /// The app whose file in `apps/` it's written from.
     public let app: String
@@ -27,5 +29,11 @@ public struct ManagedFile: Codable, Equatable, Sendable {
             hash = hash &* prime
         }
         return String(hash, radix: hexRadix)
+    }
+
+    /// Where the copy of what was at `path` is kept when Malum overwrites it: next to it, with
+    /// `.backup` added to its name.
+    static func backupPath(of path: String) -> String {
+        path + backupExtension
     }
 }

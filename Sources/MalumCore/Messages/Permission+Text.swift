@@ -23,3 +23,8 @@ extension Permission: CustomStringConvertible {
         }
     }
 }
+
+extension TerminalApp {
+    /// The name used when the terminal doesn't say which one it is.
+    static let unnamed = "your terminal app"
+}

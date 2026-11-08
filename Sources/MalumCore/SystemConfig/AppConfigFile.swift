@@ -58,8 +58,7 @@ struct AppConfigFile: Sendable {
         let text = format.text(from: table, at: tablePath, reader: &reader)
         guard always || text != nil else { return nil }
         let header = format.comment.map { comment in
-            "\(comment.start) Written by \(Project.name) from \(Paths.appFile(named: app)) in dots. "
-                + "Changes made here are overwritten.\(comment.end)\n"
+            "\(comment.start) \(FileHeader.appFile(from: Paths.appFile(named: app)))\(comment.end)\n"
         }
         return AppFile(path, (header ?? "") + (text ?? format.empty), onlyWhenMissing: onlyWhenMissing)
     }

@@ -162,7 +162,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         } catch {
             throw .unwritable(reason: error.localizedDescription)
         }
-        guard let text = String(bytes: data, encoding: .utf8) else { throw .unwritable(reason: "it isn't UTF-8") }
+        guard let text = String(bytes: data, encoding: .utf8) else { throw .notUTF8 }
         return text + "\n"
     }
 }

@@ -6,8 +6,6 @@ public enum TerminalApp {
     private static let iTerm = "iTerm.app"
     /// What kitty sets `TERM` to.
     private static let kittyTerm = "xterm-kitty"
-    /// The name used when the terminal doesn't say which one it is.
-    private static let fallback = "your terminal app"
 
     /// The terminal's name as the user knows it, such as `kitty`, or nil when the command doesn't run
     /// in a terminal, as when a script pipes it.
@@ -22,7 +20,7 @@ public enum TerminalApp {
         case iTerm:
             return "iTerm"
         case "":
-            return fallback
+            return unnamed
         case let program:
             return program
         }

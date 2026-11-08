@@ -18,8 +18,6 @@ public struct SelfUpdate {
     private static let bundleIDKey = "CFBundleIdentifier"
     /// The key in `Info.plist` that holds the version.
     private static let versionKey = "CFBundleShortVersionString"
-    /// What a version that can't be read is called.
-    private static let unknownVersion = "an unknown version"
 
     /// Looks up and downloads the releases.
     private let github: any GitHub

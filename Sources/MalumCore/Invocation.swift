@@ -63,7 +63,7 @@ public enum Invocation: Equatable, Sendable {
 
     /// Reads the arguments of `disable`: exactly one module.
     private static func disable(_ arguments: [String]) -> Self {
-        guard let module = arguments.first else { return .incomplete(command: "disable", needs: "a module") }
+        guard let module = arguments.first else { return .incomplete(command: "disable", needs: needsModule) }
         guard let extra = arguments.dropFirst().first else { return .disable(module: module) }
         return .unknown(extra)
     }
@@ -88,7 +88,7 @@ public enum Invocation: Equatable, Sendable {
 
     /// Reads the arguments of `init`: exactly one path.
     private static func initialize(_ arguments: [String]) -> Self {
-        guard let dots = arguments.first else { return .incomplete(command: "init", needs: "the path to dots") }
+        guard let dots = arguments.first else { return .incomplete(command: "init", needs: needsDots) }
         guard let extra = arguments.dropFirst().first else { return .initialize(dots: dots) }
         return .unknown(extra)
     }

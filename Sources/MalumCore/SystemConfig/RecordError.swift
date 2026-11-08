@@ -4,4 +4,6 @@ enum RecordError: Error, Equatable {
     case unreadable(path: String)
     /// The record couldn't be turned into text.
     case unwritable(reason: String)
+    /// The record's text isn't UTF-8.
+    case notUTF8
 }
