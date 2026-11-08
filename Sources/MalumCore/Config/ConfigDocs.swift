@@ -14,6 +14,12 @@ public enum ConfigDocs {
         the module, such as `[system_config]`. A module is off until its table sets `enabled = true`. \
         A setting that's left out takes its default, when it has one.
 
+        A module's settings can go in a file of their own in dots instead, next to \
+        `\(Paths.configTOMLName)` and named after the module, such as \
+        `\(Paths.moduleTOMLName(SystemConfig.id))`. That file holds the same settings without the \
+        table around them. `\(ConfigSchema.switchKey)` always stays in `\(Paths.configTOMLName)`, and a \
+        module's settings go in one of the two places, never both.
+
         """
 
     /// The page for the modules with these schemas, by the module's id.

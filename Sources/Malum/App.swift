@@ -22,8 +22,7 @@ func runApp() -> Never {
     updateLoginAgent()
     let launches = LaunchRecord(state: state)
     checkCrashLoop(launches, overrides: OverrideStore(state: state))
-    // TODO: one list of the modules, which MalumDocs shares, once there are modules.
-    let modules: [any Module] = []
+    let modules = Modules.all()
     let schemas = ConfigSchemas.all(modules: modules)
     let config = LiveConfig(
         reloader: ConfigReloader(files: files, paths: paths, schemas: schemas),

@@ -39,6 +39,10 @@ struct PathsTests {
         #expect(paths.configTOML(in: "/Users/test/Git/dots") == "/Users/test/Git/dots/malum.toml")
     }
 
+    @Test func moduleTOMLIsNamedAfterTheModuleAtTheTopOfDots() {
+        #expect(paths.moduleTOML("keyboard", in: "/Users/test/Git/dots") == "/Users/test/Git/dots/keyboard.toml")
+    }
+
     @Test func tildeExpandsToHome() {
         #expect(paths.resolve("~/git/dots", relativeTo: "/tmp") == "/Users/test/git/dots")
         #expect(paths.resolve("~", relativeTo: "/tmp") == "/Users/test")

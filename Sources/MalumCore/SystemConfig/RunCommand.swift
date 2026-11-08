@@ -34,12 +34,12 @@ public struct RunCommand {
     /// Loads `malum.toml` and runs each part of system config in order, reporting as it goes. Says
     /// whether everything worked.
     public func run(report: (Message) -> Void) async -> Bool {
-        let reloader = ConfigReloader(files: files, paths: paths, schemas: ConfigSchemas.all(modules: []))
+        let reloader = ConfigReloader(files: files, paths: paths, schemas: ConfigSchemas.all(modules: Modules.all()))
         guard let config = reloader.reload(force: true) else { return false }
         config.problems.map(\.message).forEach(report)
         guard let loaded = config.loaded else { return false }
         guard !config.kept.contains(SystemConfig.id) else {
-            report(.systemConfigNeedsFix(in: loaded))
+            report(.systemConfigNeedsFix)
             return false
         }
         guard reloader.enabled.contains(SystemConfig.id) else {

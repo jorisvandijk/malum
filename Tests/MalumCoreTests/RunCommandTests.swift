@@ -84,7 +84,8 @@ struct RunCommandTests {
         let runner = FakeRunner()
         let (succeeded, messages) = await run("[system_config]\nenabled = true\nformulae = [\"bat\"]\n", runner: runner)
         #expect(!succeeded)
-        #expect(messages.last == Message(.error, "couldn't run system_config: fix its table in \(file) first"))
+        #expect(
+            messages.last == Message(.error, "couldn't run system_config: fix the problems with its settings first"))
         #expect(messages.contains(Message(.error, "malum.toml line 3: unknown setting system_config.formulae")))
         #expect(runner.commands.isEmpty)
     }

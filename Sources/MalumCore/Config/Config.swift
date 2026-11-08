@@ -18,8 +18,11 @@ public struct Config: Sendable {
     /// The ids of the modules this config holds settings for.
     public var modules: Set<String> { Set(schemas.keys) }
 
-    /// Checks `text`, read from `path`, and takes the settings of every module whose table is fine.
-    public mutating func load(_ text: String, from path: String) -> ConfigReport {
+    /// Checks `text`, read from `path`, and each module's own file in `moduleFiles`, by the module's id,
+    /// and takes the settings of every module whose settings are fine.
+    public mutating func load(
+        _ text: String, from path: String, moduleFiles: [String: ModuleFile] = [:]
+    ) -> ConfigReport {
         var reader: TableReader
         do {
             reader = try TableReader(text, file: Paths.configTOMLName)
@@ -34,24 +37,76 @@ public struct Config: Sendable {
         }
         var changed: Set<String> = []
         var kept: Set<String> = []
+        var fileProblems: [ConfigProblem] = []
         for (module, schema) in schemas {
-            guard let value = document[module] else {
-                take([:], for: module, changed: &changed)
-                continue
-            }
-            let before = reader.problems.count
-            if let table = reader.table(value, at: [module]) {
-                for (key, text) in schema.problems(in: table, module: module) {
-                    reader.add(.error, at: [module, key], text)
-                }
-            }
-            guard reader.problems.count == before, case .table(let table) = value else {
+            let file = moduleFiles[module]
+            let table = moduleSettings(of: module, schema: schema, file: file, in: &reader, problems: &fileProblems)
+            guard let table else {
                 kept.insert(module)
                 continue
             }
             take(table, for: module, changed: &changed)
         }
-        return ConfigReport(loaded: path, changed: changed, kept: kept, problems: reader.problems)
+        let loadedFiles = moduleFiles.filter { !kept.contains($0.key) }.map(\.value.path).sorted()
+        return ConfigReport(
+            loaded: path, moduleFiles: loadedFiles, changed: changed, kept: kept,
+            problems: reader.problems + fileProblems)
+    }
+
+    /// The settings of `module`, from its table in `malum.toml` that `reader` reads and from its own
+    /// `file` when there is one, or nil when either has a problem. The own file's problems go in `problems`.
+    private func moduleSettings(
+        of module: String, schema: ConfigSchema, file: ModuleFile?, in reader: inout TableReader,
+        problems: inout [ConfigProblem]
+    ) -> ConfigTable? {
+        guard let table = checkedTable(of: module, schema: schema, in: &reader) else { return nil }
+        guard let file else { return table }
+        guard table.keys.allSatisfy({ $0 == ConfigSchema.switchKey }) else {
+            reader.add(.error, at: [module], .settingsInTwoPlaces(module))
+            return nil
+        }
+        guard let settings = fileSettings(of: module, schema: schema, from: file, problems: &problems) else {
+            return nil
+        }
+        return table.merging(settings) { switchValue, _ in switchValue }
+    }
+
+    /// The table of `module` in `malum.toml`, which `reader` reads, checked against `schema`. Empty
+    /// when it's missing, nil when it has a problem.
+    private func checkedTable(of module: String, schema: ConfigSchema, in reader: inout TableReader) -> ConfigTable? {
+        guard let value = reader.document[module] else { return [:] }
+        let before = reader.problems.count
+        if let table = reader.table(value, at: [module]) {
+            for (key, text) in schema.problems(in: table, at: [module]) {
+                reader.add(.error, at: [module, key], text)
+            }
+        }
+        guard reader.problems.count == before, case .table(let table) = value else { return nil }
+        return table
+    }
+
+    /// The settings in `module`'s own `file`, checked against `schema`, or nil and its problems added
+    /// to `problems` when it has any.
+    private func fileSettings(
+        of module: String, schema: ConfigSchema, from file: ModuleFile, problems: inout [ConfigProblem]
+    ) -> ConfigTable? {
+        let name = Paths.moduleTOMLName(module)
+        var reader: TableReader
+        do {
+            reader = try TableReader(try file.text(named: name), file: name)
+        } catch {
+            problems.append(error)
+            return nil
+        }
+        let document = reader.document
+        if document[ConfigSchema.switchKey] != nil {
+            reader.add(.error, at: [ConfigSchema.switchKey], .switchOutsideConfig(module))
+        }
+        for (key, text) in schema.problems(in: document, at: []) where key != ConfigSchema.switchKey {
+            reader.add(.error, at: [key], text)
+        }
+        problems += reader.problems
+        return reader.problems.isEmpty ? document : nil
     }
 
     /// Takes `table` as the settings of `module`, adding it to `changed` when they differ from the

@@ -75,6 +75,10 @@ public struct Paths: Equatable, Sendable {
     /// `macos.toml`, the name of the file in dots that holds macOS's settings.
     public static var macOSTOMLName: String { "macos.\(tomlExtension)" }
 
+    /// `<module>.toml`, the name of the file in dots that can hold `module`'s settings instead of
+    /// its table in `malum.toml`.
+    public static func moduleTOMLName(_ module: String) -> String { "\(module).\(tomlExtension)" }
+
     /// `apps`, the folder in dots that holds one file for each app whose config Malum writes.
     public static let appsFolderName = "apps"
 
@@ -86,6 +90,9 @@ public struct Paths: Equatable, Sendable {
 
     /// `malum.toml` at the top of the dots folder `dots`.
     public func configTOML(in dots: String) -> String { "\(dots)/\(Self.configTOMLName)" }
+
+    /// `<module>.toml` at the top of the dots folder `dots`.
+    public func moduleTOML(_ module: String, in dots: String) -> String { "\(dots)/\(Self.moduleTOMLName(module))" }
 
     /// `packages.toml` at the top of the dots folder `dots`.
     public func packagesTOML(in dots: String) -> String { "\(dots)/\(Self.packagesTOMLName)" }

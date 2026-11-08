@@ -1,4 +1,4 @@
-/// The settings one module takes in its table in `malum.toml`.
+/// The settings one module takes in its table in `malum.toml`, or in its own file in dots.
 public struct ConfigSchema: Equatable, Sendable {
     /// What the module does, in a sentence or two for the docs.
     public let about: String
@@ -19,16 +19,18 @@ public struct ConfigSchema: Equatable, Sendable {
         self.settings = settings.merging([Self.switchKey: Self.switchSetting]) { _, common in common }
     }
 
-    /// What's wrong with `table`, keyed by the setting it's about. Empty when the table is fine.
-    func problems(in table: ConfigTable, module: String) -> [String: MessageText] {
+    /// What's wrong with `table`, found at `path`, keyed by the setting it's about. Empty when the
+    /// table is fine. The path is the module's table in `malum.toml`, or empty in the module's own file.
+    func problems(in table: ConfigTable, at path: [String]) -> [String: MessageText] {
         var problems: [String: MessageText] = [:]
         for (key, value) in table {
+            let name = TableReader.dotted(path + [key])
             guard let setting = settings[key] else {
-                problems[key] = .unknownKey("\(module).\(key)", isTable: false)
+                problems[key] = .unknownKey(name, isTable: false)
                 continue
             }
             if !setting.kind.accepts(value) {
-                problems[key] = .shouldBe("\(module).\(key)", setting.kind)
+                problems[key] = .shouldBe(name, setting.kind)
             }
         }
         return problems
