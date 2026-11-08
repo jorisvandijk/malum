@@ -43,7 +43,9 @@ public struct StatusCommand {
         }
         // Nothing here asks for the password; the parts only need a session to be built.
         let sudo = SudoSession(runner: runner, canAsk: false)
-        let packages = await packages(in: dots, record: record, sudo: sudo, state: state, report: note)
+        // A problem in packages.toml itself isn't a mismatch.
+        let packages = await packages(
+            in: dots, record: record, sudo: sudo, state: state, problems: report, report: note)
         let extensions = await VSCodiumExtensions(runner: runner, files: files, state: state).status(
             record: record, report: note)
         let appFiles = check(record.files.mapValues(\.fingerprint), .appFiles, report: note)
@@ -57,24 +59,25 @@ public struct StatusCommand {
     }
 
     /// Reports how what `packages.toml` in the dots folder `dots` lists, and what `record` holds,
-    /// look now. Says whether it could tell.
+    /// look now, and what's wrong with the file itself through `problems`. Says whether it could tell.
     private func packages(
-        in dots: String, record: InstalledRecord, sudo: SudoSession, state: StateFolder, report: (Message) -> Void
+        in dots: String, record: InstalledRecord, sudo: SudoSession, state: StateFolder,
+        problems: (Message) -> Void, report: (Message) -> Void
     ) async -> Bool {
         let file = paths.packagesTOML(in: dots)
         var list = PackageList()
         do {
             if files.item(at: file) != nil {
-                let (read, problems) = PackageList.read(try files.read(file))
-                problems.map(\.message).forEach(report)
+                let (read, found) = PackageList.read(try files.read(file))
+                found.map(\.message).forEach(problems)
                 guard let read else {
-                    report(.needsFix(.showStatus, file))
+                    problems(.needsFix(.showStatus, file))
                     return false
                 }
                 list = read
             }
         } catch {
-            report(.failed(.showStatus, error))
+            problems(.failed(.showStatus, error))
             return false
         }
         let homebrew = await HomebrewPackages(runner: runner, files: files, state: state).status(
