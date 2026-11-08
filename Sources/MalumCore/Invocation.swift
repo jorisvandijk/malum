@@ -14,8 +14,10 @@ public enum Invocation: Equatable, Sendable {
     case disable(module: String)
     /// Check that the terminal has the permissions Malum needs in it.
     case permissions
-    /// Make the Mac match dots.
-    case run
+    /// Make the Mac match dots and update Malum, installing an older release too when `force` is set.
+    case run(force: Bool)
+    /// Put back the version of Malum the last update replaced.
+    case rollback
     /// Show what Malum manages and what doesn't match dots.
     case status
     /// Ask for the GitHub token and keep it in the keychain, or remove it when `remove` is set.
@@ -43,6 +45,8 @@ public enum Invocation: Equatable, Sendable {
             self = Self.disable(rest)
         case "token":
             self = Self.token(rest)
+        case "run":
+            self = Self.run(rest)
         default:
             guard let plain = Self.plain[first] else {
                 self = .unknown(first)
@@ -54,7 +58,7 @@ public enum Invocation: Equatable, Sendable {
 
     /// The commands that take no arguments, by name.
     private static let plain: [String: Self] = [
-        "reload": .reload, "safe": .safe, "permissions": .permissions, "run": .run, "status": .status,
+        "reload": .reload, "safe": .safe, "permissions": .permissions, "status": .status, "rollback": .rollback,
     ]
 
     /// Reads the arguments of `disable`: exactly one module.
@@ -71,6 +75,16 @@ public enum Invocation: Equatable, Sendable {
         guard first == "--remove" else { return .unknown(first) }
         return arguments.dropFirst().first.map(Self.unknown) ?? .token(remove: true)
     }
+
+    /// Reads the arguments of `run`: nothing, or `--force`.
+    private static func run(_ arguments: [String]) -> Self {
+        guard let first = arguments.first else { return .run(force: false) }
+        guard first == forceFlag else { return .unknown(first) }
+        return arguments.dropFirst().first.map(Self.unknown) ?? .run(force: true)
+    }
+
+    /// The flag that lets `run` install an older release.
+    private static let forceFlag = "--force"
 
     /// Reads the arguments of `init`: exactly one path.
     private static func initialize(_ arguments: [String]) -> Self {

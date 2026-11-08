@@ -75,7 +75,7 @@ extension SigningError: ReportableError {
         case .unverified(let reason):
             "the signed copy of \(Project.name) didn't pass codesign's check: \(reason)"
         case .unrestartable(let reason):
-            "signed \(Project.name), but couldn't restart it: \(reason); quit it and open it again"
+            .couldnt("restart \(Project.name)", "\(reason); quit it and open it again")
         }
     }
 }

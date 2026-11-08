@@ -81,7 +81,19 @@ struct InvocationTests {
     }
 
     @Test func runMakesTheMacMatchDots() {
-        #expect(Invocation(arguments: ["run"]) == .run)
+        #expect(Invocation(arguments: ["run"]) == .run(force: false))
+    }
+
+    @Test func runWithForceInstallsAnOlderRelease() {
+        #expect(Invocation(arguments: ["run", "--force"]) == .run(force: true))
+    }
+
+    @Test func runWithForceAndExtraArgumentIsReported() {
+        #expect(Invocation(arguments: ["run", "--force", "extra"]) == .unknown("extra"))
+    }
+
+    @Test func rollbackPutsThePreviousVersionBack() {
+        #expect(Invocation(arguments: ["rollback"]) == .rollback)
     }
 
     @Test func runWithExtraArgumentIsReported() {
