@@ -43,9 +43,11 @@ public struct StatusCommand {
         }
         // Nothing here asks for the password; the parts only need a session to be built.
         let sudo = SudoSession(runner: runner, canAsk: false)
-        // A problem in packages.toml itself isn't a mismatch.
-        let packages = await packages(
-            in: dots, record: record, sudo: sudo, state: state, problems: report, report: note)
+        // A problem in packages.toml itself isn't a mismatch, so it goes to `report`.
+        var packages = false
+        if let list = packageList(in: dots, report: report) {
+            packages = await self.packages(list, record: record, sudo: sudo, state: state, report: note)
+        }
         let extensions = await VSCodiumExtensions(runner: runner, files: files, state: state).status(
             record: record, report: note)
         let appFiles = check(record.files.mapValues(\.fingerprint), .appFiles, report: note)
@@ -58,28 +60,29 @@ public struct StatusCommand {
         return known
     }
 
-    /// Reports how what `packages.toml` in the dots folder `dots` lists, and what `record` holds,
-    /// look now, and what's wrong with the file itself through `problems`. Says whether it could tell.
-    private func packages(
-        in dots: String, record: InstalledRecord, sudo: SudoSession, state: StateFolder,
-        problems: (Message) -> Void, report: (Message) -> Void
-    ) async -> Bool {
+    /// What `packages.toml` in the dots folder `dots` lists, or nil, after reporting why, when it
+    /// can't be read. Reports what's wrong in the file.
+    private func packageList(in dots: String, report: (Message) -> Void) -> PackageList? {
         let file = paths.packagesTOML(in: dots)
-        var list = PackageList()
+        guard files.item(at: file) != nil else { return PackageList() }
         do {
-            if files.item(at: file) != nil {
-                let (read, found) = PackageList.read(try files.read(file))
-                found.map(\.message).forEach(problems)
-                guard let read else {
-                    problems(.needsFix(.showStatus, file))
-                    return false
-                }
-                list = read
+            let (read, problems) = PackageList.read(try files.read(file))
+            problems.map(\.message).forEach(report)
+            guard let read else {
+                report(.needsFix(.showStatus, file))
+                return nil
             }
+            return read
         } catch {
-            problems(.failed(.showStatus, error))
-            return false
+            report(.failed(.showStatus, error))
+            return nil
         }
+    }
+
+    /// Reports how what `list` lists, and what `record` holds, look now. Says whether it could tell.
+    private func packages(
+        _ list: PackageList, record: InstalledRecord, sudo: SudoSession, state: StateFolder, report: (Message) -> Void
+    ) async -> Bool {
         let homebrew = await HomebrewPackages(runner: runner, files: files, state: state).status(
             list.homebrew, record: record, report: report)
         let appStore = await AppStoreApps(runner: runner, files: files, sudo: sudo, state: state).status(
