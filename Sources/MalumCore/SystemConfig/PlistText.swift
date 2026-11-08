@@ -1,12 +1,17 @@
 /// Property lists, the format `defaults` takes an app's preferences in, one value at a time.
 enum PlistText {
+    /// The two lines every property list document starts with.
+    static let header = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        """
+
     /// `value` as a property list document, or nil when it isn't text, a number, true or false,
     /// or a list or table of them.
     static func document(_ value: ConfigValue) -> String? {
         element(value).map { element in
             """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            \(header)
             <plist version="1.0">\(element)</plist>
             """
         }

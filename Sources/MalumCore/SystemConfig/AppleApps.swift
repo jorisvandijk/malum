@@ -13,10 +13,8 @@ struct AppleApps {
     private static let folder = "/Applications"
     /// What every Apple app's bundle ID starts with.
     private static let applePrefix = "com.apple."
-    /// The key of an app's bundle ID in its `Contents/Info.plist`.
-    private static let bundleIDKey = "CFBundleIdentifier"
 
-    /// Reads the bundle IDs and removes the apps.
+    /// Removes the apps.
     private let runner: any CommandRunner
     /// The disk, where the apps are.
     private let files: any FileSystem
@@ -54,8 +52,7 @@ struct AppleApps {
         for name in names {
             let path = "\(Self.folder)/\(name).app"
             guard files.item(at: path) == .directory else { continue }
-            let read = await runner.run(Defaults.read(Paths.info(of: path), Self.bundleIDKey))
-            let bundleID = read.succeeded ? read.output.trimmingCharacters(in: .whitespacesAndNewlines) : nil
+            let bundleID = AppBundle.bundleID(of: path, files: files)
             guard let bundleID, bundleID.hasPrefix(Self.applePrefix) else {
                 report(.notAppleApp(path, bundleID: bundleID))
                 succeeded = false

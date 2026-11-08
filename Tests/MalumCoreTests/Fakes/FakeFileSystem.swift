@@ -1,3 +1,4 @@
+import Foundation
 import Synchronization
 
 @testable import MalumCore
@@ -49,6 +50,10 @@ final class FakeFileSystem: FileSystem {
     func read(_ path: String) throws(FileSystemError) -> String {
         guard let text = text(at: path) else { throw .unreadable(path: path, reason: "no such file") }
         return text
+    }
+
+    func data(at path: String) throws(FileSystemError) -> Data {
+        Data(try read(path).utf8)
     }
 
     func write(_ text: String, to path: String) throws(FileSystemError) {

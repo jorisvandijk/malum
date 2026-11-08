@@ -15,8 +15,8 @@ struct SelfUpdateTests {
 
     /// The installed app at `version`, with `kept` as the version kept for a rollback.
     private func disk(installed version: String = "0.2.0", kept: String? = nil) -> FakeFileSystem {
-        var texts = [installedInfo: version]
-        if let kept { texts[keptInfo] = kept }
+        var texts = [installedInfo: AppBundleTests.info(version: version)]
+        if let kept { texts[keptInfo] = AppBundleTests.info(version: kept) }
         return FakeFileSystem(texts: texts)
     }
 
@@ -45,13 +45,9 @@ struct SelfUpdateTests {
             case Shasum.path:
                 return CommandResult(status: 0, output: "abc123  \(command.arguments.last ?? "")\n")
             case Ditto.path:
-                try? files.write(version, to: "\(command.arguments.last ?? "")/Malum.app/Contents/Info.plist")
+                let info = AppBundleTests.info(bundleID: bundleID, version: version)
+                try? files.write(info, to: "\(command.arguments.last ?? "")/Malum.app/Contents/Info.plist")
                 return CommandResult(status: 0)
-            case Defaults.path where command.arguments.last == "CFBundleIdentifier":
-                return CommandResult(status: 0, output: "\(bundleID)\n")
-            case Defaults.path:
-                let plist = "\(command.arguments.dropLast().last ?? "").plist"
-                return CommandResult(status: 0, output: "\(files.text(at: plist) ?? "")\n")
             case let path where path.hasSuffix("/Contents/MacOS/Malum"):
                 return CommandResult(status: 0, output: "\(says)\n")
             default:
@@ -129,13 +125,13 @@ struct SelfUpdateTests {
                 Message(.info, "updating Malum 0.2.0 to 0.3.0"),
                 Message(.info, "updated Malum to 0.3.0; malum rollback puts 0.2.0 back"),
             ])
-        #expect(files.text(at: installedInfo) == "0.3.0")
-        #expect(files.text(at: keptInfo) == "0.2.0")
+        #expect(files.text(at: installedInfo) == AppBundleTests.info(version: "0.3.0"))
+        #expect(files.text(at: keptInfo) == AppBundleTests.info(version: "0.2.0"))
         #expect(files.item(at: scratch) == nil)
         let app = "\(scratch)/unpacked/Malum.app"
         #expect(
             runner.commands.map(\.executable) == [
-                Shasum.path, Ditto.path, Defaults.path, "/usr/bin/security", Codesign.path, Codesign.path,
+                Shasum.path, Ditto.path, "/usr/bin/security", Codesign.path, Codesign.path,
                 "\(app)/Contents/MacOS/Malum", "/bin/launchctl", "/bin/launchctl",
             ])
         #expect(runner.commands.first { $0.arguments.first == "--force" }?.arguments.last == "\(app).staged")
@@ -152,7 +148,7 @@ struct SelfUpdateTests {
                 Message(.info, "updating Malum 0.2.0 to 0.1.0"),
                 Message(.info, "updated Malum to 0.1.0; malum rollback puts 0.2.0 back"),
             ])
-        #expect(files.text(at: installedInfo) == "0.1.0")
+        #expect(files.text(at: installedInfo) == AppBundleTests.info(version: "0.1.0"))
     }
 
     @Test func privateRepositoryIsReported() async {
@@ -184,7 +180,7 @@ struct SelfUpdateTests {
         let (succeeded, messages) = await run(update(files, github: github(files, sum: "fff000")))
         #expect(!succeeded)
         #expect(messages.last == Message(.error, "couldn't update Malum: \(zip) doesn't match its checksum"))
-        #expect(files.text(at: installedInfo) == "0.2.0")
+        #expect(files.text(at: installedInfo) == AppBundleTests.info(version: "0.2.0"))
         #expect(files.item(at: keptInfo) == nil && files.item(at: scratch) == nil)
     }
 
@@ -197,7 +193,7 @@ struct SelfUpdateTests {
                 == Message(
                     .error, "couldn't update Malum: the downloaded app is com.example.other, not com.jorisvandijk.malum"
                 ))
-        #expect(files.text(at: installedInfo) == "0.2.0")
+        #expect(files.text(at: installedInfo) == AppBundleTests.info(version: "0.2.0"))
     }
 
     @Test func wrongVersionLeavesTheAppAlone() async {
@@ -206,16 +202,18 @@ struct SelfUpdateTests {
         #expect(!succeeded)
         #expect(
             messages.last == Message(.error, "couldn't update Malum: the downloaded app says it's 0.2.9, not 0.3.0"))
-        #expect(files.text(at: installedInfo) == "0.2.0")
+        #expect(files.text(at: installedInfo) == AppBundleTests.info(version: "0.2.0"))
     }
 
     @Test func rollbackSwapsTheKeptVersionInBothWays() async {
         let files = disk(installed: "0.3.0", kept: "0.2.0")
         var messages: [Message] = []
         #expect(await update(files).rollBack { messages.append($0) })
-        #expect(files.text(at: installedInfo) == "0.2.0" && files.text(at: keptInfo) == "0.3.0")
+        #expect(files.text(at: installedInfo) == AppBundleTests.info(version: "0.2.0"))
+        #expect(files.text(at: keptInfo) == AppBundleTests.info(version: "0.3.0"))
         #expect(await update(files).rollBack { messages.append($0) })
-        #expect(files.text(at: installedInfo) == "0.3.0" && files.text(at: keptInfo) == "0.2.0")
+        #expect(files.text(at: installedInfo) == AppBundleTests.info(version: "0.3.0"))
+        #expect(files.text(at: keptInfo) == AppBundleTests.info(version: "0.2.0"))
         #expect(
             messages == [
                 Message(.info, "rolled back Malum to 0.2.0; malum rollback puts 0.3.0 back"),
@@ -228,7 +226,7 @@ struct SelfUpdateTests {
         var messages: [Message] = []
         #expect(!(await update(files).rollBack { messages.append($0) }))
         #expect(messages == [Message(.error, "couldn't roll back Malum: no previous version is kept")])
-        #expect(files.text(at: installedInfo) == "0.2.0")
+        #expect(files.text(at: installedInfo) == AppBundleTests.info(version: "0.2.0"))
     }
 }
 
