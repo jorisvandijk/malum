@@ -29,8 +29,8 @@ extension WorkspaceAppHandlers: AppHandlers {
     public func handler(for target: OpenTarget) -> String? {
         let app: URL? =
             switch target {
-            case .scheme(let scheme): Self.link(scheme).flatMap { workspace.urlForApplication(toOpen: $0) }
-            case .contentType(let type): UTType(type).flatMap { workspace.urlForApplication(toOpen: $0) }
+            case .scheme(let scheme): Self.link(scheme).flatMap { NSWorkspace.shared.urlForApplication(toOpen: $0) }
+            case .contentType(let type): UTType(type).flatMap { NSWorkspace.shared.urlForApplication(toOpen: $0) }
             }
         return app.flatMap { Bundle(url: $0)?.bundleIdentifier }
     }
