@@ -428,4 +428,27 @@ After a change, Malum tells running apps about it, and restarts Finder, the Dock
 
 The last line shows when a setting changed that nothing can be restarted for.
 
+### Hosts and Touch ID for sudo
+
+Two more tables in `macos.toml` change files that only root can change. They use the run's one password prompt, and only ask when a file has to change.
+
+```toml
+[hosts]
+"ha.home" = "10.0.0.110"
+
+[sudo]
+touch_id = true
+```
+
+`[hosts]` holds the names this Mac looks up itself instead of asking DNS, each with its address. With this table Malum owns `/etc/hosts`: it writes macOS's own lines followed by one line for each name, then makes macOS read the file again. An empty `[hosts]` leaves only macOS's own lines. Taking the table out puts back the file macOS ships with.
+
+`touch_id = true` in `[sudo]` lets `sudo` in the terminal take Touch ID instead of the password, through `/etc/pam.d/sudo_local`, which macOS keeps across updates. `false`, or taking it out, removes that file when Malum wrote it.
+
+These work like app config files: a file that was already there, or that was changed outside Malum, is overwritten, and the old one is kept next to it with `.backup` added, with a warning that gives the `diff` command to see what changed. A file Malum wrote that was changed by hand stays when you take its table out, and Malum lets it go. Malum keeps the files it wrote in `installed.json`, under `system_files`.
+
+```
+[info] asking for your password to change /etc/hosts or Touch ID for sudo
+[info] wrote /etc/pam.d/sudo_local from macos.toml
+```
+
 The messages also go to the macOS log, as the [log page](log.md) describes.

@@ -2,6 +2,8 @@
 extension MessageText {
     /// Setting macOS's settings.
     static let setMacOSSettings: MessageText = "set macOS settings"
+    /// Changing the files only root can change.
+    static let changeSystemFiles: MessageText = "change \(SystemFile.hosts.path) or Touch ID for sudo"
 }
 
 extension Message {
@@ -33,5 +35,20 @@ extension Message {
     /// A changed setting may only show after logging out.
     static var logOutToApply: Message {
         Message(.info, "some macOS settings, such as key repeat, take full effect after you log out and back in")
+    }
+
+    /// `path` was set back to macOS's own, since `source` doesn't set it anymore.
+    static func putBack(_ path: String, source: String) -> Message {
+        Message(.info, "put back macOS's own \(path), \(source) doesn't set it anymore")
+    }
+
+    /// The file at `path` couldn't be changed as root.
+    static func systemFileNotChanged(_ path: String, reason: String) -> Message {
+        couldnt("change \(path)", "\(reason)")
+    }
+
+    /// macOS couldn't be made to read `/etc/hosts` again.
+    static func hostsNotReread(reason: String) -> Message {
+        couldnt("make macOS read \(SystemFile.hosts.path) again", "\(reason)", level: .warn)
     }
 }

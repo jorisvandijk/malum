@@ -8,4 +8,10 @@ public enum Killall {
     public static func restart(_ process: String) -> Command {
         Command(path, [process])
     }
+
+    /// Tells every process called `process` to read its settings again, such as `mDNSResponder`
+    /// after a change to `/etc/hosts`.
+    public static func hangUp(_ process: String) -> Command {
+        Command(path, ["-HUP", process])
+    }
 }

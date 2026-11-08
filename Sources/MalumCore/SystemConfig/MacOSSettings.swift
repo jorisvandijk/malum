@@ -1,11 +1,26 @@
 /// The macOS settings part of system config: sets the preferences `macos.toml` in dots lists, by
-/// domain and the names macOS stores them under, then restarts what has to show them.
+/// domain and the names macOS stores them under, then restarts what has to show them. It also
+/// writes the files only root can change: `/etc/hosts` and Touch ID for sudo.
 @MainActor
 struct MacOSSettings {
     /// The table of preferences, one table inside it for each domain.
     static let preferencesTable = "preferences"
     /// The table of preferences macOS keeps for this Mac only, one table inside it for each domain.
     static let currentHostTable = "current_host"
+    /// The table of names this Mac looks up itself, each with its address.
+    static let hostsTable = "hosts"
+    /// The table of how sudo asks who you are.
+    static let sudoTable = "sudo"
+    /// The key in `[sudo]` that lets sudo take Touch ID.
+    static let touchIDKey = "touch_id"
+
+    /// What `macos.toml` sets.
+    struct Wanted: Equatable {
+        /// The preferences, in every domain.
+        var preferences: [AppPreference] = []
+        /// The text of each file only root can change, by path.
+        var files: [String: String] = [:]
+    }
 
     /// The process that shows the settings of a domain, which is restarted after a change to it.
     private static let restarts: [String: String] = [
@@ -22,7 +37,7 @@ struct MacOSSettings {
     private let files: any FileSystem
     /// Runs `defaults` and restarts what shows the settings.
     private let runner: any CommandRunner
-    /// Gets root, should a setting be system-wide.
+    /// Gets root for system-wide settings and the files only root can change.
     private let sudo: SudoSession
     /// Where the record of what Malum set is kept.
     private let state: StateFolder
@@ -30,7 +45,7 @@ struct MacOSSettings {
     private let paths: Paths
 
     /// Creates the part, which reads `macos.toml` on `files`, sets the settings with `runner`, as
-    /// root through `sudo` when they're system-wide, and keeps its record in `state`.
+    /// root through `sudo` where needed, and keeps its record in `state`.
     init(files: any FileSystem, runner: any CommandRunner, sudo: SudoSession, state: StateFolder, paths: Paths) {
         self.files = files
         self.runner = runner
@@ -48,7 +63,7 @@ struct MacOSSettings {
             report(.noMacOSSettings(missing: file))
             return true
         }
-        let reading: (preferences: [AppPreference]?, problems: [ConfigProblem])
+        let reading: (wanted: Wanted?, problems: [ConfigProblem])
         do {
             reading = Self.read(try files.read(file))
         } catch {
@@ -56,33 +71,74 @@ struct MacOSSettings {
             return false
         }
         reading.problems.map(\.message).forEach(report)
-        guard let preferences = reading.preferences else {
+        guard let wanted = reading.wanted else {
             report(.needsFix(.setMacOSSettings, file))
             return false
         }
+        let wrote = await SystemFileWriter(runner: runner, files: files, sudo: sudo, state: state).write(
+            wanted.files, report: report)
         var changed: Set<String> = []
         let writer = AppPreferenceWriter(runner: runner, files: files, sudo: sudo, state: state, scope: .macOS)
-        let succeeded = await writer.write(
-            preferences.map { (Paths.macOSTOMLName, $0) }, keeping: [], changed: { changed.insert($0) }, report: report)
+        let set = await writer.write(
+            wanted.preferences.map { (Paths.macOSTOMLName, $0) }, keeping: [], changed: { changed.insert($0) },
+            report: report)
         await show(changed, report: report)
-        return succeeded
+        return wrote && set
     }
 
-    /// Reads `text`, the contents of `macos.toml`: its preferences, or nil when an error stops
-    /// them, and every problem found.
-    static func read(_ text: String) -> (preferences: [AppPreference]?, problems: [ConfigProblem]) {
+    /// Reads `text`, the contents of `macos.toml`: what it sets, or nil when an error stops it, and
+    /// every problem found.
+    static func read(_ text: String) -> (wanted: Wanted?, problems: [ConfigProblem]) {
         var reader: TableReader
         do {
             reader = try TableReader(text, file: Paths.macOSTOMLName)
         } catch {
             return (nil, [error])
         }
-        reader.unknownKeys(reader.document, at: [], known: [preferencesTable, currentHostTable])
-        let preferences =
+        reader.unknownKeys(
+            reader.document, at: [], known: [preferencesTable, currentHostTable, hostsTable, sudoTable])
+        var wanted = Wanted()
+        wanted.preferences =
             domains(preferencesTable, named: { $0 }, &reader)
             + domains(currentHostTable, named: Defaults.currentHost, &reader)
+        if reader.document[hostsTable] != nil {
+            wanted.files[SystemFile.hosts.path] = SystemFile.hosts(hosts(&reader))
+        }
+        if touchID(&reader) {
+            wanted.files[SystemFile.sudoLocal.path] = SystemFile.touchID
+        }
         let problems = reader.problems.sorted { ($0.line ?? Int.max) < ($1.line ?? Int.max) }
-        return (reader.hasErrors ? nil : preferences, problems)
+        return (reader.hasErrors ? nil : wanted, problems)
+    }
+
+    /// The entries of `[hosts]`, each a host name with its address.
+    private static func hosts(_ reader: inout TableReader) -> [(key: String, value: String)] {
+        let table = reader.table(reader.document, hostsTable, at: [])
+        let entries = reader.entries(table, at: [hostsTable], expected: SettingKind.string.description) {
+            guard case .string(let address) = $0 else { return nil }
+            return address
+        }
+        return entries.filter { entry in
+            let plain = [entry.key, entry.value].allSatisfy { !$0.isEmpty && !$0.contains { $0.isWhitespace } }
+            if !plain {
+                reader.add(
+                    .error, at: [hostsTable, entry.key], .notHostsEntry(TableReader.dotted([hostsTable, entry.key])))
+            }
+            return plain
+        }
+    }
+
+    /// Whether `[sudo]` lets sudo take Touch ID.
+    private static func touchID(_ reader: inout TableReader) -> Bool {
+        guard reader.document[sudoTable] != nil else { return false }
+        let table = reader.table(reader.document, sudoTable, at: [])
+        reader.unknownKeys(table, at: [sudoTable], known: [touchIDKey])
+        guard let value = table[touchIDKey] else { return false }
+        guard case .boolean(let on) = value else {
+            reader.expect([sudoTable, touchIDKey], SettingKind.boolean)
+            return false
+        }
+        return on
     }
 
     /// The preferences in each domain's table inside the table `name`, each in the domain `named`
