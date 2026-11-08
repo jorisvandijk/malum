@@ -30,7 +30,7 @@ enum FeedText {
             fields = table
         }
         guard case .string(let url)? = fields["url"], !url.isEmpty, !url.contains(where: \.isWhitespace) else {
-            reader.expect(path, "an address without spaces, or a table with url and tags")
+            reader.expect(path, MessageText.feedValue)
             return nil
         }
         guard let tags = fields["tags"] else { return (url, []) }

@@ -139,7 +139,7 @@ struct MacOSSettings {
     /// The entries of `[hosts]`, each a host name with its address.
     private static func hosts(_ reader: inout TableReader) -> [(key: String, value: String)] {
         let table = reader.table(reader.document, hostsTable, at: [])
-        let entries = reader.entries(table, at: [hostsTable], expected: SettingKind.string.description) {
+        let entries = reader.entries(table, at: [hostsTable], expected: SettingKind.string) {
             guard case .string(let address) = $0 else { return nil }
             return address
         }
@@ -179,7 +179,7 @@ struct MacOSSettings {
                 continue
             }
             guard let table = reader.table(value, at: path) else { continue }
-            let entries = reader.entries(table, at: path, expected: PlistText.expected, write: PlistText.document)
+            let entries = reader.entries(table, at: path, expected: MessageText.plistValue, write: PlistText.document)
             preferences += entries.map { AppPreference(domain: domain(key), key: $0.key, value: $0.value) }
         }
         return preferences
