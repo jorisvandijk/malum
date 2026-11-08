@@ -3,6 +3,8 @@
 struct AppConfig: Sendable {
     /// The table that holds the app's preferences.
     static let preferencesTable = "preferences"
+    /// The table that holds the app's system-wide preferences, such as a browser's policies.
+    static let policiesTable = "policies"
     /// The table that lists the app's extensions, in `ids`.
     static let extensionsTable = "extensions"
     /// The key in `extensionsTable` that lists them.
@@ -13,16 +15,24 @@ struct AppConfig: Sendable {
     /// The preferences domain the table `preferences` is written to, such as `com.if.Amphetamine`,
     /// or nil when the app has none.
     let domain: String?
+    /// The system-wide preferences domain the table `policies` is written to, such as
+    /// `/Library/Preferences/net.librewolf.librewolf`, or nil when the app has none.
+    let policies: String?
     /// The files the app gets.
     let files: [AppConfigFile]
     /// Whether the app lists extensions to install, as VSCodium does.
     let extensions: Bool
 
-    /// Creates the app called `name`, which gets `files`, its preferences in `domain` when that's
-    /// set, and the extensions it lists when it has `extensions`.
-    init(name: String, domain: String? = nil, files: [AppConfigFile] = [], extensions: Bool = false) {
+    /// Creates the app called `name`, which gets `files`, its preferences in `domain` and its
+    /// system-wide ones in `policies` when those are set, and the extensions it lists when it has
+    /// `extensions`.
+    init(
+        name: String, domain: String? = nil, policies: String? = nil, files: [AppConfigFile] = [],
+        extensions: Bool = false
+    ) {
         self.name = name
         self.domain = domain
+        self.policies = policies
         self.files = files
         self.extensions = extensions
     }
@@ -31,21 +41,29 @@ struct AppConfig: Sendable {
     /// to `reader`.
     func read(_ reader: inout TableReader) -> AppSettings {
         let tables =
-            files.flatMap(\.tables) + (domain == nil ? [] : [Self.preferencesTable])
-            + (extensions ? [Self.extensionsTable] : [])
+            files.flatMap(\.tables) + preferenceTables.map(\.table) + (extensions ? [Self.extensionsTable] : [])
         reader.unknownKeys(reader.document, at: [], known: tables)
         let appFiles = files.flatMap { $0.read(reader.document, app: name, reader: &reader) }
         return AppSettings(files: appFiles, preferences: preferences(&reader), extensions: extensionIDs(&reader))
     }
 
-    /// The preferences in the table `preferences`, none when the app has no domain.
+    /// The tables of preferences the app has, each with the domain it's written to.
+    private var preferenceTables: [(table: String, domain: String)] {
+        [(Self.preferencesTable, domain), (Self.policiesTable, policies)].compactMap { table, domain in
+            domain.map { (table, $0) }
+        }
+    }
+
+    /// The preferences in the tables `preferences` and `policies`, none when the app has no domain.
     private func preferences(_ reader: inout TableReader) -> [AppPreference] {
-        guard let domain else { return [] }
-        let table = reader.table(reader.document, Self.preferencesTable, at: [])
-        let entries = reader.entries(
-            table, at: [Self.preferencesTable], expected: PlistText.expected,
-            write: PlistText.document)
-        return entries.map { AppPreference(domain: domain, key: $0.key, value: $0.value) }
+        var preferences: [AppPreference] = []
+        for (name, domain) in preferenceTables {
+            let table = reader.table(reader.document, name, at: [])
+            let entries = reader.entries(
+                table, at: [name], expected: PlistText.expected, write: PlistText.document)
+            preferences += entries.map { AppPreference(domain: domain, key: $0.key, value: $0.value) }
+        }
+        return preferences
     }
 
     /// The extensions in `ids` of the table `extensions`, as `publisher.name`, none when the app

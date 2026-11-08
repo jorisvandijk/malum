@@ -219,6 +219,39 @@ enable_audio_bell = false
 - `[theme]` and `[settings]`: any of [kitty's options](https://sw.kovidgoyal.net/kitty/conf/), as `option = value`, each written as an `option value` line. `true` and `false` are written as `yes` and `no`. The theme is written first, so a setting wins over it. A list writes the option once for each item, for options kitty takes more than once, such as `symbol_map`.
 - `[keybindings]`: keyboard shortcuts, as `"keys" = "action"`. Each becomes a `map keys action` line.
 
+### LibreWolf
+
+`apps/librewolf.toml` writes LibreWolf's settings and look into its profile, `~/Library/Application Support/LibreWolf/Profiles/default`, and sets its policies for every user of the Mac. LibreWolf reads all of it when it starts: quit and reopen it after a run. Install LibreWolf itself with the `librewolf` cask.
+
+```toml
+[settings]
+"sidebar.verticalTabs" = true
+"toolkit.legacyUserProfileCustomizations.stylesheets" = true
+
+[user_chrome]
+text = '''
+#alltabs-button { display: none !important; }
+'''
+
+[policies]
+EnterprisePoliciesEnabled = true
+DisableTelemetry = true
+
+[policies.ExtensionSettings."uBlock0@raymondhill.net"]
+installation_mode = "force_installed"
+install_url = "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi"
+
+[[policies.SearchEngines.Add]]
+Name = "Startpage"
+URLTemplate = "https://www.startpage.com/search?q={searchTerms}"
+```
+
+- `[settings]`: preferences, as you'd find them in `about:config`, as `"name" = value`. Names have dots, so quote them. Each is written to the profile's `user.js` as `user_pref("name", value);`, which LibreWolf applies every time it starts. A value is text, a number, or `true` or `false`.
+- `[user_chrome]`: `text` is written to the profile's `chrome/userChrome.css` as it is, to change LibreWolf's own interface. LibreWolf only reads it when `toolkit.legacyUserProfileCustomizations.stylesheets` is `true` in `[settings]`.
+- `[policies]`: [Mozilla's enterprise policies](https://mozilla.github.io/policy-templates/), by their own names: add-ons, search engines, bookmarks, and settings for add-ons such as uBlock Origin's filters. They're set in the system-wide preferences `/Library/Preferences/net.librewolf.librewolf`, like the [app preferences](#app-preferences) but for every user, so a run that changes them asks for your password. Set `EnterprisePoliciesEnabled = true`, or LibreWolf ignores the rest. `defaults read /Library/Preferences/net.librewolf.librewolf` shows what's set, and `about:policies` in LibreWolf shows what it took.
+
+The profile is always called `default`. When `~/Library/Application Support/LibreWolf/profiles.ini` is missing, Malum writes one that makes LibreWolf start with it, and when the profile has no `compatibility.ini`, Malum writes the one LibreWolf leaves in a profile it has used, so LibreWolf takes the profile on its first start instead of making a new one. Both are for LibreWolf in `/Applications`, where the cask puts it. After that the files are LibreWolf's: Malum doesn't change, record or remove them. `user.js` and `userChrome.css` are only written when their table has something in it.
+
 ### micro
 
 `apps/micro.toml` writes micro's options to `~/.config/micro/settings.json`, its key bindings to `bindings.json`, and each colour scheme to its own file in `colorschemes/`, all in `~/.config/micro/`. JSON has no comments, so `settings.json` and `bindings.json` don't start with the line that says where they come from.

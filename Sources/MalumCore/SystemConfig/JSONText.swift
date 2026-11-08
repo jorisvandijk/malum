@@ -14,6 +14,12 @@ enum JSONText {
 
     /// One value as JSON, or nil when it isn't text, a number, true or false, or a list of them.
     private static func value(_ value: ConfigValue) -> String? {
+        guard case .array(let items) = value else { return scalar(value) }
+        return list(items)
+    }
+
+    /// One value as JSON, or nil when it isn't text, a number, or true or false.
+    static func scalar(_ value: ConfigValue) -> String? {
         switch value {
         case .string(let text):
             Escaping.quoted(text, controls: .all)
@@ -23,19 +29,15 @@ enum JSONText {
             number.isFinite ? String(number) : nil
         case .boolean(let flag):
             String(flag)
-        case .array(let items):
-            list(items)
-        case .date, .table:
+        case .array, .date, .table:
             nil
         }
     }
 
-    /// `items` as a JSON list on one line, or nil when one of them is a list or isn't a value.
+    /// `items` as a JSON list on one line, or nil when one of them isn't text, a number, or true
+    /// or false.
     private static func list(_ items: [ConfigValue]) -> String? {
-        let written = items.compactMap { item -> String? in
-            guard case .array = item else { return value(item) }
-            return nil
-        }
+        let written = items.compactMap(scalar)
         guard written.count == items.count else { return nil }
         return "[" + written.joined(separator: ", ") + "]"
     }

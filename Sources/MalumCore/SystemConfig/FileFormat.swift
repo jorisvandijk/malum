@@ -11,25 +11,38 @@ enum FileFormat: Sendable {
     case list(table: String, key: String)
     /// A feed list in newsboat's urls style, one line per feed in `table`.
     case feeds(table: String)
+    /// A call per entry of `table`, such as LibreWolf's `user_pref("name", value);`.
+    case calls(table: String, function: String)
+    /// CSS: the `text` of `table`, as it is.
+    case css(table: String)
+    /// `text` as it is, the same on every Mac, read from no table.
+    case fixed(String)
 
     /// The tables at the top of the TOML the format reads.
     var tables: [String] {
         switch self {
-        case .json(let table), .ini(let table), .list(let table, _), .feeds(let table):
+        case .json(let table), .ini(let table), .list(let table, _), .feeds(let table), .calls(let table, _),
+            .css(let table):
             [table]
         case .lines(let blocks):
             blocks.compactMap(\.table)
+        case .fixed:
+            []
         }
     }
 
-    /// The comment mark of the format, for the line at the top that says where the file comes
-    /// from, or nil when the format has no comments.
-    var comment: String? {
+    /// What starts and ends a comment in the format, for the line at the top that says where the
+    /// file comes from, or nil when the format has no comments or the file isn't from dots.
+    var comment: (start: String, end: String)? {
         switch self {
-        case .json:
+        case .json, .fixed:
             nil
         case .lines, .ini, .list, .feeds:
-            "#"
+            ("#", "")
+        case .calls:
+            ("//", "")
+        case .css:
+            ("/*", " */")
         }
     }
 
@@ -38,7 +51,7 @@ enum FileFormat: Sendable {
         switch self {
         case .json:
             "{}\n"
-        case .lines, .ini, .list, .feeds:
+        case .lines, .ini, .list, .feeds, .calls, .css, .fixed:
             ""
         }
     }
@@ -68,6 +81,14 @@ enum FileFormat: Sendable {
         case .feeds(let name):
             let fields = reader.table(table, name, at: path)
             return FeedText.text(fields, at: path + [name], reader: &reader)
+        case .calls(let name, let function):
+            let fields = reader.table(table, name, at: path)
+            return CallText.text(fields, at: path + [name], function: function, reader: &reader)
+        case .css(let name):
+            let fields = reader.table(table, name, at: path)
+            return LineText.verbatim(fields, at: path + [name], reader: &reader)
+        case .fixed(let text):
+            return text
         }
     }
 }

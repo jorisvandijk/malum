@@ -4,10 +4,14 @@ public struct AppFile: Equatable, Sendable {
     public let path: String
     /// What the file holds.
     public let text: String
+    /// Whether the file is written only when there's none, and left to the app after that.
+    public let onlyWhenMissing: Bool
 
-    /// Creates the file at `path`, relative to the home folder, holding `text`.
-    public init(_ path: String, _ text: String) {
+    /// Creates the file at `path`, relative to the home folder, holding `text`, written only when
+    /// there's none yet when it's `onlyWhenMissing`.
+    public init(_ path: String, _ text: String, onlyWhenMissing: Bool = false) {
         self.path = path
         self.text = text
+        self.onlyWhenMissing = onlyWhenMissing
     }
 }

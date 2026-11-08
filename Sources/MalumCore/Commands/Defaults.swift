@@ -5,6 +5,8 @@ import Foundation
 public enum Defaults {
     /// Where macOS keeps `defaults`.
     public static let path = "/usr/bin/defaults"
+    /// What a system-wide domain's file has after its name.
+    public static let fileExtension = ".plist"
     /// What a domain's name ends with when it's the version macOS keeps for this Mac only.
     private static let currentHostSuffix = " (current host)"
 
@@ -12,6 +14,12 @@ public enum Defaults {
     /// such as the menu bar's items in `com.apple.controlcenter`.
     public static func currentHost(_ domain: String) -> String {
         domain + currentHostSuffix
+    }
+
+    /// Whether `domain` is a system-wide one, named by its file without `.plist`, such as
+    /// `/Library/Preferences/net.librewolf.librewolf`. Only root can change those.
+    public static func isSystemWide(_ domain: String) -> Bool {
+        domain.hasPrefix("/Library/")
     }
 
     /// Prints every preference in `domain` as a property list, an empty one when there's none.

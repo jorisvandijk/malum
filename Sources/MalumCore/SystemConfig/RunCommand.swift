@@ -47,10 +47,12 @@ public struct RunCommand {
         do {
             guard let dots = try DotsPointer(files: files, paths: paths).read() else { return false }
             let state = StateFolder(files: files, locks: locks, paths: paths)
-            let packages = await installPackages(dots: dots, folders: folders, state: state, report: report)
-            let apps = await AppConfigFiles(files: files, runner: runner, state: state, paths: paths).run(
+            let sudo = SudoSession(runner: runner, canAsk: canAsk)
+            defer { sudo.end() }
+            let packages = await installPackages(dots: dots, folders: folders, sudo: sudo, state: state, report: report)
+            let apps = await AppConfigFiles(files: files, runner: runner, sudo: sudo, state: state, paths: paths).run(
                 dots: dots, report: report)
-            let macOS = await MacOSSettings(files: files, runner: runner, state: state, paths: paths).run(
+            let macOS = await MacOSSettings(files: files, runner: runner, sudo: sudo, state: state, paths: paths).run(
                 dots: dots, report: report)
             succeeded = packages && apps && macOS
         } catch {
@@ -61,10 +63,10 @@ public struct RunCommand {
         return succeeded
     }
 
-    /// Reads `packages.toml` from the dots folder `dots` and installs what it lists. Says whether
-    /// everything worked.
+    /// Reads `packages.toml` from the dots folder `dots` and installs what it lists, asking for the
+    /// password through `sudo`. Says whether everything worked.
     private func installPackages(
-        dots: String, folders: ReleaseFolders, state: StateFolder, report: (Message) -> Void
+        dots: String, folders: ReleaseFolders, sudo: SudoSession, state: StateFolder, report: (Message) -> Void
     ) async -> Bool {
         let file = paths.packagesTOML(in: dots)
         do {
@@ -78,8 +80,6 @@ public struct RunCommand {
                 report(.needsFix(.installPackages, file))
                 return false
             }
-            let sudo = SudoSession(runner: runner, canAsk: canAsk)
-            defer { sudo.end() }
             let homebrew = await HomebrewPackages(runner: runner, files: files, state: state).run(
                 list.homebrew, report: report)
             let appStore = await AppStoreApps(runner: runner, files: files, sudo: sudo, state: state).run(

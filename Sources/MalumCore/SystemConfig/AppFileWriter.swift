@@ -5,7 +5,8 @@ import Foundation
 /// Malum owns every file it writes. A file that was changed since the last run, or that was
 /// already there before Malum first wrote it, is overwritten, and the old one is kept next to it,
 /// with `.backup` added to its name. A file no app asks for anymore is removed, unless it was
-/// changed outside Malum: then it stays, and Malum no longer manages it.
+/// changed outside Malum: then it stays, and Malum no longer manages it. A file written only when
+/// it's missing is left to its app once it's there, and isn't recorded.
 @MainActor
 struct AppFileWriter {
     /// What's added to a file's name for the copy of what was there before Malum overwrote it.
@@ -44,6 +45,7 @@ struct AppFileWriter {
         var outcomes: [Outcome] = []
         for (app, file) in wanted {
             let path = "\(paths.home)/\(file.path)"
+            guard !file.onlyWhenMissing || files.item(at: path) == nil else { continue }
             outcomes.append(write(file, to: path, app: app, known: record.files[path], report: report))
         }
         let wantedPaths = Set(wanted.map { "\(paths.home)/\($0.file.path)" })
@@ -78,6 +80,7 @@ struct AppFileWriter {
             return .failed
         }
         report(message)
+        guard !file.onlyWhenMissing else { return .changed }
         return remember(path, ManagedFile(app: app, text: file.text), report: report)
     }
 

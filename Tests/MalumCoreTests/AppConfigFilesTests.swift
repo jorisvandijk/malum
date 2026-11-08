@@ -22,7 +22,9 @@ struct AppConfigFilesTests {
     private func run(_ files: FakeFileSystem) async -> (Bool, [Message]) {
         var messages: [Message] = []
         let succeeded = await AppConfigFiles(
-            files: files, runner: FakeRunner(), state: state(files), paths: Paths(home: home)
+            files: files, runner: FakeRunner(), sudo: SudoSession(runner: FakeRunner(), canAsk: false),
+            state: state(files),
+            paths: Paths(home: home)
         ).run(
             dots: "/Users/joris/dots"
         ) { messages.append($0) }
@@ -193,7 +195,10 @@ struct AppConfigFilesTests {
         )
         try InstalledRecord.change(in: state(files)) { $0.extensions = ["a.b"] }
         let runner = FakeRunner()
-        _ = await AppConfigFiles(files: files, runner: runner, state: state(files), paths: Paths(home: home)).run(
+        _ = await AppConfigFiles(
+            files: files, runner: runner, sudo: SudoSession(runner: runner, canAsk: false), state: state(files),
+            paths: Paths(home: home)
+        ).run(
             dots: "/Users/joris/dots"
         ) { _ in }
         #expect(runner.commands.isEmpty)
@@ -214,7 +219,7 @@ struct AppConfigFilesTests {
         let files = FakeFileSystem(texts: [toml: settings, "/Users/jo ris/.config/git/config": "old\n"])
         var messages: [Message] = []
         _ = await AppConfigFiles(
-            files: files, runner: FakeRunner(),
+            files: files, runner: FakeRunner(), sudo: SudoSession(runner: FakeRunner(), canAsk: false),
             state: StateFolder(files: files, locks: FakeFileLocks(), paths: Paths(home: "/Users/jo ris")),
             paths: Paths(home: "/Users/jo ris")
         ).run(dots: "/Users/joris/dots") { messages.append($0) }
@@ -223,5 +228,20 @@ struct AppConfigFilesTests {
                 "see what changed with: diff '/Users/jo ris/.config/git/config.backup' '/Users/jo ris/.config/git/config'"
             )
                 == true)
+    }
+
+    @Test func fileWrittenOnlyWhenMissingIsLeftAlone() async {
+        let toml = "/Users/joris/dots/apps/librewolf.toml"
+        let ini = "/Users/joris/Library/Application Support/LibreWolf/profiles.ini"
+        let files = FakeFileSystem(texts: [toml: ""])
+        let (_, messages) = await run(files)
+        #expect(messages.first == Message(.info, "wrote \(ini) from apps/librewolf.toml"))
+        #expect(files.text(at: ini)?.contains("Path=Profiles/default\n") == true)
+        #expect(managed(files).isEmpty)
+        try? files.write("[General]\n", to: ini)
+        let (succeeded, again) = await run(files)
+        #expect(succeeded)
+        #expect(again == [Message(.info, "every app config file is up to date")])
+        #expect(files.text(at: ini) == "[General]\n")
     }
 }

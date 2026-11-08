@@ -7,17 +7,23 @@ struct AppConfigFile: Sendable {
     let format: FileFormat
     /// Whether the file is written when its tables are empty or missing.
     let always: Bool
+    /// Whether the file is written only when there's none, and left to the app after that.
+    let onlyWhenMissing: Bool
     /// The table that holds one table per file, such as one per colour scheme, or nil when this
     /// is a single file written from the top of the TOML.
     let each: String?
 
     /// Creates the file at `path`, written in `format`, which is left out when it would be empty
-    /// unless it's written `always`, and written once per table in the table `each` when it's set.
-    init(_ path: String, _ format: FileFormat, always: Bool = false, each: String? = nil) {
+    /// unless it's written `always`, written once per table in the table `each` when it's set, and
+    /// only when there's none yet when it's `onlyWhenMissing`.
+    init(
+        _ path: String, _ format: FileFormat, always: Bool = false, each: String? = nil, onlyWhenMissing: Bool = false
+    ) {
         self.path = path
         self.format = format
         self.always = always
         self.each = each
+        self.onlyWhenMissing = onlyWhenMissing
     }
 
     /// The tables at the top of the TOML this file reads.
@@ -51,10 +57,10 @@ struct AppConfigFile: Sendable {
     ) -> AppFile? {
         let text = format.text(from: table, at: tablePath, reader: &reader)
         guard always || text != nil else { return nil }
-        let header = format.comment.map { mark in
-            "\(mark) Written by \(Project.name) from \(Paths.appFile(named: app)) in dots. "
-                + "Changes made here are overwritten.\n"
+        let header = format.comment.map { comment in
+            "\(comment.start) Written by \(Project.name) from \(Paths.appFile(named: app)) in dots. "
+                + "Changes made here are overwritten.\(comment.end)\n"
         }
-        return AppFile(path, (header ?? "") + (text ?? format.empty))
+        return AppFile(path, (header ?? "") + (text ?? format.empty), onlyWhenMissing: onlyWhenMissing)
     }
 }

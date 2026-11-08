@@ -17,7 +17,9 @@ struct MacOSSettingsTests {
     private func run(_ files: FakeFileSystem, runner: FakeRunner) async -> (Bool, [Message]) {
         var messages: [Message] = []
         let state = StateFolder(files: files, locks: FakeFileLocks(), paths: paths)
-        let succeeded = await MacOSSettings(files: files, runner: runner, state: state, paths: paths).run(
+        let succeeded = await MacOSSettings(
+            files: files, runner: runner, sudo: SudoSession(runner: runner, canAsk: false), state: state, paths: paths
+        ).run(
             dots: "/Users/joris/dots"
         ) { messages.append($0) }
         return (succeeded, messages)

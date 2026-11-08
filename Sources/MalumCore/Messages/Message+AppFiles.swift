@@ -7,6 +7,9 @@ extension MessageText {
     /// Setting every app's preferences.
     static let setPreferences: MessageText = "set app preferences"
 
+    /// Setting the preferences of every Mac user, such as LibreWolf's policies.
+    static let setSystemPreferences: MessageText = "set system-wide app preferences"
+
     /// Installing the extensions VSCodium lists.
     static let installExtensions: MessageText = "install \(vscodiumExtensions)"
 
