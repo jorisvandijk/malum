@@ -8,6 +8,8 @@ protocol Installer {
 
     /// The kind as messages name it, such as `Homebrew cask`.
     var label: MessageText { get }
+    /// The kind in the plural, such as `Homebrew casks`.
+    var plural: MessageText { get }
     /// What tells two items apart, such as the App Store ID. It's the name unless the kind says otherwise.
     func key(of item: Item) -> String
     /// The item's name in `packages.toml`.

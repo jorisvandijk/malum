@@ -68,6 +68,23 @@ public struct GitHubReleases {
         return succeeded
     }
 
+    /// Reports how the releases in `releases` and the ones `record` holds look now, changing
+    /// nothing, looking on `files`: one that's listed counts as missing when Malum hasn't installed
+    /// it or it's gone.
+    static func status(
+        _ releases: [ReleaseEntry], record: InstalledRecord, files: any FileSystem, report: (Message) -> Void
+    ) {
+        guard !releases.isEmpty || !record.releases.isEmpty else { return }
+        report(.statusManaged(record.releases.count, .releases))
+        for entry in releases where record.releases[entry.name].map({ files.item(at: $0.path) == nil }) ?? true {
+            report(.statusNotInstalled(.release, entry.name))
+        }
+        let listed = Set(releases.map(\.name))
+        for name in record.releases.keys.sorted() where !listed.contains(name) {
+            report(.statusNotListed(.release, name))
+        }
+    }
+
     /// Removes the release `name` that Malum installed, and takes it out of the record. Says whether
     /// it worked.
     private func remove(_ name: String, _ installed: InstalledRelease, report: (Message) -> Void) -> Bool {

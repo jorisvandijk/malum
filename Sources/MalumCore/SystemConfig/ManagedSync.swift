@@ -35,6 +35,23 @@ struct ManagedSync<Kind: Installer> {
         return succeeded
     }
 
+    /// Reports how `listed` and `managed` look now, changing nothing: how many Malum manages, each
+    /// listed item that isn't installed, and each managed one that isn't listed anymore. Says
+    /// whether it could tell.
+    func status(listed: [Kind.Item], managed: [Kind.Item], report: (Message) -> Void) async -> Bool {
+        guard !listed.isEmpty || !managed.isEmpty else { return true }
+        guard let isInstalled = await installer.installed(report: report) else { return false }
+        report(.statusManaged(managed.count, installer.plural))
+        let listedKeys = Set(listed.map(installer.key))
+        for item in listed where !isInstalled(item) {
+            report(.statusNotInstalled(installer.label, installer.name(of: item)))
+        }
+        for item in managed where !listedKeys.contains(installer.key(of: item)) {
+            report(.statusNotListed(installer.label, installer.name(of: item)))
+        }
+        return true
+    }
+
     /// Records `items` as managed, since they were installed already. Says whether it worked.
     private func adopt(_ items: [Kind.Item], report: (Message) -> Void) -> Bool {
         guard !items.isEmpty else { return true }

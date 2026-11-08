@@ -16,12 +16,25 @@ struct VSCodiumExtensions {
             return false
         }
         guard !ids.isEmpty || !record.extensions.isEmpty else { return true }
+        guard let sync = sync(report: report) else { return false }
+        return await sync.run(listed: ids, managed: record.extensions.sorted(), report: report)
+    }
+
+    /// Reports how the extensions `record` holds look now, changing nothing. Says whether it could tell.
+    func status(record: InstalledRecord, report: (Message) -> Void) async -> Bool {
+        guard !record.extensions.isEmpty else { return true }
+        guard let sync = sync(report: report) else { return false }
+        let managed = record.extensions.sorted()
+        return await sync.status(listed: managed, managed: managed, report: report)
+    }
+
+    /// Brings extensions in line through `codium`, or nil, after reporting why, when it isn't installed.
+    private func sync(report: (Message) -> Void) -> ManagedSync<Kind>? {
         guard files.item(at: Codium.path) != nil else {
             report(.noCodium)
-            return false
+            return nil
         }
-        let sync = ManagedSync(installer: Kind(runner: runner), state: state)
-        return await sync.run(listed: ids, managed: record.extensions.sorted(), report: report)
+        return ManagedSync(installer: Kind(runner: runner), state: state)
     }
 
     /// How extensions are installed with `codium`.
@@ -29,6 +42,8 @@ struct VSCodiumExtensions {
         let runner: any CommandRunner
 
         var label: MessageText { .vscodiumExtension }
+
+        var plural: MessageText { .vscodiumExtensions }
 
         func key(of item: String) -> String { item.lowercased() }
 

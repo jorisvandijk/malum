@@ -87,7 +87,7 @@ The [menu bar page](docs/menu-bar.md) explains Malum's icon and its menu.
 
 A module that's missing a permission waits until you grant it, and `malum permissions` checks that your terminal has Full Disk Access. The [permissions page](docs/permissions.md) explains both.
 
-`malum run` makes the Mac match dots: for now, it installs the Homebrew formulae and casks listed in `packages.toml` in dots. The [system config page](docs/system-config.md) explains how.
+`malum run` makes the Mac match dots: for now, it installs the Homebrew formulae and casks listed in `packages.toml` in dots. `malum status` shows what Malum manages and what doesn't match dots. The [system config page](docs/system-config.md) explains how.
 
 When something keeps crashing Malum, it turns on safe mode by itself, with every module off. `malum safe` turns it on by hand, and `malum disable <module>` keeps one module off. The [safe mode page](docs/safe-mode.md) has the details.
 

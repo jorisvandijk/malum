@@ -23,20 +23,48 @@ public struct HomebrewPackages {
         guard let record = InstalledRecord.read(from: state, for: .installPackages, report: report) else {
             return false
         }
-        let work = PackageKind.allCases.filter { !(packages[$0] ?? []).isEmpty || !record[$0].isEmpty }
-        guard !work.isEmpty else { return true }
-        guard files.item(at: Brew.path) != nil else {
-            report(.noHomebrew)
-            return false
-        }
+        guard let kinds = kinds(packages, record: record, report: report) else { return false }
         var succeeded = true
-        for kind in work {
-            let sync = ManagedSync(installer: Kind(kind: kind, runner: runner), state: state)
+        for kind in kinds {
             succeeded =
-                await sync.run(listed: packages[kind] ?? [], managed: record[kind].sorted(), report: report)
+                await sync(kind).run(listed: packages[kind] ?? [], managed: record[kind].sorted(), report: report)
                 && succeeded
         }
         return succeeded
+    }
+
+    /// Reports how the packages in `packages` and the ones `record` holds look now, changing
+    /// nothing. Says whether it could tell.
+    func status(_ packages: [PackageKind: [String]], record: InstalledRecord, report: (Message) -> Void) async
+        -> Bool
+    {
+        guard let kinds = kinds(packages, record: record, report: report) else { return false }
+        var known = true
+        for kind in kinds {
+            known =
+                await sync(kind).status(listed: packages[kind] ?? [], managed: record[kind].sorted(), report: report)
+                && known
+        }
+        return known
+    }
+
+    /// The kinds that `packages` lists or `record` holds, or nil, after reporting why, when Homebrew
+    /// isn't installed.
+    private func kinds(_ packages: [PackageKind: [String]], record: InstalledRecord, report: (Message) -> Void)
+        -> [PackageKind]?
+    {
+        let kinds = PackageKind.allCases.filter { !(packages[$0] ?? []).isEmpty || !record[$0].isEmpty }
+        guard !kinds.isEmpty else { return [] }
+        guard files.item(at: Brew.path) != nil else {
+            report(.noHomebrew)
+            return nil
+        }
+        return kinds
+    }
+
+    /// Brings packages of `kind` in line through `brew`.
+    private func sync(_ kind: PackageKind) -> ManagedSync<Kind> {
+        ManagedSync(installer: Kind(kind: kind, runner: runner), state: state)
     }
 
     /// How packages of one kind are installed with `brew`.
@@ -45,6 +73,7 @@ public struct HomebrewPackages {
         let runner: any CommandRunner
 
         var label: MessageText { kind.label }
+        var plural: MessageText { kind.plural }
         func name(of item: String) -> String { item }
 
         func installed(report: (Message) -> Void) async -> ((String) -> Bool)? {
