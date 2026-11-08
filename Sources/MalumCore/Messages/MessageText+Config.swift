@@ -16,6 +16,16 @@ extension MessageText {
         "unknown module \(key)"
     }
 
+    /// `module` has settings in its table in `malum.toml` and in its own file too.
+    static func settingsInTwoPlaces(_ module: String) -> MessageText {
+        "\(module) has settings here and in \(Paths.moduleTOMLName(module)): keep them in one of the two"
+    }
+
+    /// `module`'s own file holds its switch, which only `malum.toml` holds.
+    static func switchOutsideConfig(_ module: String) -> MessageText {
+        "\(ConfigSchema.switchKey) goes in the [\(module)] table of \(Paths.configTOMLName), not here"
+    }
+
     /// `malum.toml` has a setting `key` outside every module's table.
     static func outsideModule(_ key: String) -> MessageText {
         "\(key) isn't inside a module's table"

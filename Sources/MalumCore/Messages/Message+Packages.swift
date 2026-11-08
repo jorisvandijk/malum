@@ -41,9 +41,9 @@ extension PackageKind {
 extension Message {
     // MARK: - The run
 
-    /// System config's table in `malum.toml`, at `path`, has an error.
-    static func systemConfigNeedsFix(in path: String) -> Message {
-        couldnt("run \(SystemConfig.id)", "fix its table in \(private: path) first")
+    /// System config's settings, in `malum.toml` or its own file, have an error.
+    static var systemConfigNeedsFix: Message {
+        couldnt("run \(SystemConfig.id)", "fix the problems with its settings first")
     }
 
     /// System config is switched off in `malum.toml`, at `path`.

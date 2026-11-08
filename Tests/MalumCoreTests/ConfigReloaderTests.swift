@@ -65,4 +65,38 @@ struct ConfigReloaderTests {
             ])
         #expect(reloader.settings == ["launcher": ["size": .integer(3)]])
     }
+
+    @Test func modulesOwnFileIsReadAndWatched() throws {
+        let launcher = "/Users/test/dots/launcher.toml"
+        let files = FakeFileSystem(texts: [pointer: "/Users/test/dots\n", file: "[launcher]\n", launcher: "size = 3\n"])
+        let reloader = ConfigReloader(files: files, paths: paths, schemas: schemas)
+        #expect(
+            reloader.reload(force: false)?.messages == [
+                Message(.info, "loaded \(file)"), Message(.info, "loaded \(launcher)"),
+            ])
+        #expect(reloader.settings == ["launcher": ["size": .integer(3)]])
+        #expect(reloader.watchedFiles == [file, launcher])
+        try files.write("size = 4\n", to: launcher)
+        #expect(reloader.reload(force: false)?.changed == ["launcher"])
+        #expect(reloader.settings == ["launcher": ["size": .integer(4)]])
+    }
+
+    @Test func missingModuleFileIsStillWatched() {
+        let files = FakeFileSystem(texts: [pointer: "/Users/test/dots\n", file: "[launcher]\nsize = 3\n"])
+        let reloader = ConfigReloader(files: files, paths: paths, schemas: schemas)
+        #expect(reloader.reload(force: false)?.moduleFiles == [])
+        #expect(reloader.watchedFiles == [file, "/Users/test/dots/launcher.toml"])
+    }
+
+    @Test func unreadableModuleFileIsReported() {
+        let launcher = "/Users/test/dots/launcher.toml"
+        let files = FakeFileSystem(items: [launcher: .file], texts: [pointer: "/Users/test/dots\n", file: ""])
+        let reloader = ConfigReloader(files: files, paths: paths, schemas: schemas)
+        #expect(
+            reloader.reload(force: false)?.messages.map(\.description) == [
+                "[info] loaded \(file)",
+                "[error] couldn't read \(launcher): no such file",
+                "[warn] launcher keeps its last good settings",
+            ])
+    }
 }
