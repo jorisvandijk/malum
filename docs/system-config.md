@@ -493,10 +493,10 @@ browser = "net.librewolf.librewolf"
 video = "io.mpv"
 ```
 
-`osascript -e 'id of app "LibreWolf"'` gives an app's bundle ID. The app has to be installed, so put it in `packages.toml` too. A default app changed by hand is set back on the next run. A file type that no app on this Mac knows yet is skipped until one does. Taking a key out leaves the default app as it is. Setting them needs no password, but macOS asks you to confirm a new browser in a dialog of its own; when you keep the old one, the browser isn't set and the run ends with an error.
+`osascript -e 'id of app "LibreWolf"'` gives an app's bundle ID. The app has to be installed, so put it in `packages.toml` too. A default app changed by hand is set back on the next run. A file type that no app on this Mac knows yet is skipped until one does. Taking a key out leaves the default app as it is. Setting them needs no password, but macOS asks you to confirm each change in a dialog of its own: one for the browser, which also covers `https` and `public.html`, and one for each video file type that changes. When you keep the old app, Malum stops asking for that key in this run, and the run ends with an error.
 
 ```
-[info] macOS asks you to confirm net.librewolf.librewolf as the default browser, in a dialog of its own
+[info] macOS asks you to confirm net.librewolf.librewolf for http links, in a dialog of its own
 [info] made net.librewolf.librewolf the default app for http links from macos.toml
 ```
 

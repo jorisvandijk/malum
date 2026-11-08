@@ -13,7 +13,7 @@ public protocol AppHandlers {
     /// Where the app with the bundle ID `bundleID` is, or nil when it isn't installed.
     func app(_ bundleID: String) -> URL?
 
-    /// Makes the app at `app` the one that opens `target`. For a new browser, macOS first asks the
-    /// user to confirm it in a dialog of its own.
+    /// Makes the app at `app` the one that opens `target`. macOS first asks the user to confirm it in
+    /// a dialog of its own.
     func setHandler(for target: OpenTarget, to app: URL) async throws
 }

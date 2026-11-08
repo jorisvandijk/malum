@@ -2,7 +2,8 @@ import Foundation
 
 /// Makes the apps `[default_apps]` in `macos.toml` names, by bundle ID, open what they're for:
 /// `browser` web links and pages, `video` video files. A file type no app on this Mac declares is
-/// skipped until one does. A key taken out of the file leaves the default app as it is.
+/// skipped until one does. A key taken out of the file leaves the default app as it is. macOS asks
+/// the user to confirm each change.
 @MainActor
 struct DefaultApps {
     /// The table of default apps.
@@ -66,13 +67,13 @@ struct DefaultApps {
     }
 
     /// Makes the app `bundleID` at `app` open each of `targets` that another app opens now. Stops
-    /// at the first that fails, so a browser turned down in macOS's dialog isn't asked for again.
+    /// at the first that fails, so an app turned down in macOS's dialog isn't asked for again.
     /// Says whether it worked.
     private func set(
         _ bundleID: String, at app: URL, for targets: [OpenTarget], _ report: (Message) -> Void
     ) async -> Bool {
         for target in targets where handlers.handler(for: target)?.lowercased() != bundleID.lowercased() {
-            if case .scheme = target { report(.confirmBrowser(bundleID)) }
+            report(.confirmDefaultApp(bundleID, for: target))
             do {
                 try await handlers.setHandler(for: target, to: app)
             } catch {

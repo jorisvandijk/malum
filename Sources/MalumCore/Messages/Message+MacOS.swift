@@ -117,9 +117,9 @@ extension Message {
         couldnt("set \(path) in \(Paths.macOSTOMLName) to \(bundleID)", "no app with that bundle ID is installed")
     }
 
-    /// macOS asks the user to confirm `bundleID` as the default browser.
-    static func confirmBrowser(_ bundleID: String) -> Message {
-        Message(.info, "macOS asks you to confirm \(bundleID) as the default browser, in a dialog of its own")
+    /// macOS asks the user to confirm `bundleID` as the app that opens `target`.
+    static func confirmDefaultApp(_ bundleID: String, for target: OpenTarget) -> Message {
+        Message(.info, "macOS asks you to confirm \(bundleID) for \(opened(target)), in a dialog of its own")
     }
 
     /// The app `bundleID` opens `target` now.

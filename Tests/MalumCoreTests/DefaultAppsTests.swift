@@ -48,7 +48,7 @@ struct DefaultAppsTests {
         #expect(handlers.set == browserTargets)
         #expect(
             messages.prefix(2) == [
-                Message(.info, "macOS asks you to confirm \(browser) as the default browser, in a dialog of its own"),
+                Message(.info, "macOS asks you to confirm \(browser) for http links, in a dialog of its own"),
                 Message(.info, "made \(browser) the default app for http links from macos.toml"),
             ])
         #expect(
