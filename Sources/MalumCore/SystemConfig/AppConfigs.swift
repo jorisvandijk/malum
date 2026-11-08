@@ -18,6 +18,19 @@ enum AppConfigs {
 
         """
 
+    /// Where the `librewolf` cask puts the app.
+    private static let libreWolfApp = "/Applications/LibreWolf.app"
+
+    /// What LibreWolf writes in a profile once it has used it. LibreWolf only takes a profile that
+    /// has this, so the one Malum writes to is used from LibreWolf's first start. LibreWolf keeps
+    /// it up to date itself.
+    private static let libreWolfCompatibility = """
+        [Compatibility]
+        LastPlatformDir=\(libreWolfApp)/Contents/Resources
+        LastAppDir=\(libreWolfApp)/Contents/Resources/browser
+
+        """
+
     /// The apps, each read from `apps/<name>.toml`.
     static let all = [
         AppConfig(name: "amphetamine", domain: "com.if.Amphetamine"),
@@ -44,6 +57,9 @@ enum AppConfigs {
             policies: "/Library/Preferences/net.librewolf.librewolf",
             files: [
                 AppConfigFile("\(libreWolf)/profiles.ini", .fixed(libreWolfProfiles), onlyWhenMissing: true),
+                AppConfigFile(
+                    "\(libreWolf)/Profiles/default/compatibility.ini", .fixed(libreWolfCompatibility),
+                    onlyWhenMissing: true),
                 AppConfigFile(
                     "\(libreWolf)/Profiles/default/user.js", .calls(table: "settings", function: "user_pref")),
                 AppConfigFile("\(libreWolf)/Profiles/default/chrome/userChrome.css", .css(table: "user_chrome")),

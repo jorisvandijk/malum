@@ -25,7 +25,15 @@ extension AppConfigsTests {
         #expect(files.first?.onlyWhenMissing == true)
         #expect(files.first?.text.hasPrefix("[General]\nStartWithLastProfile=1\n\n[Profile0]\nDefault=1\n") == true)
         #expect(
-            files.dropFirst() == [
+            files.dropFirst()
+                .first
+                == AppFile(
+                    "\(Self.libreWolf)/Profiles/default/compatibility.ini",
+                    "[Compatibility]\nLastPlatformDir=/Applications/LibreWolf.app/Contents/Resources\n"
+                        + "LastAppDir=/Applications/LibreWolf.app/Contents/Resources/browser\n",
+                    onlyWhenMissing: true))
+        #expect(
+            files.dropFirst(2) == [
                 AppFile(
                     "\(Self.libreWolf)/Profiles/default/user.js",
                     "// \(note)\n" + #"user_pref("browser.startup.homepage", "https://example.com/\"a\"");"# + "\n"
@@ -39,12 +47,15 @@ extension AppConfigsTests {
     @Test func libreWolfWithNothingWritesOnlyItsProfileList() throws {
         let (files, problems) = try read("", app: "librewolf")
         #expect(problems.isEmpty)
-        #expect(files.map(\.path) == ["\(Self.libreWolf)/profiles.ini"])
+        #expect(
+            files.map(\.path) == [
+                "\(Self.libreWolf)/profiles.ini", "\(Self.libreWolf)/Profiles/default/compatibility.ini",
+            ])
     }
 
     @Test func libreWolfSettingThatIsAListIsAnError() throws {
         let (files, problems) = try read("[settings]\nlist = [1]\n", app: "librewolf")
-        #expect(files.count == 1)
+        #expect(files.count == 2)
         #expect(problems == [Message(.error, "settings.list should be text, a number, or true or false")])
     }
 

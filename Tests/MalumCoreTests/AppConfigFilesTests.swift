@@ -235,7 +235,7 @@ struct AppConfigFilesTests {
         let ini = "/Users/joris/Library/Application Support/LibreWolf/profiles.ini"
         let files = FakeFileSystem(texts: [toml: ""])
         let (_, messages) = await run(files)
-        #expect(messages == [Message(.info, "wrote \(ini) from apps/librewolf.toml")])
+        #expect(messages.first == Message(.info, "wrote \(ini) from apps/librewolf.toml"))
         #expect(files.text(at: ini)?.contains("Path=Profiles/default\n") == true)
         #expect(managed(files).isEmpty)
         try? files.write("[General]\n", to: ini)
