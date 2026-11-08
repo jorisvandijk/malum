@@ -26,6 +26,11 @@ public enum AppBundle {
         return path
     }
 
+    /// Whether `text` can be a bundle ID: not empty and without spaces.
+    static func isBundleID(_ text: String) -> Bool {
+        !text.isEmpty && !text.contains(where: \.isWhitespace)
+    }
+
     /// The bundle ID of the app bundle `bundle` on `files`, such as `com.apple.garageband10`, or nil
     /// when its `Info.plist` can't be read or has none.
     public static func bundleID(of bundle: String, files: any FileSystem) -> String? {

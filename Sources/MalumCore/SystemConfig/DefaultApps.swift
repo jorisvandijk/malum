@@ -41,7 +41,7 @@ struct DefaultApps {
                 reader.expect(path, SettingKind.string)
                 continue
             }
-            guard !bundleID.isEmpty, !bundleID.contains(where: \.isWhitespace) else {
+            guard AppBundle.isBundleID(bundleID) else {
                 reader.add(.error, at: path, .notBundleID(TableReader.dotted(path)))
                 continue
             }

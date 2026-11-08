@@ -61,6 +61,21 @@ extension MessageText {
         "\(path): a bundle ID can't be empty or hold spaces"
     }
 
+    /// The key at `path`, written dotted, is `name`, which isn't one of `Key`'s names.
+    static func notKeyName(_ path: String, _ name: String) -> MessageText {
+        "\(path): \(name) isn't a key name"
+    }
+
+    /// The table of shortcuts `table` names its modifiers in another order, and is written `spelling`.
+    static func modifierOrder(_ table: String, _ spelling: String) -> MessageText {
+        "\(table) should be written \(spelling)"
+    }
+
+    /// The remap at `path`, written dotted, remaps `name`, which is the hyper key.
+    static func remapsHyperKey(_ path: String, _ name: String) -> MessageText {
+        "\(path): \(name) is the hyper key, so it can't be remapped too"
+    }
+
     /// `file` couldn't be read, for `reason`.
     static func unreadable(_ file: String, _ reason: String) -> MessageText {
         "couldn't read \(file): \(reason)"
@@ -104,6 +119,17 @@ extension MessageText {
 
     /// What a release's `repo` has to be.
     static var repository: MessageText { "the repository, as \"owner/name\"" }
+
+    /// What a key in `keyboard.toml` has to be.
+    static var keyName: MessageText { "a key name, such as \"caps_lock\"" }
+
+    /// What `hyper_key` has to be.
+    static var hyperKeyName: MessageText {
+        "one of \(Key.hyperKeys.map { Escaping.quoted($0.name, controls: .all) }.joined(separator: ", "))"
+    }
+
+    /// What a shortcut in `keyboard.toml` does.
+    static var keyAction: MessageText { "an app's bundle ID or a module's action, such as \"launcher\"" }
 
     /// What a list of VSCodium extensions has to be.
     static var extensionList: MessageText { "a list of extensions as \"publisher.name\"" }

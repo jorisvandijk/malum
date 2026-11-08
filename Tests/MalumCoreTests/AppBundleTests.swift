@@ -23,6 +23,15 @@ struct AppBundleTests {
         """
     }
 
+    @Test func bundleIDWithoutSpacesIsOne() {
+        #expect(AppBundle.isBundleID("com.apple.finder"))
+    }
+
+    @Test func emptyOrSpacedTextIsNoBundleID() {
+        #expect(!AppBundle.isBundleID(""))
+        #expect(!AppBundle.isBundleID("com.example app"))
+    }
+
     @Test func executableInsideAppIsFound() {
         let path = "/Users/test/Applications/Malum.app/Contents/MacOS/Malum"
         #expect(AppBundle.executable(at: path) == path)

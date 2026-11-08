@@ -132,7 +132,7 @@ struct MacOSSettings {
         wanted.power = PowerSettings.read(&reader)
         wanted.appleApps = AppleApps.read(&reader)
         wanted.defaultApps = DefaultApps.read(&reader)
-        let problems = reader.problems.sorted { ($0.line ?? Int.max) < ($1.line ?? Int.max) }
+        let problems = reader.problemsByLine
         return (reader.hasErrors ? nil : wanted, problems)
     }
 

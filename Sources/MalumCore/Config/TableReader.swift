@@ -26,6 +26,11 @@ struct TableReader {
         lines = TOMLLines(text)
     }
 
+    /// The problems so far, in the order of their lines, those without a line last.
+    var problemsByLine: [ConfigProblem] {
+        problems.sorted { ($0.line ?? Int.max) < ($1.line ?? Int.max) }
+    }
+
     /// Whether any problem so far is an error.
     var hasErrors: Bool { problems.contains { $0.level == .error } }
 
