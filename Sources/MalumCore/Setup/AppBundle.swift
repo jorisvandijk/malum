@@ -41,9 +41,9 @@ public enum AppBundle {
     /// The text under `key` in the `Info.plist` of `bundle`, or nil when there's none. Foundation reads
     /// both the XML and the binary form.
     private static func info(_ key: String, of bundle: String, files: any FileSystem) -> String? {
-        guard let data = try? files.data(at: Paths.info(of: bundle)),
-            let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-            let text = plist[key] as? String, !text.isEmpty
+        guard let data = try? files.data(at: Paths.info(of: bundle)),  // No Info.plist, no answer.
+            let plist = try? PropertyListSerialization.propertyList(from: data, format: nil),  // Nor a bad one.
+            let info = plist as? [String: Any], let text = info[key] as? String, !text.isEmpty
         else { return nil }
         return text
     }
