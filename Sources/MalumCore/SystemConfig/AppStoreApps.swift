@@ -26,9 +26,23 @@ public struct AppStoreApps {
         guard let record = InstalledRecord.read(from: state, for: .installAppStoreApps, report: report) else {
             return false
         }
-        let managed = record.appStore.sorted { $0.key < $1.key }.map { AppStoreApp($0.key, id: $0.value) }
-        let kind = Kind(runner: runner, files: files, sudo: sudo)
-        return await ManagedSync(installer: kind, state: state).run(listed: apps, managed: managed, report: report)
+        return await sync.run(listed: apps, managed: Self.managed(in: record), report: report)
+    }
+
+    /// Reports how the apps in `apps` and the ones `record` holds look now, changing nothing. Says
+    /// whether it could tell.
+    func status(_ apps: [AppStoreApp], record: InstalledRecord, report: (Message) -> Void) async -> Bool {
+        await sync.status(listed: apps, managed: Self.managed(in: record), report: report)
+    }
+
+    /// Brings apps in line through `mas`.
+    private var sync: ManagedSync<Kind> {
+        ManagedSync(installer: Kind(runner: runner, files: files, sudo: sudo), state: state)
+    }
+
+    /// The apps `record` holds, by name.
+    private static func managed(in record: InstalledRecord) -> [AppStoreApp] {
+        record.appStore.sorted { $0.key < $1.key }.map { AppStoreApp($0.key, id: $0.value) }
     }
 
     /// How App Store apps are installed with `mas`.
@@ -38,6 +52,8 @@ public struct AppStoreApps {
         let sudo: SudoSession
 
         var label: MessageText { .appStoreApp }
+
+        var plural: MessageText { .appStoreApps }
 
         func key(of item: AppStoreApp) -> String { String(item.id) }
 

@@ -16,6 +16,8 @@ public enum Invocation: Equatable, Sendable {
     case permissions
     /// Make the Mac match dots.
     case run
+    /// Show what Malum manages and what doesn't match dots.
+    case status
     /// A command that's missing an argument, with what it needs.
     case incomplete(command: String, needs: String)
     /// An argument Malum doesn't know.
@@ -35,20 +37,21 @@ public enum Invocation: Equatable, Sendable {
             self = .help
         case "init":
             self = Self.initialize(rest)
-        case "reload":
-            self = rest.first.map(Self.unknown) ?? .reload
-        case "safe":
-            self = rest.first.map(Self.unknown) ?? .safe
         case "disable":
             self = Self.disable(rest)
-        case "permissions":
-            self = rest.first.map(Self.unknown) ?? .permissions
-        case "run":
-            self = rest.first.map(Self.unknown) ?? .run
         default:
-            self = .unknown(first)
+            guard let plain = Self.plain[first] else {
+                self = .unknown(first)
+                return
+            }
+            self = rest.first.map(Self.unknown) ?? plain
         }
     }
+
+    /// The commands that take no arguments, by name.
+    private static let plain: [String: Self] = [
+        "reload": .reload, "safe": .safe, "permissions": .permissions, "run": .run, "status": .status,
+    ]
 
     /// Reads the arguments of `disable`: exactly one module.
     private static func disable(_ arguments: [String]) -> Self {

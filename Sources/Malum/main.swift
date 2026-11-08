@@ -42,10 +42,8 @@ func linkOnFirstStart() {
 @MainActor
 func runCommand(_ invocation: Invocation) {
     switch invocation {
-    case .version:
-        terminal.write(Project.version)
-    case .help:
-        terminal.write(Invocation.usage)
+    case .version, .help:
+        terminal.write(invocation == .version ? Project.version : Invocation.usage)
     case .initialize(let dots):
         finish(
             InitCommand(files: files, paths: paths)
@@ -63,6 +61,8 @@ func runCommand(_ invocation: Invocation) {
         checkTerminal()
     case .run:
         applySystemConfig()
+    case .status:
+        showStatus()
     case .incomplete, .unknown:
         reject(invocation)
     }
@@ -71,11 +71,27 @@ func runCommand(_ invocation: Invocation) {
 /// Runs `malum run`, reporting as it goes, and exits once it's done.
 @MainActor
 func applySystemConfig() -> Never {
-    Task {
+    finishing {
         let command = RunCommand(
             files: files, paths: paths, runner: runner, github: GitHubAPI(), locks: locks,
             canAsk: isatty(STDIN_FILENO) == 1, handlers: WorkspaceAppHandlers())
-        let succeeded = await command.run { announce($0) }
+        return await command.run { announce($0) }
+    }
+}
+
+/// Runs `malum status`, which only reports to the terminal, and exits once it's done.
+@MainActor
+func showStatus() -> Never {
+    finishing {
+        await StatusCommand(files: files, paths: paths, runner: runner, locks: locks).run { terminal.report($0) }
+    }
+}
+
+/// Runs `work`, then exits with an error when it says it didn't succeed.
+@MainActor
+func finishing(_ work: @escaping @MainActor () async -> Bool) -> Never {
+    Task {
+        let succeeded = await work()
         exit(succeeded ? EXIT_SUCCESS : EXIT_FAILURE)
     }
     dispatchMain()
@@ -89,7 +105,7 @@ func reject(_ invocation: Invocation) -> Never {
         terminal.report(.incomplete(command, needs: needs))
     case .unknown(let argument):
         terminal.report(.unknownArgument(argument))
-    case .version, .help, .initialize, .reload, .safe, .disable, .permissions, .run:
+    case .version, .help, .initialize, .reload, .safe, .disable, .permissions, .run, .status:
         break  // These make sense; runCommand runs them.
     }
     terminal.write(Invocation.usage)

@@ -500,4 +500,29 @@ video = "io.mpv"
 [info] made net.librewolf.librewolf the default app for http links from macos.toml
 ```
 
+## Status
+
+`malum status` shows what Malum manages and what doesn't match dots right now. It changes nothing and never asks for your password. It works whether `system_config` is on or off.
+
+For each kind of thing Malum manages it prints one count, followed by a warning for each thing that's off: a listed package or release that isn't installed, one Malum manages that isn't listed anymore, a file Malum wrote that is missing or was changed outside Malum, and a power setting that holds something else than Malum set. Each warning says what the next `malum run` does about it.
+
+```
+[info] managed Homebrew formulae: 41
+[warn] Homebrew formula fd isn't installed, malum run installs it
+[info] managed App Store apps: 3
+[info] managed app config files: 14
+[warn] /Users/you/.config/kitty/kitty.conf was changed outside Malum, malum run overwrites it and keeps a .backup
+[info] managed macOS settings: 23
+[info] managed power settings: 2
+[warn] lessbright on battery power is 0, Malum set it to 1, malum run sets it back
+```
+
+When nothing is off, the last line says so:
+
+```
+[info] everything Malum manages matches dots
+```
+
+App preferences and macOS settings are only counted. VSCodium extensions are checked against what Malum installed, not against `apps/vscodium.toml`. A problem in `packages.toml` is reported, and `malum status` then exits with an error.
+
 The messages also go to the macOS log, as the [log page](log.md) describes.

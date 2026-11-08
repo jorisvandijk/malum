@@ -78,6 +78,14 @@ struct InvocationTests {
         #expect(Invocation(arguments: ["run", "extra"]) == .unknown("extra"))
     }
 
+    @Test func statusShowsWhatMalumManages() {
+        #expect(Invocation(arguments: ["status"]) == .status)
+    }
+
+    @Test func statusWithExtraArgumentIsReported() {
+        #expect(Invocation(arguments: ["status", "extra"]) == .unknown("extra"))
+    }
+
     @Test func permissionsWithExtraArgumentIsReported() {
         #expect(Invocation(arguments: ["permissions", "extra"]) == .unknown("extra"))
     }

@@ -64,6 +64,26 @@ struct PowerSettings {
         return InstalledRecord.remember(in: state, report: report) { $0.power = managed } && set && putBack
     }
 
+    /// Reports how the settings in `managed` look now, changing nothing: each one that holds
+    /// something else than Malum set. Says whether it could tell.
+    func status(_ managed: [String: [String: ManagedPower]], report: (Message) -> Void) async -> Bool {
+        guard !managed.isEmpty else { return true }
+        let read = await runner.run(Pmset.custom)
+        guard read.succeeded else {
+            report(.powerUnreadable(reason: read.reason))
+            return false
+        }
+        let current = Pmset.settings(in: read.output)
+        report(.statusManaged(managed.values.map(\.count).reduce(0, +), .powerSettings))
+        for (name, settings) in managed.sorted(by: { $0.key < $1.key }) {
+            let now = Pmset.Source(rawValue: name).flatMap { current[$0] } ?? [:]
+            for (setting, known) in settings.sorted(by: { $0.key < $1.key }) where now[setting] != known.value {
+                report(.statusPowerChanged(setting, on: name, now: now[setting], set: known.value))
+            }
+        }
+        return true
+    }
+
     /// Sets each setting in `wanted`, where `current` holds what they are now, and records it in
     /// `managed`. Says whether everything worked.
     private func setAll(
