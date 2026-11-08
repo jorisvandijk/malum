@@ -41,7 +41,8 @@ public struct Terminal: Sendable {
             var buffer = [CChar](repeating: 0, count: Self.secretLength)
             defer { buffer.withUnsafeMutableBytes { _ = memset($0.baseAddress, 0, $0.count) } }
             guard readpassphrase(prompt, &buffer, buffer.count, RPP_ECHO_OFF) != nil else { return nil }
-            return String(cString: buffer)
+            let typed = buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }
+            return String(decoding: typed, as: UTF8.self)
         #else
             return readLine()
         #endif
