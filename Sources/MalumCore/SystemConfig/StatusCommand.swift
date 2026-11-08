@@ -98,12 +98,12 @@ public struct StatusCommand {
         report(.statusManaged(managed.count, plural))
         var known = true
         for (path, fingerprint) in managed.sorted(by: { $0.key < $1.key }) {
-            guard let item = files.item(at: path) else {
+            guard files.item(at: path) != nil else {
                 report(.statusMissing(path))
                 continue
             }
             do {
-                let text = item == .file ? try files.read(path) : nil
+                let text = try files.text(ifFileAt: path)
                 if text.map(ManagedFile.fingerprint) != fingerprint { report(.statusChanged(path)) }
             } catch {
                 report(.failed(.showStatus, error))

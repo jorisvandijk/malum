@@ -40,7 +40,7 @@ struct SystemFileWriter {
             guard wanted[file.path] != nil || known != nil else { continue }
             let current: String?
             do {
-                current = files.item(at: file.path) == .file ? try files.read(file.path) : nil
+                current = try files.text(ifFileAt: file.path)
             } catch {
                 report(.failed(.setMacOSSettings, error))
                 succeeded = false
@@ -73,12 +73,15 @@ struct SystemFileWriter {
         guard current != text else {
             guard known != fingerprint else { return nil }
             report(.adopted(file: path, source: source))
-            return remember(path, fingerprint, report: report) ? nil : false
+            let recorded = remember(path, fingerprint, report: report)
+            return recorded ? nil : false
         }
         var message: Message =
-            current == nil
-            ? (known == nil ? .wrote(path, from: source) : .wroteAgain(path, from: source))
-            : .updated(path, from: source)
+            switch (current, known) {
+            case (nil, nil): .wrote(path, from: source)
+            case (nil, _?): .wroteAgain(path, from: source)
+            case (_?, _): .updated(path, from: source)
+            }
         if let current, ManagedFile.fingerprint(of: current) != known {
             let backup = path + Self.backupExtension
             guard await asRoot(Install.rootFile(path, to: backup), doing: path, report: report) else { return false }
@@ -107,7 +110,8 @@ struct SystemFileWriter {
     /// unless the record couldn't be changed.
     private func letGo(_ path: String, changed: Bool, report: (Message) -> Void) -> Bool? {
         if changed { report(.keptChanged(path, source: Paths.macOSTOMLName)) }
-        return remember(path, nil, report: report) ? nil : false
+        let recorded = remember(path, nil, report: report)
+        return recorded ? nil : false
     }
 
     /// Stages `text` in the state folder and copies it to `path` as root.

@@ -28,6 +28,12 @@ public protocol FileSystem: Sendable {
 }
 
 extension FileSystem {
+    /// The text at `path` when a regular file is there, or nil for a folder, a link or nothing.
+    func text(ifFileAt path: String) throws(FileSystemError) -> String? {
+        guard item(at: path) == .file else { return nil }
+        return try read(path)
+    }
+
     /// Puts `staged` at `destination` in one step, then removes what was there, which the swap
     /// left at `staged`. Both must exist.
     func replace(_ destination: String, with staged: String) throws(FileSystemError) {

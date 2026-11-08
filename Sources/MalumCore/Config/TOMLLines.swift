@@ -84,7 +84,14 @@ struct TOMLLines {
                 parts.append("")
                 continue
             case "\"", "'":
-                quote = quote == nil ? character : (quote == character ? nil : quote)
+                switch quote {
+                case nil:
+                    quote = character
+                case character:
+                    quote = nil
+                default:
+                    break
+                }
             default:
                 break
             }
