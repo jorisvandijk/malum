@@ -27,7 +27,6 @@ extension WorkspaceAppHandlers: AppHandlers {
 
     /// The bundle ID of the app that opens `target` now, or nil when none does.
     public func handler(for target: OpenTarget) -> String? {
-        let workspace = NSWorkspace.shared
         let app: URL? =
             switch target {
             case .scheme(let scheme): Self.link(scheme).flatMap { workspace.urlForApplication(toOpen: $0) }
@@ -43,7 +42,6 @@ extension WorkspaceAppHandlers: AppHandlers {
 
     /// Makes the app at `app` the one that opens `target`. A file type macOS doesn't know is left alone.
     public func setHandler(for target: OpenTarget, to app: URL) async throws {
-        let workspace = NSWorkspace.shared
         // NSWorkspace isn't Sendable, so it's called here on the main actor and only its answer comes back.
         try await withCheckedThrowingContinuation { (done: CheckedContinuation<Void, any Error>) in
             let finish: @Sendable ((any Error)?) -> Void = { error in
@@ -52,10 +50,10 @@ extension WorkspaceAppHandlers: AppHandlers {
             }
             switch target {
             case .scheme(let scheme):
-                workspace.setDefaultApplication(at: app, toOpenURLsWithScheme: scheme) { finish($0) }
+                NSWorkspace.shared.setDefaultApplication(at: app, toOpenURLsWithScheme: scheme) { finish($0) }
             case .contentType(let type):
                 guard let type = UTType(type) else { return done.resume() }
-                workspace.setDefaultApplication(at: app, toOpen: type) { finish($0) }
+                NSWorkspace.shared.setDefaultApplication(at: app, toOpen: type) { finish($0) }
             }
         }
     }
