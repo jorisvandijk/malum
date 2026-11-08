@@ -51,16 +51,15 @@ func runCommand(_ invocation: Invocation) {
             InitCommand(files: files, paths: paths)
                 .run(dots: dots, workingDirectory: FileManager.default.currentDirectoryPath, executable: executable))
     case .reload:
-        let instance = AppInstance(state: state, locks: locks)
-        let message = ReloadCommand(instance: instance, signals: LocalSignals()).run()
-        terminal.report(message)
-        guard message.level != .error else { exit(EXIT_FAILURE) }
+        finish([ReloadCommand(instance: AppInstance(state: state, locks: locks), signals: LocalSignals()).run()])
     case .safe, .disable:
         finish(applyOverride(invocation))
     case .permissions:
         checkTerminal()
-    case .run:
-        applySystemConfig()
+    case .run(let force):
+        applySystemConfig(force: force)
+    case .rollback:
+        finishing { await selfUpdate(github: GitHubAPI(token: nil)).rollBack { announce($0) } }
     case .status:
         showStatus()
     case .token(let remove):
@@ -70,14 +69,18 @@ func runCommand(_ invocation: Invocation) {
     }
 }
 
-/// Runs `malum run`, reporting as it goes, and exits once it's done.
+/// Runs `malum run`, then updates Malum, installing an older release too when `force` is set,
+/// reporting as it goes, and exits once it's done.
 @MainActor
-func applySystemConfig() -> Never {
+func applySystemConfig(force: Bool) -> Never {
     finishing {
+        let github = gitHub()
         let command = RunCommand(
-            files: files, paths: paths, runner: runner, github: gitHub(), locks: locks,
+            files: files, paths: paths, runner: runner, github: github, locks: locks,
             canAsk: isatty(STDIN_FILENO) == 1, handlers: WorkspaceAppHandlers())
-        return await command.run { announce($0) }
+        let applied = await command.run { announce($0) }
+        let updated = await selfUpdate(github: github).run(force: force) { announce($0) }
+        return applied && updated
     }
 }
 
@@ -116,6 +119,16 @@ func keepToken(remove: Bool) -> Never {
     }
 }
 
+/// Updates the installed app from `github`, and rolls it back.
+@MainActor
+func selfUpdate(github: any GitHub) -> SelfUpdate {
+    let certificate = SigningCertificate(
+        runner: runner, files: files, paths: paths, temporaryDirectory: NSTemporaryDirectory())
+    return SelfUpdate(
+        github: github, runner: runner, files: files, paths: paths, state: state, certificate: certificate,
+        executable: executable, current: Project.version, userID: getuid())
+}
+
 /// Runs `malum status`, which only reports to the terminal, and exits once it's done.
 @MainActor
 func showStatus() -> Never {
@@ -143,7 +156,7 @@ func reject(_ invocation: Invocation) -> Never {
         terminal.report(.incomplete(command, needs: needs))
     case .unknown(let argument):
         terminal.report(.unknownArgument(argument))
-    case .version, .help, .initialize, .reload, .safe, .disable, .permissions, .run, .status, .token:
+    case .version, .help, .initialize, .reload, .safe, .disable, .permissions, .run, .rollback, .status, .token:
         break  // These make sense; runCommand runs them.
     }
     terminal.write(Invocation.usage)

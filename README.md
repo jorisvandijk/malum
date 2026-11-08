@@ -95,6 +95,8 @@ A module that's missing a permission waits until you grant it, and `malum permis
 
 `malum run` makes the Mac match dots: for now, it installs the Homebrew formulae and casks listed in `packages.toml` in dots. `malum status` shows what Malum manages and what doesn't match dots. The [system config page](docs/system-config.md) explains how.
 
+At the end of every run, Malum updates itself to its latest release, and `malum rollback` puts the version it replaced back. The [updates page](docs/updates.md) explains how.
+
 When something keeps crashing Malum, it turns on safe mode by itself, with every module off. `malum safe` turns it on by hand, and `malum disable <module>` keeps one module off. The [safe mode page](docs/safe-mode.md) has the details.
 
 ## Start at login

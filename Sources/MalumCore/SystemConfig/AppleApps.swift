@@ -54,7 +54,7 @@ struct AppleApps {
         for name in names {
             let path = "\(Self.folder)/\(name).app"
             guard files.item(at: path) == .directory else { continue }
-            let read = await runner.run(Defaults.read("\(path)/Contents/Info", Self.bundleIDKey))
+            let read = await runner.run(Defaults.read(Paths.info(of: path), Self.bundleIDKey))
             let bundleID = read.succeeded ? read.output.trimmingCharacters(in: .whitespacesAndNewlines) : nil
             guard let bundleID, bundleID.hasPrefix(Self.applePrefix) else {
                 report(.notAppleApp(path, bundleID: bundleID))

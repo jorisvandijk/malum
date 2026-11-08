@@ -8,7 +8,8 @@ extension Invocation {
                \(Project.command) safe
                \(Project.command) disable <module>
                \(Project.command) permissions
-               \(Project.command) run
+               \(Project.command) run [--force]
+               \(Project.command) rollback
                \(Project.command) status
                \(Project.command) token [--remove]
 
@@ -17,7 +18,9 @@ extension Invocation {
           safe         keep every module off until you leave safe mode from the menu bar
           disable      keep one module off until you enable it from the menu bar
           permissions  check that this terminal has Full Disk Access
-          run          make the Mac match dots: install the packages it lists
+          run          make the Mac match dots, then update \(Project.name) to its latest release
+                       (--force installs it even when it's older)
+          rollback     put back the version of \(Project.name) the last update replaced
           status       show what \(Project.name) manages and what doesn't match dots
           token        ask for the GitHub token and keep it in the login keychain
                        (--remove deletes it)

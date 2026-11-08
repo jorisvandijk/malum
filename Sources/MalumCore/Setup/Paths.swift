@@ -23,6 +23,10 @@ public struct Paths: Equatable, Sendable {
     private static let loginKeychainPath = "Library/Keychains/login.keychain-db"
     /// The folder inside an app bundle that holds its executable.
     private static let executableFolder = "Contents/MacOS"
+    /// An app bundle's `Info.plist`, without `.plist`, the way `defaults read` takes it.
+    private static let infoFile = "Contents/Info"
+    /// The state folder's folder that keeps the version an update replaced.
+    private static let previousFolder = "previous"
 
     /// Creates the paths under `home`.
     public init(home: String) {
@@ -42,7 +46,17 @@ public struct Paths: Equatable, Sendable {
     /// `~/Applications/Malum.app`, the installed app.
     public var installedBundle: String { "\(home)/\(Self.applicationsRoot)/\(Project.name).app" }
     /// `~/Applications/Malum.app/Contents/MacOS/Malum`, the executable of the installed app.
-    public var installedExecutable: String { "\(installedBundle)/\(Self.executableFolder)/\(Project.name)" }
+    public var installedExecutable: String { Self.executable(in: installedBundle) }
+    /// The state folder's `previous/Malum.app`, the version the last update replaced, for `malum rollback`.
+    public var previousBundle: String { "\(stateDirectory)/\(Self.previousFolder)/\(Project.name).app" }
+
+    /// Malum's executable inside the app bundle `bundle`.
+    public static func executable(in bundle: String) -> String {
+        "\(bundle)/\(executableFolder)/\(Project.name)"
+    }
+
+    /// The `Info.plist` of the app bundle `bundle`, without `.plist`, for `Defaults.read`.
+    public static func info(of bundle: String) -> String { "\(bundle)/\(infoFile)" }
     /// `~/Library/Keychains/login.keychain-db`, where Malum's signing certificate goes.
     public var loginKeychain: String { "\(home)/\(Self.loginKeychainPath)" }
     /// `~/Library/LaunchAgents`, where the login agent goes.

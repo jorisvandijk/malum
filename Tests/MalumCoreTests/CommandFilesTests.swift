@@ -99,4 +99,17 @@ struct CommandFilesTests {
             Launchctl.load("/a.plist", into: "gui/501")
                 == Command("/bin/launchctl", ["bootstrap", "gui/501", "/a.plist"]))
     }
+
+    @Test func shasumChecksTheFileWithSHA256() {
+        #expect(Shasum.sha256("/tmp/a.zip") == Command("/usr/bin/shasum", ["-a", "256", "/tmp/a.zip"]))
+    }
+
+    @Test func checksumIsTheFirstWordInLowercase() {
+        #expect(Shasum.checksum(in: "ABC123  Malum-macos-arm64.zip\n") == "abc123")
+        #expect(Shasum.checksum(in: "\n") == nil)
+    }
+
+    @Test func appVersionAsksTheExecutable() {
+        #expect(AppVersion.ask("/a/Malum") == Command("/a/Malum", ["--version"]))
+    }
 }
