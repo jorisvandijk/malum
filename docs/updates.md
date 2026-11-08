@@ -4,7 +4,13 @@ Malum updates itself at the end of every `malum run`, after system config. The m
 
 ## How an update goes
 
-`malum run` asks GitHub for Malum's latest release. When it's the version that runs, it says so:
+`malum run` asks GitHub for Malum's latest release, with the token from the keychain, since Malum's repository is private. The [GitHub token page](github-token.md) shows how to add one. Without it, the update says:
+
+```
+[error] couldn't update Malum: GitHub shows jorisvandijk/malum only with a token, run malum token
+```
+
+When the latest release is the version that runs, it says so:
 
 ```
 [info] Malum 0.2.0 is up to date

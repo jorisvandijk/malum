@@ -51,10 +51,7 @@ func runCommand(_ invocation: Invocation) {
             InitCommand(files: files, paths: paths)
                 .run(dots: dots, workingDirectory: FileManager.default.currentDirectoryPath, executable: executable))
     case .reload:
-        let instance = AppInstance(state: state, locks: locks)
-        let message = ReloadCommand(instance: instance, signals: LocalSignals()).run()
-        terminal.report(message)
-        guard message.level != .error else { exit(EXIT_FAILURE) }
+        finish([ReloadCommand(instance: AppInstance(state: state, locks: locks), signals: LocalSignals()).run()])
     case .safe, .disable:
         finish(applyOverride(invocation))
     case .permissions:

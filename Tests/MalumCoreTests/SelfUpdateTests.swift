@@ -61,7 +61,7 @@ struct SelfUpdateTests {
     }
 
     private func update(
-        _ files: FakeFileSystem, github: FakeGitHub? = nil, runner: FakeRunner? = nil,
+        _ files: FakeFileSystem, github: (any GitHub)? = nil, runner: FakeRunner? = nil,
         executable: String? = nil, current: String = "0.2.0"
     ) -> SelfUpdate {
         let runner = runner ?? self.runner(files)
@@ -167,6 +167,18 @@ struct SelfUpdateTests {
             ])
     }
 
+    @Test func missingTokenIsReported() async {
+        let files = disk()
+        let github = FailingGitHub(error: .needsToken(repo: "jorisvandijk/malum"))
+        let (succeeded, messages) = await run(update(files, github: github))
+        #expect(!succeeded)
+        #expect(
+            messages == [
+                Message(
+                    .error, "couldn't update Malum: GitHub shows jorisvandijk/malum only with a token, run malum token")
+            ])
+    }
+
     @Test func wrongChecksumLeavesTheAppAlone() async {
         let files = disk()
         let (succeeded, messages) = await run(update(files, github: github(files, sum: "fff000")))
@@ -218,4 +230,16 @@ struct SelfUpdateTests {
         #expect(messages == [Message(.error, "couldn't roll back Malum: no previous version is kept")])
         #expect(files.text(at: installedInfo) == "0.2.0")
     }
+}
+
+/// GitHub that answers every lookup with `error`.
+private struct FailingGitHub: GitHub {
+    /// What every call throws.
+    let error: GitHubError
+
+    func latestRelease(of repo: String) async throws(GitHubError) -> Release? { throw error }
+
+    func download(_ asset: ReleaseAsset, to path: String) async throws(GitHubError) { throw error }
+
+    func check(_ token: String, canRead repo: String) async throws(GitHubError) { throw error }
 }
