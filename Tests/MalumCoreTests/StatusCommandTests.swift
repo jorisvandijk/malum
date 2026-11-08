@@ -38,10 +38,10 @@ struct StatusCommandTests {
         if pointed { all[pointer] = "/Users/test/dots\n" }
         let files = FakeFileSystem(
             items: ["/opt/homebrew/bin/brew": .file, "/opt/homebrew/bin/mas": .file], texts: all)
-        let locks = FakeFileLocks()
-        try InstalledRecord.change(in: StateFolder(files: files, locks: locks, paths: paths), change)
+        let state = StateFolder(files: files, locks: FakeFileLocks(), paths: paths)
+        try InstalledRecord.change(in: state, change)
         var messages: [Message] = []
-        let known = await StatusCommand(files: files, paths: paths, runner: runner, locks: locks).run {
+        let known = await StatusCommand(files: files, paths: paths, runner: runner, state: state).run {
             messages.append($0)
         }
         return (known, messages)

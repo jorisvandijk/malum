@@ -76,7 +76,7 @@ func applySystemConfig(force: Bool) -> Never {
     finishing {
         let github = gitHub()
         let command = RunCommand(
-            files: files, paths: paths, runner: runner, github: github, locks: locks,
+            files: files, paths: paths, runner: runner, github: github, state: state,
             canAsk: isatty(STDIN_FILENO) == 1, handlers: WorkspaceAppHandlers())
         let applied = await command.run { announce($0) }
         let updated = await selfUpdate(github: github).run(force: force) { announce($0) }
@@ -134,7 +134,7 @@ func selfUpdate(github: any GitHub) -> SelfUpdate {
 func showStatus() -> Never {
     terminal.report(tokenCommand().status())
     finishing {
-        await StatusCommand(files: files, paths: paths, runner: runner, locks: locks).run { terminal.report($0) }
+        await StatusCommand(files: files, paths: paths, runner: runner, state: state).run { terminal.report($0) }
     }
 }
 

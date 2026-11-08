@@ -9,8 +9,8 @@ public struct RunCommand {
     private let runner: any CommandRunner
     /// Looks up and downloads GitHub releases.
     private let github: any GitHub
-    /// The locks of the state folder.
-    private let locks: any FileLocks
+    /// Malum's state folder.
+    private let state: StateFolder
     /// Whether it runs in a terminal, where sudo can ask for the password.
     private let canAsk: Bool
     /// Says which app opens what, and changes it.
@@ -19,14 +19,14 @@ public struct RunCommand {
     /// Creates the command, which asks for the password only when `canAsk` is set and sets the
     /// default apps through `handlers`.
     public init(
-        files: any FileSystem, paths: Paths, runner: any CommandRunner, github: any GitHub, locks: any FileLocks,
+        files: any FileSystem, paths: Paths, runner: any CommandRunner, github: any GitHub, state: StateFolder,
         canAsk: Bool, handlers: any AppHandlers
     ) {
         self.files = files
         self.paths = paths
         self.runner = runner
         self.github = github
-        self.locks = locks
+        self.state = state
         self.canAsk = canAsk
         self.handlers = handlers
     }
@@ -50,7 +50,6 @@ public struct RunCommand {
         let succeeded: Bool
         do {
             guard let dots = try DotsPointer(files: files, paths: paths).read() else { return false }
-            let state = StateFolder(files: files, locks: locks, paths: paths)
             let sudo = SudoSession(runner: runner, canAsk: canAsk)
             defer { sudo.end() }
             let packages = await installPackages(dots: dots, folders: folders, sudo: sudo, state: state, report: report)
