@@ -34,8 +34,9 @@ extension KeychainTokenStore: TokenStore {
         var result: CFTypeRef?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
         guard status != errSecItemNotFound else { return nil }
-        guard status == errSecSuccess, let data = result as? Data else { throw Self.error(status) }
-        return String(decoding: data, as: UTF8.self)
+        guard status == errSecSuccess, let data = result as? Data, let token = String(bytes: data, encoding: .utf8)
+        else { throw Self.error(status) }
+        return token
     }
 
     /// Looks the item up without its data.

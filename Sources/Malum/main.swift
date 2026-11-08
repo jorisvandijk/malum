@@ -55,10 +55,8 @@ func runCommand(_ invocation: Invocation) {
         let message = ReloadCommand(instance: instance, signals: LocalSignals()).run()
         terminal.report(message)
         guard message.level != .error else { exit(EXIT_FAILURE) }
-    case .safe:
-        finish(overrideCommand().safe())
-    case .disable(let module):
-        finish(overrideCommand().disable(module))
+    case .safe, .disable:
+        finish(applyOverride(invocation))
     case .permissions:
         checkTerminal()
     case .run:
@@ -150,6 +148,13 @@ func reject(_ invocation: Invocation) -> Never {
     }
     terminal.write(Invocation.usage)
     exit(EXIT_FAILURE)
+}
+
+/// Runs `malum safe`, or `malum disable` when `invocation` is that, and gives back what it says.
+@MainActor
+func applyOverride(_ invocation: Invocation) -> [Message] {
+    guard case .disable(let module) = invocation else { return overrideCommand().safe() }
+    return overrideCommand().disable(module)
 }
 
 /// The command behind `malum safe` and `malum disable`.
