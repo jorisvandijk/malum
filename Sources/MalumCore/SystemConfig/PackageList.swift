@@ -37,7 +37,7 @@ public struct PackageList: Equatable, Sendable {
         let homebrew = homebrewPackages(reader.table(document, homebrewTable, at: []), reader: &reader)
         let appStore = appStoreApps(reader.table(document, appStoreTable, at: []), reader: &reader)
         let releases = releaseEntries(reader.table(document, releaseTable, at: []), reader: &reader)
-        let problems = reader.problems.sorted { ($0.line ?? Int.max) < ($1.line ?? Int.max) }
+        let problems = reader.problemsByLine
         guard !reader.hasErrors else { return (nil, problems) }
         return (Self(homebrew: homebrew, appStore: appStore, releases: releases), problems)
     }
