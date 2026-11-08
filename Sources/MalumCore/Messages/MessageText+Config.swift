@@ -26,6 +26,16 @@ extension MessageText {
         "\(path): the name can't be empty, start with a dot or hold /"
     }
 
+    /// The name at `path`, written dotted, of a `name value` line is empty or holds spaces.
+    static func notLineName(_ path: String) -> MessageText {
+        "\(path): the name can't be empty or hold spaces"
+    }
+
+    /// The Homebrew package at `path`, written dotted, starts with `-`, which `brew` would take as an option.
+    static func notPackageName(_ path: String) -> MessageText {
+        "\(path): a package name can't start with -"
+    }
+
     /// The domain at `path`, written dotted, starts with `-`, which `defaults` would take as an option.
     static func notDomain(_ path: String) -> MessageText {
         "\(path): a preferences domain can't start with -"
@@ -55,4 +65,36 @@ extension MessageText {
     static func configMissing(_ path: String) -> MessageText {
         "couldn't load \(private: path): it doesn't exist"
     }
+
+    // MARK: - Should be
+
+    /// What a value has to be to become a property list.
+    static var plistValue: MessageText { "text, a number, true or false, or a list or table of them" }
+
+    /// What a value in a JSON file has to be.
+    static var jsonValue: MessageText { "text, a number, true or false, or a list of them" }
+
+    /// What a value in a file of calls, such as `user_pref`, has to be.
+    static var callValue: MessageText { "text, a number, or true or false" }
+
+    /// What a value in a git style config file has to be.
+    static var iniValue: MessageText { "text, a whole number, true or false, or a list of them" }
+
+    /// What a value in a file of `name value` lines has to be.
+    static var lineValue: MessageText { "text on one line, a number, true or false, or a list of them" }
+
+    /// What a newsboat feed has to be.
+    static var feedValue: MessageText { "an address without spaces, or a table with url and tags" }
+
+    /// What a Homebrew package's kind has to be.
+    static var homebrewKind: MessageText { "\"formula\" or \"cask\"" }
+
+    /// What an App Store app's value has to be.
+    static var appStoreID: MessageText { "the app's App Store ID, \(SettingKind.integer)" }
+
+    /// What a release's `repo` has to be.
+    static var repository: MessageText { "the repository, as \"owner/name\"" }
+
+    /// What a list of VSCodium extensions has to be.
+    static var extensionList: MessageText { "a list of extensions as \"publisher.name\"" }
 }

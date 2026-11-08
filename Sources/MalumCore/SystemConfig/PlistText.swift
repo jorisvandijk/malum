@@ -1,8 +1,5 @@
 /// Property lists, the format `defaults` takes an app's preferences in, one value at a time.
 enum PlistText {
-    /// What a value has to be to become a property list, for a "should be" problem.
-    static let expected = "text, a number, true or false, or a list or table of them"
-
     /// `value` as a property list document, or nil when it isn't text, a number, true or false,
     /// or a list or table of them.
     static func document(_ value: ConfigValue) -> String? {

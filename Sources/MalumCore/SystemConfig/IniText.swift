@@ -20,7 +20,7 @@ enum IniText {
         for (key, value) in entries.sorted(by: { $0.key < $1.key }) {
             let written = value.items.compactMap(self.value)
             guard written.count == value.items.count else {
-                reader.expect(path + [key], "text, a whole number, true or false, or a list of them")
+                reader.expect(path + [key], MessageText.iniValue)
                 continue
             }
             text += written.map { "\t\(key) = \($0)\n" }.joined()

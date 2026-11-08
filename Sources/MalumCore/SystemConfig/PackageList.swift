@@ -48,12 +48,11 @@ public struct PackageList: Equatable, Sendable {
         for (name, kind) in table.sorted(by: { $0.key < $1.key }) {
             guard !name.hasPrefix("-") else {
                 reader.add(
-                    .error, at: [homebrewTable, name],
-                    "\(TableReader.dotted([homebrewTable, name])): a package name can't start with -")
+                    .error, at: [homebrewTable, name], .notPackageName(TableReader.dotted([homebrewTable, name])))
                 continue
             }
             guard case .string(let word) = kind, let kind = PackageKind(rawValue: word) else {
-                reader.expect([homebrewTable, name], "\"formula\" or \"cask\"")
+                reader.expect([homebrewTable, name], MessageText.homebrewKind)
                 continue
             }
             packages[kind, default: []].append(name)
@@ -65,7 +64,7 @@ public struct PackageList: Equatable, Sendable {
     private static func appStoreApps(_ table: ConfigTable, reader: inout TableReader) -> [AppStoreApp] {
         table.sorted { $0.key < $1.key }.compactMap { name, id in
             guard case .integer(let id) = id, id > 0 else {
-                reader.expect([appStoreTable, name], "the app's App Store ID, \(SettingKind.integer)")
+                reader.expect([appStoreTable, name], MessageText.appStoreID)
                 return nil
             }
             return AppStoreApp(name, id: id)
@@ -83,7 +82,7 @@ public struct PackageList: Equatable, Sendable {
             }
             reader.unknownKeys(fields, at: path, known: ["repo", "asset"])
             guard case .string(let repo) = fields["repo"], isRepository(repo) else {
-                reader.expect(path + ["repo"], "the repository, as \"owner/name\"")
+                reader.expect(path + ["repo"], MessageText.repository)
                 return nil
             }
             switch fields["asset"] {

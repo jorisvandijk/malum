@@ -5,8 +5,7 @@ enum JSONText {
 
     /// The object from `table`, found at `path`, one entry per line, or nil when it's empty.
     static func text(_ table: ConfigTable, at path: [String], reader: inout TableReader) -> String? {
-        let entries = reader.entries(
-            table, at: path, expected: "text, a number, true or false, or a list of them", write: value)
+        let entries = reader.entries(table, at: path, expected: MessageText.jsonValue, write: value)
         guard !entries.isEmpty else { return nil }
         let lines = entries.map { indent + Escaping.quoted($0.key, controls: .all) + ": " + $0.value }
         return "{\n" + lines.joined(separator: ",\n") + "\n}\n"

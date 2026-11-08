@@ -59,8 +59,7 @@ struct AppConfig: Sendable {
         var preferences: [AppPreference] = []
         for (name, domain) in preferenceTables {
             let table = reader.table(reader.document, name, at: [])
-            let entries = reader.entries(
-                table, at: [name], expected: PlistText.expected, write: PlistText.document)
+            let entries = reader.entries(table, at: [name], expected: MessageText.plistValue, write: PlistText.document)
             preferences += entries.map { AppPreference(domain: domain, key: $0.key, value: $0.value) }
         }
         return preferences
@@ -75,7 +74,7 @@ struct AppConfig: Sendable {
         let path = [Self.extensionsTable, Self.extensionsKey]
         guard let value = table[Self.extensionsKey] else { return [] }
         guard let ids = TableReader.texts(value), ids.allSatisfy(Codium.isExtensionID) else {
-            reader.expect(path, "a list of extensions as \"publisher.name\"")
+            reader.expect(path, MessageText.extensionList)
             return []
         }
         return ids

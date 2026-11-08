@@ -11,14 +11,12 @@ enum LineText {
         var lines: [String] = []
         for (name, value) in table.sorted(by: { $0.key < $1.key }) {
             guard !name.isEmpty, !name.contains(where: \.isWhitespace) else {
-                reader.add(
-                    .error, at: path + [name],
-                    "\(TableReader.dotted(path + [name])): the name can't be empty or hold spaces")
+                reader.add(.error, at: path + [name], .notLineName(TableReader.dotted(path + [name])))
                 continue
             }
             let written = value.items.compactMap { self.value(of: $0, quoted: block.quoted) }
             guard written.count == value.items.count else {
-                reader.expect(path + [name], "text on one line, a number, true or false, or a list of them")
+                reader.expect(path + [name], MessageText.lineValue)
                 continue
             }
             lines += written.map { "\(prefix)\(name)\(block.separator)\($0)\n" }

@@ -57,9 +57,10 @@ struct TableReader {
 
     /// The entries of `table`, found at `path`, in alphabetical order, each value written by
     /// `write`. A value `write` turns down, by giving nil, is an error that says it should be
-    /// `expected`.
+    /// `expected`, such as `SettingKind.string`.
     mutating func entries(
-        _ table: ConfigTable, at path: [String], expected: String, write: (ConfigValue) -> String?
+        _ table: ConfigTable, at path: [String], expected: some CustomStringConvertible,
+        write: (ConfigValue) -> String?
     ) -> [(key: String, value: String)] {
         table.sorted { $0.key < $1.key }.compactMap { entry in
             guard let written = write(entry.value) else {
