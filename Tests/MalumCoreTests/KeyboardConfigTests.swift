@@ -33,9 +33,11 @@ struct KeyboardConfigTests {
                 KeyRemap(from: try key("grave"), to: try key("delete_forward")),
             ],
             bindings: [
-                KeyBinding(modifiers: [.ctrl, .shift], key: try key("return"), action: .app("net.kovidgoyal.kitty")),
-                KeyBinding(modifiers: hyper, key: try key("f"), action: .app("com.apple.finder")),
-                KeyBinding(modifiers: hyper, key: try key("space"), action: .module("launcher")),
+                KeyBinding(
+                    hotkey: Hotkey(modifiers: [.ctrl, .shift], key: try key("return")),
+                    action: .app("net.kovidgoyal.kitty")),
+                KeyBinding(hotkey: Hotkey(modifiers: hyper, key: try key("f")), action: .app("com.apple.finder")),
+                KeyBinding(hotkey: Hotkey(modifiers: hyper, key: try key("space")), action: .module("launcher")),
             ])
         #expect(reading.config == expected)
         #expect(reading.problems.isEmpty)

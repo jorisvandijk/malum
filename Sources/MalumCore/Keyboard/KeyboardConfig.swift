@@ -90,7 +90,7 @@ struct KeyboardConfig: Equatable, Sendable {
             let path = [name, keyName]
             guard let key = Self.key(named: keyName, at: path, reader: &reader) else { return nil }
             guard let action = Self.action(value, at: path, reader: &reader) else { return nil }
-            return KeyBinding(modifiers: modifiers, key: key, action: action)
+            return KeyBinding(hotkey: Hotkey(modifiers: modifiers, key: key), action: action)
         }
     }
 

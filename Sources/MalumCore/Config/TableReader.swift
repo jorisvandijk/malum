@@ -28,7 +28,7 @@ struct TableReader {
 
     /// The problems so far, in the order of their lines, those without a line last.
     var problemsByLine: [ConfigProblem] {
-        problems.sorted { ($0.line ?? Int.max) < ($1.line ?? Int.max) }
+        ConfigProblem.byLine(problems)
     }
 
     /// Whether any problem so far is an error.

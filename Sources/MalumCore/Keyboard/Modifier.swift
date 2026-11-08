@@ -18,8 +18,13 @@ enum Modifier: String, CaseIterable, Sendable {
 
     /// The name of the table of shortcuts that hold `modifiers`, such as `ctrl_shift`, or `hyper` for all four.
     static func table(of modifiers: Set<Modifier>) -> String {
-        guard modifiers.count < allCases.count else { return hyperTable }
-        return allCases.filter(modifiers.contains).map(\.rawValue).joined(separator: String(joiner))
+        names(of: modifiers).joined(separator: String(joiner))
+    }
+
+    /// The names of `modifiers` in their order, or just `hyper` for all four.
+    static func names(of modifiers: Set<Modifier>) -> [String] {
+        guard modifiers.count < allCases.count else { return [hyperTable] }
+        return allCases.filter(modifiers.contains).map(\.rawValue)
     }
 
     /// The modifiers a table named `name` holds, in any order, or nil when the name isn't modifiers
