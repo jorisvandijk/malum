@@ -9,7 +9,7 @@ public enum SystemConfig {
         about: """
             Makes the Mac match dots when you run `malum run`, installing what `packages.toml` lists, \
             writing the app config files and preferences in `apps/` and setting the macOS settings in `macos.toml`. \
-            At the end of the run, Malum updates itself. \
+            At the end of the run, \(Project.name) updates itself. \
             Nothing happens in the background: the app only reads the switch, and `malum run` does the work.
             """,
         settings: [
