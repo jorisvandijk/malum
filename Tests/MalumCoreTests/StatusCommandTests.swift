@@ -133,6 +133,21 @@ struct StatusCommandTests {
             ])
     }
 
+    @Test func packagesTomlWarningIsNoMismatch() async throws {
+        let list = "[homebrew]\nbat = \"formula\"\n\n[other]\n"
+        let (known, messages) = try await status([packages: list], runner: Self.runner(formulae: "bat\n")) {
+            record in
+            record.formulae = ["bat"]
+        }
+        #expect(known)
+        #expect(
+            messages == [
+                Message(.warn, "packages.toml line 4: unknown table other"),
+                Message(.info, "managed Homebrew formulae: 1"),
+                Message(.info, "everything Malum manages matches dots"),
+            ])
+    }
+
     @Test func badPackagesTomlIsAnError() async throws {
         let (known, messages) = try await status([packages: "[homebrew]\nbat = \"app\"\n"])
         #expect(!known)
