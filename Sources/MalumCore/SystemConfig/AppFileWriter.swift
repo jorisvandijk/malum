@@ -66,7 +66,7 @@ struct AppFileWriter {
         let item = files.item(at: path)
         let message: Message
         do {
-            let current = item == .file ? try files.read(path) : nil
+            let current = try files.text(ifFileAt: path)
             guard current != file.text else {
                 return adopt(path, app: app, text: file.text, known: known, report: report)
             }
@@ -145,7 +145,8 @@ struct AppFileWriter {
 
     /// Records `managed` as the file at `path`, or takes the path out of the record when it's nil.
     private func remember(_ path: String, _ managed: ManagedFile?, report: (Message) -> Void) -> Outcome {
-        InstalledRecord.remember(in: state, report: report) { $0.files[path] = managed } ? .changed : .failed
+        let recorded = InstalledRecord.remember(in: state, report: report) { $0.files[path] = managed }
+        return recorded ? .changed : .failed
     }
 
     /// The folder `path` is in.
