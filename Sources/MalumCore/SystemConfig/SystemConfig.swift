@@ -4,10 +4,12 @@ public enum SystemConfig {
     /// The module's id, which is also the name of its table in `malum.toml`.
     public static let id = "system_config"
 
-    /// The settings the module takes. What it installs and writes is listed in `packages.toml` and `apps/`, not here.
+    /// The settings the module takes. What it installs and writes is listed in `packages.toml`, `apps/` and `macos.toml`, not here.
     public static let schema = ConfigSchema(
         about: """
-            Makes the Mac match dots when you run `malum run`, installing what `packages.toml` lists and writing the app config files in `apps/`. \
+            Makes the Mac match dots when you run `malum run`, installing what `packages.toml` lists, \
+            writing the app config files and preferences in `apps/` and setting the macOS settings in `macos.toml`. \
+            At the end of the run, \(Project.name) updates itself. \
             Nothing happens in the background: the app only reads the switch, and `malum run` does the work.
             """,
         settings: [

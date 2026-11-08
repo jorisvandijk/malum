@@ -56,15 +56,15 @@ malum token
 
 ## Config
 
-Malum's settings live in `malum.toml`, at the top of your dots folder. Each module has its own table in it, named after the module, such as `[window_manager]`. Every setting is listed in the [config reference](docs/config.md).
+Malum's settings live in `malum.toml`, at the top of your dots folder. Each module has its own table in it, named after the module, such as `[system_config]`. Every setting is listed in the [config reference](docs/config.md).
 
 When the app starts, it reads `malum.toml`. While it runs, saving the file is enough: the app sees the change and reads the file again. Saving without changing anything does nothing. `malum reload` makes the app read the file again even when nothing changed.
 
 Every problem in the file is reported at once, each with the line it's on:
 
 ```
-[error] malum.toml line 3: window_manager.gap should be a whole number
-[warn] window_manager keeps its last good settings
+[error] malum.toml line 3: system_config.release_apps should be text in quotes
+[warn] system_config keeps its last good settings
 ```
 
 A problem in one module's table affects only that module. It keeps the settings it had before, and the other modules take their new settings as normal. When the file isn't valid TOML at all, every module keeps its settings until the file is fixed.
@@ -93,7 +93,7 @@ The [menu bar page](docs/menu-bar.md) explains Malum's icon and its menu.
 
 A module that's missing a permission waits until you grant it, and `malum permissions` checks that your terminal has Full Disk Access. The [permissions page](docs/permissions.md) explains both.
 
-`malum run` makes the Mac match dots: for now, it installs the Homebrew formulae and casks listed in `packages.toml` in dots. `malum status` shows what Malum manages and what doesn't match dots. The [system config page](docs/system-config.md) explains how.
+`malum run` makes the Mac match dots: it installs the Homebrew packages, App Store apps and GitHub releases listed in `packages.toml`, writes the app config files and preferences in `apps/`, and sets the macOS settings in `macos.toml`. `malum status` shows what Malum manages and what doesn't match dots. The [system config page](docs/system-config.md) explains how.
 
 At the end of every run, Malum updates itself to its latest release, and `malum rollback` puts the version it replaced back. The [updates page](docs/updates.md) explains how.
 
