@@ -172,7 +172,7 @@ public struct SelfUpdate {
         let kept = paths.previousBundle
         do {
             if files.item(at: kept) != nil { try files.remove(kept) }
-            try files.createDirectory((kept as NSString).deletingLastPathComponent)
+            try files.createDirectory(Paths.folder(of: kept))
             try files.copy(old, to: kept)
         } catch {
             report(.previousNotKept(error))

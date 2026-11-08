@@ -69,7 +69,7 @@ struct AppFileWriter {
             }
             message = try change(
                 at: path, item: item, current: current, known: known, source: Paths.appFile(named: app))
-            try files.createDirectory(Self.parent(of: path))
+            try files.createDirectory(Paths.folder(of: path))
             if case .link = item { try files.remove(path) }
             try files.write(file.text, to: path)
         } catch {
@@ -143,10 +143,5 @@ struct AppFileWriter {
     private func remember(_ path: String, _ managed: ManagedFile?, report: (Message) -> Void) -> Outcome {
         let recorded = InstalledRecord.remember(in: state, report: report) { $0.files[path] = managed }
         return recorded ? .changed : .failed
-    }
-
-    /// The folder `path` is in.
-    private static func parent(of path: String) -> String {
-        String(path[..<(path.lastIndex(of: "/") ?? path.endIndex)])
     }
 }

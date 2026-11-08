@@ -155,7 +155,7 @@ public struct GitHubReleases {
     private func place(
         _ payload: String, at destination: String, previous: String?, owner: String?, report: (Message) -> Void
     ) throws {
-        try files.createDirectory((destination as NSString).deletingLastPathComponent)
+        try files.createDirectory(Paths.folder(of: destination))
         if files.item(at: destination) == nil {
             try files.copy(payload, to: destination)
         } else {

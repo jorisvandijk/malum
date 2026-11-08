@@ -42,8 +42,9 @@ public struct ProcessRunner: CommandRunner {
     }
 }
 
-/// A process and its pipes, shared between the runner and its timeout.
-private final class RunningProcess: @unchecked Sendable {  // SAFETY: failure is set before start returns.
+/// A process and its pipes, shared between the runner and its timeout. `stop` can run on the
+/// timeout's thread while `start` runs, which is fine: it only reads `isRunning` and sends a signal.
+private final class RunningProcess: @unchecked Sendable {  // SAFETY: see above; failure is set before start returns.
     /// The process.
     private let process = Process()
     /// The pipe for stdout.

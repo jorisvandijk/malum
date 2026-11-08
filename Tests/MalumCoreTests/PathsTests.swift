@@ -51,4 +51,9 @@ struct PathsTests {
     @Test func absolutePathIsCleaned() {
         #expect(paths.resolve("/Users/test/git/./dots/", relativeTo: "/tmp") == "/Users/test/git/dots")
     }
+
+    @Test func folderIsThePathWithoutItsLastPart() {
+        #expect(Paths.folder(of: "/Users/test/.config/git/config") == "/Users/test/.config/git")
+        #expect(Paths.folder(of: "/config") == "/")
+    }
 }

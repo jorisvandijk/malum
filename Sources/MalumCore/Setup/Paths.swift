@@ -97,6 +97,11 @@ public struct Paths: Equatable, Sendable {
         !name.isEmpty && !name.hasPrefix(".") && !name.contains("/")
     }
 
+    /// The folder `path` is in.
+    public static func folder(of path: String) -> String {
+        (path as NSString).deletingLastPathComponent
+    }
+
     /// Whether `executable`, the running executable with its links resolved, is the installed
     /// app's, or false when it's nil because Malum doesn't run from an app bundle.
     public func isInstalled(executable: String?, files: any FileSystem) -> Bool {
