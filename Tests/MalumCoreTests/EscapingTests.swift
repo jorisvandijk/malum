@@ -27,7 +27,7 @@ struct EscapingTests {
     }
 
     @Test func shellLeavesSafeTextAlone() {
-        #expect(Escaping.shell("/Users/joris/.gitconfig") == "/Users/joris/.gitconfig")
+        #expect(Escaping.shell("/Users/test/.gitconfig") == "/Users/test/.gitconfig")
     }
 
     @Test func shellQuotesTextWithSpacesAndQuotes() {

@@ -4,7 +4,7 @@ import Testing
 
 @Suite(.timeLimit(.minutes(1)))
 struct OverrideStoreTests {
-    let paths = Paths(home: "/Users/joris")
+    let paths = Paths(home: "/Users/test")
     var safeModeFile: String { "\(paths.stateDirectory)/safe-mode" }
     var disabledFile: String { "\(paths.stateDirectory)/disabled" }
 

@@ -5,15 +5,15 @@ import Testing
 @Suite(.timeLimit(.minutes(1)))
 @MainActor
 struct ConfigReloaderTests {
-    private let paths = Paths(home: "/Users/joris")
-    private let pointer = "/Users/joris/.config/malum/config"
-    private let file = "/Users/joris/dots/malum.toml"
+    private let paths = Paths(home: "/Users/test")
+    private let pointer = "/Users/test/.config/malum/config"
+    private let file = "/Users/test/dots/malum.toml"
     private let schemas = [
         "launcher": ConfigSchema(about: "Opens apps.", settings: ["size": Setting(.integer, "How big it is.")])
     ]
 
     @Test func fileIsReadFromDots() {
-        let files = FakeFileSystem(texts: [pointer: "/Users/joris/dots\n", file: "[launcher]\nsize = 3\n"])
+        let files = FakeFileSystem(texts: [pointer: "/Users/test/dots\n", file: "[launcher]\nsize = 3\n"])
         let reloader = ConfigReloader(files: files, paths: paths, schemas: schemas)
         #expect(reloader.reload(force: false)?.messages == [Message(.info, "loaded \(file)")])
         #expect(reloader.settings == ["launcher": ["size": .integer(3)]])
@@ -21,7 +21,7 @@ struct ConfigReloaderTests {
     }
 
     @Test func sameTextIsSkippedUnlessForced() throws {
-        let files = FakeFileSystem(texts: [pointer: "/Users/joris/dots\n", file: "[launcher]\nsize = 3\n"])
+        let files = FakeFileSystem(texts: [pointer: "/Users/test/dots\n", file: "[launcher]\nsize = 3\n"])
         let reloader = ConfigReloader(files: files, paths: paths, schemas: schemas)
         _ = reloader.reload(force: false)
         #expect(reloader.reload(force: false) == nil)
@@ -40,7 +40,7 @@ struct ConfigReloaderTests {
     }
 
     @Test func missingFileIsReportedOnceUntilForced() {
-        let files = FakeFileSystem(texts: [pointer: "/Users/joris/dots\n"])
+        let files = FakeFileSystem(texts: [pointer: "/Users/test/dots\n"])
         let reloader = ConfigReloader(files: files, paths: paths, schemas: schemas)
         #expect(
             reloader.reload(force: false)?.problems == [
@@ -52,7 +52,7 @@ struct ConfigReloaderTests {
     }
 
     @Test func badTableKeepsLastGoodSettings() throws {
-        let files = FakeFileSystem(texts: [pointer: "/Users/joris/dots\n", file: "[launcher]\nsize = 3\n"])
+        let files = FakeFileSystem(texts: [pointer: "/Users/test/dots\n", file: "[launcher]\nsize = 3\n"])
         let reloader = ConfigReloader(files: files, paths: paths, schemas: schemas)
         _ = reloader.reload(force: false)
         try files.write("[launcher]\nsize = \"big\"\n", to: file)

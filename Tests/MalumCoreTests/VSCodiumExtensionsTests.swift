@@ -8,7 +8,7 @@ struct VSCodiumExtensionsTests {
     private let codiumInstalled = FakeFileSystem(items: ["/opt/homebrew/bin/codium": .file])
 
     private var state: StateFolder {
-        StateFolder(files: codiumInstalled, locks: FakeFileLocks(), paths: Paths(home: "/Users/joris"))
+        StateFolder(files: codiumInstalled, locks: FakeFileLocks(), paths: Paths(home: "/Users/test"))
     }
 
     /// The extensions in the record of what Malum installed.
@@ -32,7 +32,7 @@ struct VSCodiumExtensionsTests {
     private func run(_ ids: [String], runner: FakeRunner, files: FakeFileSystem? = nil) async -> (Bool, [Message]) {
         var messages: [Message] = []
         let files = files ?? codiumInstalled
-        let state = StateFolder(files: files, locks: FakeFileLocks(), paths: Paths(home: "/Users/joris"))
+        let state = StateFolder(files: files, locks: FakeFileLocks(), paths: Paths(home: "/Users/test"))
         let succeeded = await VSCodiumExtensions(runner: runner, files: files, state: state).run(ids) {
             messages.append($0)
         }

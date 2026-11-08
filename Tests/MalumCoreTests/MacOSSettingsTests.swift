@@ -5,8 +5,8 @@ import Testing
 @Suite(.timeLimit(.minutes(1)))
 @MainActor
 struct MacOSSettingsTests {
-    private let paths = Paths(home: "/Users/joris")
-    private let file = "/Users/joris/dots/macos.toml"
+    private let paths = Paths(home: "/Users/test")
+    private let file = "/Users/test/dots/macos.toml"
 
     /// An export holding `entries`, plist elements keyed by name.
     nonisolated private static func export(_ entries: String = "") -> CommandResult {
@@ -20,7 +20,7 @@ struct MacOSSettingsTests {
         let sudo = SudoSession(runner: runner, canAsk: true)
         let succeeded = await MacOSSettings(
             files: files, runner: runner, sudo: sudo, state: state, paths: paths, handlers: FakeAppHandlers()
-        ).run(dots: "/Users/joris/dots") { messages.append($0) }
+        ).run(dots: "/Users/test/dots") { messages.append($0) }
         return (succeeded, messages)
     }
 

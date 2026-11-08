@@ -4,9 +4,9 @@ import Testing
 
 @Suite(.timeLimit(.minutes(1)))
 struct BundleSignerTests {
-    let app = "/Users/joris/Applications/Malum.app"
-    let staged = "/Users/joris/Applications/Malum.app.staged"
-    let plist = "/Users/joris/Applications/Malum.app/Contents/Info.plist"
+    let app = "/Users/test/Applications/Malum.app"
+    let staged = "/Users/test/Applications/Malum.app.staged"
+    let plist = "/Users/test/Applications/Malum.app/Contents/Info.plist"
 
     @Test func installSignsAStagedCopyAndSwapsItIn() async throws {
         let files = FakeFileSystem(texts: [plist: "old"])

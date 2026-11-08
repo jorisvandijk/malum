@@ -5,7 +5,7 @@ import Testing
 @Suite(.timeLimit(.minutes(1)))
 @MainActor
 struct PowerSettingsTests {
-    private let paths = Paths(home: "/Users/joris")
+    private let paths = Paths(home: "/Users/test")
     nonisolated private static let custom = """
         Battery Power:
          lessbright           1

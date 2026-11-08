@@ -4,7 +4,7 @@ import Testing
 
 @Suite(.timeLimit(.minutes(1)))
 struct StateFolderTests {
-    let paths = Paths(home: "/Users/joris")
+    let paths = Paths(home: "/Users/test")
     var folder: String { paths.stateDirectory }
 
     @Test func writeCreatesFolderAndTakesLock() throws {

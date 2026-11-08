@@ -8,7 +8,7 @@ struct HomebrewPackagesTests {
     private let brewInstalled = FakeFileSystem(items: ["/opt/homebrew/bin/brew": .file])
 
     private var state: StateFolder {
-        StateFolder(files: brewInstalled, locks: FakeFileLocks(), paths: Paths(home: "/Users/joris"))
+        StateFolder(files: brewInstalled, locks: FakeFileLocks(), paths: Paths(home: "/Users/test"))
     }
 
     /// The record of what Malum installed, on the disk where brew is installed.
@@ -51,7 +51,7 @@ struct HomebrewPackagesTests {
     ) {
         var messages: [Message] = []
         let files = files ?? brewInstalled
-        let state = StateFolder(files: files, locks: FakeFileLocks(), paths: Paths(home: "/Users/joris"))
+        let state = StateFolder(files: files, locks: FakeFileLocks(), paths: Paths(home: "/Users/test"))
         let succeeded = await HomebrewPackages(runner: runner, files: files, state: state).run(packages) {
             messages.append($0)
         }
@@ -156,7 +156,7 @@ struct HomebrewPackagesTests {
                 Message(
                     .error,
                     """
-                    couldn't install packages: couldn't read /Users/joris/Library/Application Support/\
+                    couldn't install packages: couldn't read /Users/test/Library/Application Support/\
                     com.jorisvandijk.malum/installed.json, the record of what Malum installed
                     """)
             ])

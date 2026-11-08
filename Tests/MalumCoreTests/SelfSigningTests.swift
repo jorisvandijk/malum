@@ -4,8 +4,8 @@ import Testing
 
 @Suite(.timeLimit(.minutes(1)))
 struct SelfSigningTests {
-    let paths = Paths(home: "/Users/joris")
-    let plist = "/Users/joris/Applications/Malum.app/Contents/Info.plist"
+    let paths = Paths(home: "/Users/test")
+    let plist = "/Users/test/Applications/Malum.app/Contents/Info.plist"
     let listed = "  1) \(SigningCertificateTests.hash) \"Malum code signing\"\n"
 
     private func signing(_ runner: FakeRunner, files: FakeFileSystem) -> SelfSigning {
@@ -15,7 +15,7 @@ struct SelfSigningTests {
 
     @Test func buildFolderIsNotInstalled() async {
         let runner = FakeRunner()
-        let built = "/Users/joris/Git/malum/build/Malum.app/Contents/MacOS/Malum"
+        let built = "/Users/test/Git/malum/build/Malum.app/Contents/MacOS/Malum"
         #expect(await signing(runner, files: FakeFileSystem()).check(executable: built) == .notInstalled)
         #expect(await signing(runner, files: FakeFileSystem()).check(executable: nil) == .notInstalled)
         #expect(runner.commands.isEmpty)

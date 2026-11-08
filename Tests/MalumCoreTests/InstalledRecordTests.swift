@@ -5,7 +5,7 @@ import Testing
 @Suite(.timeLimit(.minutes(1)))
 struct InstalledRecordTests {
     let files = FakeFileSystem()
-    var state: StateFolder { StateFolder(files: files, locks: FakeFileLocks(), paths: Paths(home: "/Users/joris")) }
+    var state: StateFolder { StateFolder(files: files, locks: FakeFileLocks(), paths: Paths(home: "/Users/test")) }
     var path: String { state.path(of: "installed.json") }
 
     @Test func changeOfAnUnreadableRecordLeavesItAsItIs() throws {

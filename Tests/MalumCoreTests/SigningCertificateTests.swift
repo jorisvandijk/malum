@@ -6,7 +6,7 @@ import Testing
 struct SigningCertificateTests {
     static let hash = "3F2A1B0C9D8E7F6A5B4C3D2E1F0A9B8C7D6E5F40"
     static let listed = "  1) \(hash) \"Malum code signing\" (CSSMERR_TP_NOT_TRUSTED)\n"
-    let paths = Paths(home: "/Users/joris")
+    let paths = Paths(home: "/Users/test")
 
     private func certificate(_ runner: FakeRunner, files: FakeFileSystem = FakeFileSystem()) -> SigningCertificate {
         SigningCertificate(runner: runner, files: files, paths: paths, temporaryDirectory: "/tmp")

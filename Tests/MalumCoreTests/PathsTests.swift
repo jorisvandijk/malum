@@ -4,22 +4,22 @@ import Testing
 
 @Suite(.timeLimit(.minutes(1)))
 struct PathsTests {
-    let paths = Paths(home: "/Users/joris")
+    let paths = Paths(home: "/Users/test")
 
     @Test func configFileIsUnderDotConfig() {
-        #expect(paths.configFile == "/Users/joris/.config/malum/config")
+        #expect(paths.configFile == "/Users/test/.config/malum/config")
     }
 
     @Test func commandLinkIsInLocalBin() {
-        #expect(paths.commandLink == "/Users/joris/.local/bin/malum")
+        #expect(paths.commandLink == "/Users/test/.local/bin/malum")
     }
 
     @Test func stateDirectoryIsNamedAfterBundleID() {
-        #expect(paths.stateDirectory == "/Users/joris/Library/Application Support/com.jorisvandijk.malum")
+        #expect(paths.stateDirectory == "/Users/test/Library/Application Support/com.jorisvandijk.malum")
     }
 
     @Test func installedExecutableIsInHomeApplications() {
-        #expect(paths.installedExecutable == "/Users/joris/Applications/Malum.app/Contents/MacOS/Malum")
+        #expect(paths.installedExecutable == "/Users/test/Applications/Malum.app/Contents/MacOS/Malum")
     }
 
     @Test func appFileIsInAppsFolder() {
@@ -27,28 +27,28 @@ struct PathsTests {
     }
 
     @Test func installedBundleAndKeychainAreInHome() {
-        #expect(paths.installedBundle == "/Users/joris/Applications/Malum.app")
-        #expect(paths.loginKeychain == "/Users/joris/Library/Keychains/login.keychain-db")
+        #expect(paths.installedBundle == "/Users/test/Applications/Malum.app")
+        #expect(paths.loginKeychain == "/Users/test/Library/Keychains/login.keychain-db")
     }
 
     @Test func loginAgentIsNamedAfterBundleID() {
-        #expect(paths.loginAgent == "/Users/joris/Library/LaunchAgents/com.jorisvandijk.malum.plist")
+        #expect(paths.loginAgent == "/Users/test/Library/LaunchAgents/com.jorisvandijk.malum.plist")
     }
 
     @Test func configTOMLIsAtTheTopOfDots() {
-        #expect(paths.configTOML(in: "/Users/joris/Git/dots") == "/Users/joris/Git/dots/malum.toml")
+        #expect(paths.configTOML(in: "/Users/test/Git/dots") == "/Users/test/Git/dots/malum.toml")
     }
 
     @Test func tildeExpandsToHome() {
-        #expect(paths.resolve("~/git/dots", relativeTo: "/tmp") == "/Users/joris/git/dots")
-        #expect(paths.resolve("~", relativeTo: "/tmp") == "/Users/joris")
+        #expect(paths.resolve("~/git/dots", relativeTo: "/tmp") == "/Users/test/git/dots")
+        #expect(paths.resolve("~", relativeTo: "/tmp") == "/Users/test")
     }
 
     @Test func relativePathIsReadFromBase() {
-        #expect(paths.resolve("../dots", relativeTo: "/Users/joris/git/malum") == "/Users/joris/git/dots")
+        #expect(paths.resolve("../dots", relativeTo: "/Users/test/git/malum") == "/Users/test/git/dots")
     }
 
     @Test func absolutePathIsCleaned() {
-        #expect(paths.resolve("/Users/joris/git/./dots/", relativeTo: "/tmp") == "/Users/joris/git/dots")
+        #expect(paths.resolve("/Users/test/git/./dots/", relativeTo: "/tmp") == "/Users/test/git/dots")
     }
 }

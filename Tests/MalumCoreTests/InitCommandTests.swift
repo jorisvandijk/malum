@@ -4,13 +4,13 @@ import Testing
 
 @Suite(.timeLimit(.minutes(1)))
 struct InitCommandTests {
-    let paths = Paths(home: "/Users/joris")
-    let dots = "/Users/joris/git/dots"
-    let executable = "/Users/joris/Applications/Malum.app/Contents/MacOS/Malum"
+    let paths = Paths(home: "/Users/test")
+    let dots = "/Users/test/git/dots"
+    let executable = "/Users/test/Applications/Malum.app/Contents/MacOS/Malum"
 
     func run(_ files: FakeFileSystem, dots argument: String = "~/git/dots") -> [Message] {
         InitCommand(files: files, paths: paths).run(
-            dots: argument, workingDirectory: "/Users/joris", executable: executable)
+            dots: argument, workingDirectory: "/Users/test", executable: executable)
     }
 
     @Test func firstInitRecordsDotsAndLinks() {
@@ -42,7 +42,7 @@ struct InitCommandTests {
     }
 
     @Test func dotsIsComparedAsSpelledOnDisk() {
-        let onDisk = "/Users/joris/Git/dots"
+        let onDisk = "/Users/test/Git/dots"
         let files = FakeFileSystem(
             items: [onDisk: .directory, paths.commandLink: .link(to: executable)],
             texts: [paths.configFile: onDisk + "\n"],

@@ -4,8 +4,8 @@ import Testing
 
 @Suite(.timeLimit(.minutes(1)))
 struct CommandLinkTests {
-    let paths = Paths(home: "/Users/joris")
-    let executable = "/Users/joris/Applications/Malum.app/Contents/MacOS/Malum"
+    let paths = Paths(home: "/Users/test")
+    let executable = "/Users/test/Applications/Malum.app/Contents/MacOS/Malum"
 
     @Test func missingLinkIsCreated() throws {
         let files = FakeFileSystem()
