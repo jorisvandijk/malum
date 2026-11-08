@@ -10,7 +10,7 @@ struct AppStoreAppsTests {
     private let amphetamine = AppStoreApp("amphetamine", id: 937_984_704)
 
     private var state: StateFolder {
-        StateFolder(files: masInstalled, locks: FakeFileLocks(), paths: Paths(home: "/Users/joris"))
+        StateFolder(files: masInstalled, locks: FakeFileLocks(), paths: Paths(home: "/Users/test"))
     }
 
     /// The App Store apps in the record of what Malum installed.
@@ -45,7 +45,7 @@ struct AppStoreAppsTests {
         let sudo = SudoSession(runner: runner, canAsk: canAsk)
         defer { sudo.end() }
         let files = files ?? masInstalled
-        let state = StateFolder(files: files, locks: FakeFileLocks(), paths: Paths(home: "/Users/joris"))
+        let state = StateFolder(files: files, locks: FakeFileLocks(), paths: Paths(home: "/Users/test"))
         let part = AppStoreApps(runner: runner, files: files, sudo: sudo, state: state)
         let succeeded = await part.run(apps) { messages.append($0) }
         return (succeeded, messages)

@@ -5,7 +5,7 @@ import Testing
 @Suite(.timeLimit(.minutes(1)))
 @MainActor
 struct SelfUpdateTests {
-    private let paths = Paths(home: "/Users/joris")
+    private let paths = Paths(home: "/Users/test")
     private let listed = "  1) \(SigningCertificateTests.hash) \"Malum code signing\"\n"
     private let zip = "Malum-macos-arm64.zip"
 
@@ -82,11 +82,11 @@ struct SelfUpdateTests {
         let files = disk()
         let github = github(files)
         let runner = runner(files)
-        let built = "/Users/joris/Git/malum/build/Malum.app/Contents/MacOS/Malum"
+        let built = "/Users/test/Git/malum/build/Malum.app/Contents/MacOS/Malum"
         let (succeeded, messages) = await run(update(files, github: github, runner: runner, executable: built))
         #expect(succeeded)
         #expect(
-            messages == [Message(.info, "not updating: Malum isn't running from /Users/joris/Applications/Malum.app")])
+            messages == [Message(.info, "not updating: Malum isn't running from /Users/test/Applications/Malum.app")])
         #expect(runner.commands.isEmpty && github.downloads.isEmpty)
     }
 

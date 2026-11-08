@@ -9,7 +9,7 @@ struct AppPreferenceWriterTests {
     private let files = FakeFileSystem()
 
     private var state: StateFolder {
-        StateFolder(files: files, locks: FakeFileLocks(), paths: Paths(home: "/Users/joris"))
+        StateFolder(files: files, locks: FakeFileLocks(), paths: Paths(home: "/Users/test"))
     }
 
     /// An export of `domain` holding `entries`, plist elements keyed by name.

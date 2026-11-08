@@ -4,8 +4,8 @@ import Testing
 
 @Suite(.timeLimit(.minutes(1)))
 struct LoginAgentTests {
-    let paths = Paths(home: "/Users/joris")
-    let installed = "/Users/joris/Applications/Malum.app/Contents/MacOS/Malum"
+    let paths = Paths(home: "/Users/test")
+    let installed = "/Users/test/Applications/Malum.app/Contents/MacOS/Malum"
 
     @Test func missingAgentIsWritten() throws {
         let files = FakeFileSystem()
@@ -26,7 +26,7 @@ struct LoginAgentTests {
     }
 
     @Test func installedAppSpelledDifferentlyWritesAgent() throws {
-        let typed = "/Users/joris/applications/Malum.app/Contents/MacOS/Malum"
+        let typed = "/Users/test/applications/Malum.app/Contents/MacOS/Malum"
         let files = FakeFileSystem(spellings: [typed: installed])
         #expect(try LoginAgent(files: files, paths: paths).update(executable: typed) == .written)
         #expect(files.text(at: paths.loginAgent) == LoginAgent.plist(program: installed))
@@ -34,7 +34,7 @@ struct LoginAgentTests {
 
     @Test func buildFolderLeavesAgentAlone() throws {
         let files = FakeFileSystem()
-        let built = "/Users/joris/Git/malum/build/Malum.app/Contents/MacOS/Malum"
+        let built = "/Users/test/Git/malum/build/Malum.app/Contents/MacOS/Malum"
         #expect(try LoginAgent(files: files, paths: paths).update(executable: built) == .notInstalled)
         #expect(files.item(at: paths.loginAgent) == nil)
     }

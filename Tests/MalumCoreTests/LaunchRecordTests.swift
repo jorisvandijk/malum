@@ -4,7 +4,7 @@ import Testing
 
 @Suite(.timeLimit(.minutes(1)))
 struct LaunchRecordTests {
-    let paths = Paths(home: "/Users/joris")
+    let paths = Paths(home: "/Users/test")
     var file: String { "\(paths.stateDirectory)/launches" }
 
     func record(_ files: FakeFileSystem) -> LaunchRecord {

@@ -29,7 +29,7 @@ struct LogTests {
 
     @Test func reportKeepsTheMessageLevelAndPrivateParts() {
         let writer = RecordingLogWriter()
-        Log(writer: writer).report(Message(.warn, "couldn't watch \(private: "/Users/joris/git/dots")"))
+        Log(writer: writer).report(Message(.warn, "couldn't watch \(private: "/Users/test/git/dots")"))
         #expect(writer.entries.map(\.redacted) == ["[warn] couldn't watch <private>"])
     }
 }

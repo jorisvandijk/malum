@@ -5,8 +5,8 @@ import Testing
 @Suite(.timeLimit(.minutes(1)))
 struct MessageTextTests {
     @Test func descriptionShowsPrivatePartsToo() {
-        let text: MessageText = "couldn't read \(private: "/Users/joris/git/dots"): no such file"
-        #expect(text.description == "couldn't read /Users/joris/git/dots: no such file")
+        let text: MessageText = "couldn't read \(private: "/Users/test/git/dots"): no such file"
+        #expect(text.description == "couldn't read /Users/test/git/dots: no such file")
     }
 
     @Test func redactedHidesPrivateParts() {

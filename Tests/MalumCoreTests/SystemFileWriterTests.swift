@@ -5,10 +5,10 @@ import Testing
 @Suite(.timeLimit(.minutes(1)))
 @MainActor
 struct SystemFileWriterTests {
-    private let paths = Paths(home: "/Users/joris")
+    private let paths = Paths(home: "/Users/test")
     private let hosts = SystemFile.hosts.path
     private let sudoLocal = SystemFile.sudoLocal.path
-    private let staged = "/Users/joris/Library/Application Support/\(Project.bundleID)/system-file.staged"
+    private let staged = "/Users/test/Library/Application Support/\(Project.bundleID)/system-file.staged"
 
     /// Writes `wanted` on `files` with `runner`, and gives back whether it worked and what it said.
     private func write(

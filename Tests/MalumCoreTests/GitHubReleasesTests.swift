@@ -5,8 +5,8 @@ import Testing
 @Suite(.timeLimit(.minutes(1)))
 @MainActor
 struct GitHubReleasesTests {
-    private let paths = Paths(home: "/Users/joris")
-    private let state = "/Users/joris/Library/Application Support/com.jorisvandijk.malum"
+    private let paths = Paths(home: "/Users/test")
+    private let state = "/Users/test/Library/Application Support/com.jorisvandijk.malum"
     private let mpv = ReleaseEntry("mpv", repo: "mpv-player/mpv", asset: "mpv-*-arm.zip")
     private let pagefind = ReleaseEntry("pagefind", repo: "CloudCannon/pagefind")
 
@@ -77,16 +77,16 @@ struct GitHubReleasesTests {
                 Message(.info, "installing GitHub release mpv v0.40.0 (mpv-v0.40.0-arm.zip)"),
                 Message(.info, "installed GitHub release mpv v0.40.0 at /Applications/mpv.app"),
                 Message(.info, "installing GitHub release pagefind v1.3.0 (pagefind-aarch64-apple-darwin.tar.gz)"),
-                Message(.info, "installed GitHub release pagefind v1.3.0 at /Users/joris/.local/bin/pagefind"),
+                Message(.info, "installed GitHub release pagefind v1.3.0 at /Users/test/.local/bin/pagefind"),
             ])
         #expect(files.text(at: "/Applications/mpv.app/Contents/Info.plist") == "app")
-        #expect(files.isExecutable("/Users/joris/.local/bin/pagefind"))
+        #expect(files.isExecutable("/Users/test/.local/bin/pagefind"))
         #expect(files.item(at: downloads) == nil)
         #expect(
             installedReleases(files) == [
                 "mpv": InstalledRelease(repo: "mpv-player/mpv", tag: "v0.40.0", path: "/Applications/mpv.app"),
                 "pagefind": InstalledRelease(
-                    repo: "CloudCannon/pagefind", tag: "v1.3.0", path: "/Users/joris/.local/bin/pagefind"),
+                    repo: "CloudCannon/pagefind", tag: "v1.3.0", path: "/Users/test/.local/bin/pagefind"),
             ])
     }
 
@@ -148,8 +148,8 @@ struct GitHubReleasesTests {
         #expect(files.item(at: "/Applications/mpv.app") == nil)
         #expect(installedReleases(files).keys.sorted() == ["pagefind"])
         let (_, last) = await run([], files: files)
-        #expect(last == [Message(.info, "removed GitHub release pagefind from /Users/joris/.local/bin/pagefind")])
-        #expect(files.item(at: "/Users/joris/.local/bin/pagefind") == nil)
+        #expect(last == [Message(.info, "removed GitHub release pagefind from /Users/test/.local/bin/pagefind")])
+        #expect(files.item(at: "/Users/test/.local/bin/pagefind") == nil)
         #expect(installedReleases(files).isEmpty)
     }
 
@@ -167,7 +167,7 @@ struct GitHubReleasesTests {
                     "couldn't install GitHub release ghost: nobody/ghost has no published release on GitHub, or it's private"
                 ),
                 Message(.info, "installing GitHub release pagefind v1.3.0 (pagefind-aarch64-apple-darwin.tar.gz)"),
-                Message(.info, "installed GitHub release pagefind v1.3.0 at /Users/joris/.local/bin/pagefind"),
+                Message(.info, "installed GitHub release pagefind v1.3.0 at /Users/test/.local/bin/pagefind"),
             ])
     }
 

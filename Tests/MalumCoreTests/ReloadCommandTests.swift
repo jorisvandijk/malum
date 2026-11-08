@@ -4,7 +4,7 @@ import Testing
 
 @Suite(.timeLimit(.minutes(1)))
 struct ReloadCommandTests {
-    let paths = Paths(home: "/Users/joris")
+    let paths = Paths(home: "/Users/test")
     var lock: String { "\(paths.stateDirectory)/app.lock" }
     var processIDFile: String { "\(paths.stateDirectory)/app.pid" }
 

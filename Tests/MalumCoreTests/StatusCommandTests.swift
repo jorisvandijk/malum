@@ -5,10 +5,10 @@ import Testing
 @Suite(.timeLimit(.minutes(1)))
 @MainActor
 struct StatusCommandTests {
-    private let paths = Paths(home: "/Users/joris")
-    private let pointer = "/Users/joris/.config/malum/config"
-    private let packages = "/Users/joris/dots/packages.toml"
-    private let kittyConf = "/Users/joris/.config/kitty/kitty.conf"
+    private let paths = Paths(home: "/Users/test")
+    private let pointer = "/Users/test/.config/malum/config"
+    private let packages = "/Users/test/dots/packages.toml"
+    private let kittyConf = "/Users/test/.config/kitty/kitty.conf"
     private let hosts = "/etc/hosts"
 
     /// A runner whose `brew list --formula` gives `formulae`, whose `mas list` gives `apps`, and
@@ -35,7 +35,7 @@ struct StatusCommandTests {
         _ change: (inout InstalledRecord) -> Void = { _ in }
     ) async throws -> (Bool, [Message]) {
         var all = texts
-        if pointed { all[pointer] = "/Users/joris/dots\n" }
+        if pointed { all[pointer] = "/Users/test/dots\n" }
         let files = FakeFileSystem(
             items: ["/opt/homebrew/bin/brew": .file, "/opt/homebrew/bin/mas": .file], texts: all)
         let locks = FakeFileLocks()
@@ -81,7 +81,7 @@ struct StatusCommandTests {
     @Test func releasesMissingOrUnlistedAreReported() async throws {
         let list = "[release.zoxide]\nrepo = \"ajeetdsouza/zoxide\"\nasset = \"zoxide\"\n"
         let (known, messages) = try await status([packages: list]) { record in
-            record.releases = ["eza": InstalledRelease(repo: "eza-community/eza", tag: "v1", path: "/Users/joris/eza")]
+            record.releases = ["eza": InstalledRelease(repo: "eza-community/eza", tag: "v1", path: "/Users/test/eza")]
         }
         #expect(known)
         #expect(
@@ -97,7 +97,7 @@ struct StatusCommandTests {
             record in
             record.files = [
                 kittyConf: ManagedFile(app: "kitty", text: "font_size 12\n"),
-                "/Users/joris/.config/micro/settings.json": ManagedFile(app: "micro", text: "{}\n"),
+                "/Users/test/.config/micro/settings.json": ManagedFile(app: "micro", text: "{}\n"),
             ]
             record.systemFiles = [hosts: ManagedFile.fingerprint(of: "127.0.0.1 localhost\n")]
         }
@@ -106,7 +106,7 @@ struct StatusCommandTests {
             messages == [
                 Message(.info, "managed app config files: 2"),
                 Message(.warn, "\(kittyConf) was changed outside Malum, malum run overwrites it and keeps a .backup"),
-                Message(.warn, "/Users/joris/.config/micro/settings.json is missing, malum run writes it again"),
+                Message(.warn, "/Users/test/.config/micro/settings.json is missing, malum run writes it again"),
                 Message(.info, "managed files only root can change: 1"),
             ])
     }

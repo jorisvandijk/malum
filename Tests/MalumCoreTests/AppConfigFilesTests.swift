@@ -5,10 +5,10 @@ import Testing
 @Suite(.timeLimit(.minutes(1)))
 @MainActor
 struct AppConfigFilesTests {
-    private let home = "/Users/joris"
-    private let toml = "/Users/joris/dots/apps/git.toml"
-    private let config = "/Users/joris/.config/git/config"
-    private let backup = "/Users/joris/.config/git/config.backup"
+    private let home = "/Users/test"
+    private let toml = "/Users/test/dots/apps/git.toml"
+    private let config = "/Users/test/.config/git/config"
+    private let backup = "/Users/test/.config/git/config.backup"
     private let header =
         "# Written by Malum from apps/git.toml in dots. Changes made here are overwritten.\n"
     private let settings = "[settings.init]\ndefaultBranch = \"main\"\n"
@@ -26,7 +26,7 @@ struct AppConfigFilesTests {
             state: state(files),
             paths: Paths(home: home)
         ).run(
-            dots: "/Users/joris/dots"
+            dots: "/Users/test/dots"
         ) { messages.append($0) }
         return (succeeded, messages)
     }
@@ -38,7 +38,7 @@ struct AppConfigFilesTests {
     @Test func missingFolderWritesNothing() async {
         let (succeeded, messages) = await run(FakeFileSystem())
         #expect(succeeded)
-        #expect(messages == [Message(.info, "no app config files to write: /Users/joris/dots/apps doesn't exist")])
+        #expect(messages == [Message(.info, "no app config files to write: /Users/test/dots/apps doesn't exist")])
     }
 
     @Test func newFileIsWrittenAndRecorded() async {
@@ -115,11 +115,11 @@ struct AppConfigFilesTests {
     }
 
     @Test func linkIsReplacedByTheFile() async {
-        let files = FakeFileSystem(items: [config: .link(to: "/Users/joris/dots/gitconfig")], texts: [toml: settings])
+        let files = FakeFileSystem(items: [config: .link(to: "/Users/test/dots/gitconfig")], texts: [toml: settings])
         let (_, messages) = await run(files)
         #expect(
             messages == [
-                Message(.info, "wrote \(config) from apps/git.toml, replacing a link to /Users/joris/dots/gitconfig")
+                Message(.info, "wrote \(config) from apps/git.toml, replacing a link to /Users/test/dots/gitconfig")
             ])
         #expect(files.item(at: config) == .file)
     }
@@ -140,19 +140,19 @@ struct AppConfigFilesTests {
         #expect(succeeded)
         #expect(
             messages == [
-                Message(.info, "removed /Users/joris/.config/git/ignore, apps/git.toml doesn't write it anymore")
+                Message(.info, "removed /Users/test/.config/git/ignore, apps/git.toml doesn't write it anymore")
             ])
-        #expect(files.item(at: "/Users/joris/.config/git/ignore") == nil)
-        #expect(managed(files)["/Users/joris/.config/git/ignore"] == nil)
+        #expect(files.item(at: "/Users/test/.config/git/ignore") == nil)
+        #expect(managed(files)["/Users/test/.config/git/ignore"] == nil)
     }
 
     @Test func droppedFileChangedOutsideMalumStays() async {
-        let ignore = "/Users/joris/.config/git/ignore"
+        let ignore = "/Users/test/.config/git/ignore"
         let files = FakeFileSystem(texts: [toml: "[ignore]\npatterns = [\"*.swp\"]\n"])
         _ = await run(files)
         try? files.write("mine\n", to: ignore)
         try? files.remove(toml)
-        try? files.createDirectory("/Users/joris/dots/apps")
+        try? files.createDirectory("/Users/test/dots/apps")
         let (_, messages) = await run(files)
         let warning: MessageText = """
             \(ignore) isn't written from apps/git.toml anymore, but it was changed outside Malum, so it stays \
@@ -191,7 +191,7 @@ struct AppConfigFilesTests {
 
     @Test func errorInVSCodiumsFileKeepsItsExtensions() async throws {
         let files = FakeFileSystem(
-            items: ["/opt/homebrew/bin/codium": .file], texts: ["/Users/joris/dots/apps/vscodium.toml": "[extensions\n"]
+            items: ["/opt/homebrew/bin/codium": .file], texts: ["/Users/test/dots/apps/vscodium.toml": "[extensions\n"]
         )
         try InstalledRecord.change(in: state(files)) { $0.extensions = ["a.b"] }
         let runner = FakeRunner()
@@ -199,7 +199,7 @@ struct AppConfigFilesTests {
             files: files, runner: runner, sudo: SudoSession(runner: runner, canAsk: false), state: state(files),
             paths: Paths(home: home)
         ).run(
-            dots: "/Users/joris/dots"
+            dots: "/Users/test/dots"
         ) { _ in }
         #expect(runner.commands.isEmpty)
         #expect(try InstalledRecord.read(from: state(files)).extensions == ["a.b"])
@@ -207,7 +207,7 @@ struct AppConfigFilesTests {
 
     @Test func unknownAppIsAWarning() async {
         let files = FakeFileSystem(texts: [
-            "/Users/joris/dots/apps/vim.toml": "", "/Users/joris/dots/apps/notes.txt": "",
+            "/Users/test/dots/apps/vim.toml": "", "/Users/test/dots/apps/notes.txt": "",
         ])
         let (succeeded, messages) = await run(files)
         #expect(succeeded)
@@ -215,14 +215,14 @@ struct AppConfigFilesTests {
     }
 
     @Test func pathWithSpacesIsQuotedInTheDiffCommand() async {
-        let toml = "/Users/joris/dots/apps/git.toml"
+        let toml = "/Users/test/dots/apps/git.toml"
         let files = FakeFileSystem(texts: [toml: settings, "/Users/jo ris/.config/git/config": "old\n"])
         var messages: [Message] = []
         _ = await AppConfigFiles(
             files: files, runner: FakeRunner(), sudo: SudoSession(runner: FakeRunner(), canAsk: false),
             state: StateFolder(files: files, locks: FakeFileLocks(), paths: Paths(home: "/Users/jo ris")),
             paths: Paths(home: "/Users/jo ris")
-        ).run(dots: "/Users/joris/dots") { messages.append($0) }
+        ).run(dots: "/Users/test/dots") { messages.append($0) }
         #expect(
             messages.first?.text.description.hasSuffix(
                 "see what changed with: diff '/Users/jo ris/.config/git/config.backup' '/Users/jo ris/.config/git/config'"
@@ -231,8 +231,8 @@ struct AppConfigFilesTests {
     }
 
     @Test func fileWrittenOnlyWhenMissingIsLeftAlone() async {
-        let toml = "/Users/joris/dots/apps/librewolf.toml"
-        let ini = "/Users/joris/Library/Application Support/LibreWolf/profiles.ini"
+        let toml = "/Users/test/dots/apps/librewolf.toml"
+        let ini = "/Users/test/Library/Application Support/LibreWolf/profiles.ini"
         let files = FakeFileSystem(texts: [toml: ""])
         let (_, messages) = await run(files)
         #expect(messages.first == Message(.info, "wrote \(ini) from apps/librewolf.toml"))
