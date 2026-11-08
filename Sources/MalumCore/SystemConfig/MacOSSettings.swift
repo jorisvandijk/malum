@@ -1,6 +1,7 @@
 /// The macOS settings part of system config: sets the preferences `macos.toml` in dots lists, by
 /// domain and the names macOS stores them under, then restarts what has to show them. It also
-/// writes the files only root can change: `/etc/hosts` and Touch ID for sudo.
+/// writes the files only root can change (`/etc/hosts` and Touch ID for sudo), sets the power
+/// settings and removes the Apple apps it lists.
 @MainActor
 struct MacOSSettings {
     /// The table of preferences, one table inside it for each domain.
@@ -20,6 +21,10 @@ struct MacOSSettings {
         var preferences: [AppPreference] = []
         /// The text of each file only root can change, by path.
         var files: [String: String] = [:]
+        /// The power settings, by power source and name.
+        var power: PowerSettings.Wanted = [:]
+        /// The Apple apps to remove.
+        var appleApps: [String] = []
     }
 
     /// The process that shows the settings of a domain, which is restarted after a change to it.
@@ -83,7 +88,10 @@ struct MacOSSettings {
             wanted.preferences.map { (Paths.macOSTOMLName, $0) }, keeping: [], changed: { changed.insert($0) },
             report: report)
         await show(changed, report: report)
-        return wrote && set
+        let power = await PowerSettings(runner: runner, sudo: sudo, state: state).write(wanted.power, report: report)
+        let removed = await AppleApps(runner: runner, files: files, sudo: sudo).remove(
+            wanted.appleApps, report: report)
+        return wrote && set && power && removed
     }
 
     /// Reads `text`, the contents of `macos.toml`: what it sets, or nil when an error stops it, and
@@ -96,7 +104,8 @@ struct MacOSSettings {
             return (nil, [error])
         }
         reader.unknownKeys(
-            reader.document, at: [], known: [preferencesTable, currentHostTable, hostsTable, sudoTable])
+            reader.document, at: [],
+            known: [preferencesTable, currentHostTable, hostsTable, sudoTable, PowerSettings.table, AppleApps.table])
         var wanted = Wanted()
         wanted.preferences =
             domains(preferencesTable, named: { $0 }, &reader)
@@ -107,6 +116,8 @@ struct MacOSSettings {
         if touchID(&reader) {
             wanted.files[SystemFile.sudoLocal.path] = SystemFile.touchID
         }
+        wanted.power = PowerSettings.read(&reader)
+        wanted.appleApps = AppleApps.read(&reader)
         let problems = reader.problems.sorted { ($0.line ?? Int.max) < ($1.line ?? Int.max) }
         return (reader.hasErrors ? nil : wanted, problems)
     }

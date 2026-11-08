@@ -4,6 +4,10 @@ extension MessageText {
     static let setMacOSSettings: MessageText = "set macOS settings"
     /// Changing the files only root can change.
     static let changeSystemFiles: MessageText = "change \(SystemFile.hosts.path) or Touch ID for sudo"
+    /// Changing the power settings.
+    static let changePower: MessageText = "change power settings"
+    /// Removing the Apple apps `macos.toml` lists.
+    static let removeAppleApps: MessageText = "remove Apple apps"
 }
 
 extension Message {
@@ -50,5 +54,61 @@ extension Message {
     /// macOS couldn't be made to read `/etc/hosts` again.
     static func hostsNotReread(reason: String) -> Message {
         couldnt("make macOS read \(SystemFile.hosts.path) again", "\(reason)", level: .warn)
+    }
+
+    /// The power settings couldn't be read.
+    static func powerUnreadable(reason: String) -> Message {
+        couldnt("read the power settings", "\(reason)")
+    }
+
+    /// This Mac has no `source` power, such as a battery, so its settings were skipped.
+    static func noPowerSource(_ source: String) -> Message {
+        Message(.warn, "this Mac has no \(source) power, so [power.\(source)] in \(Paths.macOSTOMLName) was skipped")
+    }
+
+    /// `pmset` has no `setting` on `source` power.
+    static func noPowerSetting(_ setting: String, on source: String) -> Message {
+        couldnt("set \(setting) on \(source) power", "pmset has no such setting, pmset -g custom lists them")
+    }
+
+    /// `setting` on `source` power was set to `value` from `macos.toml`; it was `was`.
+    static func powerSet(_ setting: String, on source: String, to value: Int, was: Int) -> Message {
+        Message(.info, "set \(setting) on \(source) power to \(value) from \(Paths.macOSTOMLName) (it was \(was))")
+    }
+
+    /// `setting` on `source` power went back to `value`, since `macos.toml` doesn't set it anymore.
+    static func powerPutBack(_ setting: String, on source: String, to value: Int) -> Message {
+        Message(
+            .info, "set \(setting) on \(source) power back to \(value), \(Paths.macOSTOMLName) doesn't set it anymore")
+    }
+
+    /// `setting` on `source` power isn't set from `macos.toml` anymore, but it was changed by hand.
+    static func powerKeptChanged(_ setting: String, on source: String) -> Message {
+        let subject: MessageText = """
+            \(setting) on \(source) power isn't set from \(Paths.macOSTOMLName) anymore, but it was changed \
+            outside \(Project.name)
+            """
+        return Message(.warn, .letGo(subject))
+    }
+
+    /// `setting` on `source` power couldn't be set.
+    static func powerNotSet(_ setting: String, on source: String, reason: String) -> Message {
+        couldnt("set \(setting) on \(source) power", "\(reason)")
+    }
+
+    /// The Apple app at `path` was removed.
+    static func removedAppleApp(_ path: String) -> Message {
+        Message(.info, "removed \(path), it's in [apple_apps] remove in \(Paths.macOSTOMLName)")
+    }
+
+    /// The app at `path` isn't Apple's, by its `bundleID`, or it has none, so it stays.
+    static func notAppleApp(_ path: String, bundleID: String?) -> Message {
+        let why: MessageText = bundleID.map { "its bundle ID is \($0)" } ?? "it has no bundle ID"
+        return couldnt("remove \(path)", "it isn't an Apple app, \(why)")
+    }
+
+    /// The Apple app at `path` couldn't be removed.
+    static func appleAppNotRemoved(_ path: String, reason: String) -> Message {
+        couldnt("remove \(path)", "\(reason)")
     }
 }

@@ -451,4 +451,36 @@ These work like app config files: a file that was already there, or that was cha
 [info] wrote /etc/pam.d/sudo_local from macos.toml
 ```
 
+### Power settings
+
+`[power]` in `macos.toml` sets the power settings, with one table for each power source: `battery` and `charger`. Each setting goes by the name `pmset` gives it, and `pmset -g custom` lists them with their values.
+
+```toml
+[power.battery]
+lessbright = 0
+```
+
+Setting them needs root, so they use the run's one password prompt, and only ask when a setting has to change. Malum owns each setting it sets: one you change outside Malum is set back on the next run. One you take out of the file goes back to what it was before Malum first set it, unless you changed it outside Malum: then it stays, and Malum lets it go. A table for a power source this Mac doesn't have, such as `battery` on a desktop Mac, is skipped with a warning. Malum keeps the settings it set and what they were before in `installed.json`, under `power`.
+
+```
+[info] asking for your password to change power settings
+[info] set lessbright on battery power to 0 from macos.toml (it was 1)
+```
+
+### Removing Apple apps
+
+`remove` in `[apple_apps]` lists the Apple apps to remove from `/Applications`, by name without `.app`.
+
+```toml
+[apple_apps]
+remove = ["GarageBand", "iMovie", "Keynote", "Numbers", "Pages"]
+```
+
+Malum removes each one it finds on every run, so an app that the App Store or a macOS update puts back is removed again. Only an app whose bundle ID starts with `com.apple.` is removed; any other app by that name stays, with an error. Removing needs root and uses the run's one password prompt. Taking a name out doesn't bring the app back: get it from the App Store.
+
+```
+[info] asking for your password to remove Apple apps
+[info] removed /Applications/GarageBand.app, it's in [apple_apps] remove in macos.toml
+```
+
 The messages also go to the macOS log, as the [log page](log.md) describes.
