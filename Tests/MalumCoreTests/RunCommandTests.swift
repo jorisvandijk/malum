@@ -22,7 +22,7 @@ struct RunCommandTests {
         var messages: [Message] = []
         let succeeded = await RunCommand(
             files: files, paths: paths, runner: runner, github: FakeGitHub([:], files: files), locks: FakeFileLocks(),
-            canAsk: true
+            canAsk: true, handlers: FakeAppHandlers()
         ).run {
             messages.append($0)
         }

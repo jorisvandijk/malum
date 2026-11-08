@@ -1,7 +1,7 @@
 /// The macOS settings part of system config: sets the preferences `macos.toml` in dots lists, by
 /// domain and the names macOS stores them under, then restarts what has to show them. It also
 /// writes the files only root can change (`/etc/hosts` and Touch ID for sudo), sets the power
-/// settings and removes the Apple apps it lists.
+/// settings, removes the Apple apps it lists and sets the default apps.
 @MainActor
 struct MacOSSettings {
     /// The table of preferences, one table inside it for each domain.
@@ -25,6 +25,8 @@ struct MacOSSettings {
         var power: PowerSettings.Wanted = [:]
         /// The Apple apps to remove.
         var appleApps: [String] = []
+        /// The default apps, by key in `[default_apps]`.
+        var defaultApps: DefaultApps.Wanted = [:]
     }
 
     /// The process that shows the settings of a domain, which is restarted after a change to it.
@@ -48,15 +50,22 @@ struct MacOSSettings {
     private let state: StateFolder
     /// Where `macos.toml` is.
     private let paths: Paths
+    /// Says which app opens what, and changes it.
+    private let handlers: any AppHandlers
 
     /// Creates the part, which reads `macos.toml` on `files`, sets the settings with `runner`, as
-    /// root through `sudo` where needed, and keeps its record in `state`.
-    init(files: any FileSystem, runner: any CommandRunner, sudo: SudoSession, state: StateFolder, paths: Paths) {
+    /// root through `sudo` where needed, keeps its record in `state` and sets the default apps
+    /// through `handlers`.
+    init(
+        files: any FileSystem, runner: any CommandRunner, sudo: SudoSession, state: StateFolder, paths: Paths,
+        handlers: any AppHandlers
+    ) {
         self.files = files
         self.runner = runner
         self.sudo = sudo
         self.state = state
         self.paths = paths
+        self.handlers = handlers
     }
 
     /// Sets the settings in `macos.toml` in the dots folder `dots`, and removes the ones Malum set
@@ -91,7 +100,8 @@ struct MacOSSettings {
         let power = await PowerSettings(runner: runner, sudo: sudo, state: state).write(wanted.power, report: report)
         let removed = await AppleApps(runner: runner, files: files, sudo: sudo).remove(
             wanted.appleApps, report: report)
-        return wrote && set && power && removed
+        let defaults = await DefaultApps(handlers: handlers).set(wanted.defaultApps, report: report)
+        return wrote && set && power && removed && defaults
     }
 
     /// Reads `text`, the contents of `macos.toml`: what it sets, or nil when an error stops it, and
@@ -105,7 +115,10 @@ struct MacOSSettings {
         }
         reader.unknownKeys(
             reader.document, at: [],
-            known: [preferencesTable, currentHostTable, hostsTable, sudoTable, PowerSettings.table, AppleApps.table])
+            known: [
+                preferencesTable, currentHostTable, hostsTable, sudoTable, PowerSettings.table, AppleApps.table,
+                DefaultApps.table,
+            ])
         var wanted = Wanted()
         wanted.preferences =
             domains(preferencesTable, named: { $0 }, &reader)
@@ -118,6 +131,7 @@ struct MacOSSettings {
         }
         wanted.power = PowerSettings.read(&reader)
         wanted.appleApps = AppleApps.read(&reader)
+        wanted.defaultApps = DefaultApps.read(&reader)
         let problems = reader.problems.sorted { ($0.line ?? Int.max) < ($1.line ?? Int.max) }
         return (reader.hasErrors ? nil : wanted, problems)
     }
