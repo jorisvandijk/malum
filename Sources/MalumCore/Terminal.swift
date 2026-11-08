@@ -42,7 +42,7 @@ public struct Terminal: Sendable {
             defer { buffer.withUnsafeMutableBytes { _ = memset($0.baseAddress, 0, $0.count) } }
             guard readpassphrase(prompt, &buffer, buffer.count, RPP_ECHO_OFF) != nil else { return nil }
             let typed = buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }
-            return String(decoding: typed, as: UTF8.self)
+            return String(bytes: typed, encoding: .utf8)
         #else
             return readLine()
         #endif
