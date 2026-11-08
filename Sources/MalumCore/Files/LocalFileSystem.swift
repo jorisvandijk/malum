@@ -32,12 +32,9 @@ public struct LocalFileSystem: FileSystem {
         }
     }
 
-    /// Writes to a temporary file first, then moves it over `path`. Never writes a TOML file,
-    /// since those are the user's.
+    /// Writes to a temporary file first, then moves it over `path`.
     public func write(_ text: String, to path: String) throws(FileSystemError) {
-        guard (path as NSString).pathExtension.lowercased() != Paths.tomlExtension else {
-            throw .userFile(path: path)
-        }
+        try refuseTOML(path)
         do {
             try Data(text.utf8).write(to: URL(fileURLWithPath: path), options: .atomic)
         } catch {
@@ -56,6 +53,7 @@ public struct LocalFileSystem: FileSystem {
 
     /// Removes a link already at `path`, then links it to `destination`.
     public func link(_ path: String, to destination: String) throws(FileSystemError) {
+        try refuseTOML(path)
         let manager = FileManager.default
         do {
             if case .link = item(at: path) {
@@ -69,6 +67,7 @@ public struct LocalFileSystem: FileSystem {
 
     /// Copies with `FileManager`, which keeps the files' attributes.
     public func copy(_ source: String, to destination: String) throws(FileSystemError) {
+        try refuseTOML(destination)
         do {
             try FileManager.default.copyItem(atPath: source, toPath: destination)
         } catch {
@@ -79,6 +78,8 @@ public struct LocalFileSystem: FileSystem {
     /// Swaps the two with `renamex_np`, so neither path is ever empty. Linux has no such call
     /// that Swift can reach, and Malum never swaps there.
     public func exchange(_ path: String, _ other: String) throws(FileSystemError) {
+        try refuseTOML(path)
+        try refuseTOML(other)
         #if canImport(Darwin)
             guard renamex_np(path, other, UInt32(RENAME_SWAP)) != 0 else { return }
             throw .unswappable(path: path, other: other, reason: String(cString: strerror(errno)))
@@ -116,6 +117,13 @@ public struct LocalFileSystem: FileSystem {
             try FileManager.default.setAttributes([.posixPermissions: Self.executableMode], ofItemAtPath: path)
         } catch {
             throw .unwritable(path: path, reason: error.localizedDescription)
+        }
+    }
+
+    /// Never lets anything land on a TOML file, since those are the user's.
+    private func refuseTOML(_ path: String) throws(FileSystemError) {
+        guard (path as NSString).pathExtension.lowercased() != Paths.tomlExtension else {
+            throw .userFile(path: path)
         }
     }
 
