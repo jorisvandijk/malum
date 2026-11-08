@@ -205,7 +205,17 @@ extension RecordError: ReportableError {
             "couldn't read \(private: path), the record of what \(Project.name) installed"
         case .unwritable(let reason):
             .couldnt("write the record of what \(Project.name) installed", "\(reason)")
+        case .notUTF8:
+            .couldnt("write the record of what \(Project.name) installed", "it isn't UTF-8")
         }
+    }
+}
+
+extension ReleaseError {
+    /// The files `release` of `repo` has, for a message that says which file to install.
+    static func found(in release: Release, of repo: String) -> String {
+        let names = release.assets.map { "\"\($0.name)\"" }.joined(separator: ", ")
+        return "\(repo) \(release.tag) has \(names.isEmpty ? "no files" : names)"
     }
 }
 
@@ -243,6 +253,8 @@ extension GitHubError: ReportableError {
         switch self {
         case .unreachable(let reason):
             .couldnt("reach GitHub", "\(reason)")
+        case .notALink(let address):
+            .couldnt("reach GitHub", "\(address) isn't a link")
         case .refused(let status):
             "GitHub answered with HTTP \(status)"
         case .unreadable:

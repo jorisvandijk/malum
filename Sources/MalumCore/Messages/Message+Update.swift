@@ -6,6 +6,11 @@ extension MessageText {
     static let rollBackApp: MessageText = "roll back \(Project.name)"
 }
 
+extension SelfUpdate {
+    /// What a version that can't be read is called.
+    static let unknownVersion = "an unknown version"
+}
+
 extension Message {
     /// No update, because the app doesn't run from `installed`.
     static func noSelfUpdate(notInstalled installed: String) -> Message {

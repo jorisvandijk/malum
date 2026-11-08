@@ -25,8 +25,7 @@ enum ReleaseFiles {
     /// The file of `release` that `entry` installs: the one its `asset` matches, or else the only
     /// file, or else the only file for a Mac.
     static func asset(for entry: ReleaseEntry, in release: Release) throws(ReleaseError) -> ReleaseAsset {
-        let names = release.assets.map { "\"\($0.name)\"" }.joined(separator: ", ")
-        let found = "\(entry.repo) \(release.tag) has \(names.isEmpty ? "no files" : names)"
+        let found = ReleaseError.found(in: release, of: entry.repo)
         let chosen: ReleaseAsset
         if let pattern = entry.asset {
             let matches = release.assets.filter { fnmatch(pattern, $0.name, 0) == 0 }

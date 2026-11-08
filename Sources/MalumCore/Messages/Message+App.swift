@@ -79,3 +79,12 @@ extension SigningError: ReportableError {
         }
     }
 }
+
+extension SigningCertificate {
+    /// The step that makes the key and the certificate.
+    static let makeStep = "make the certificate"
+    /// The step that bundles them into one file.
+    static let bundleStep = "bundle it"
+    /// The step that adds the bundle to the login keychain.
+    static let keychainStep = "add it to the login keychain"
+}

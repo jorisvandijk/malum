@@ -21,6 +21,10 @@ extension FileSystemError: ReportableError {
             .couldnt("list \(private: path)", "\(reason)")
         case .userFile(let path):
             "won't write \(private: path): \(Project.name) never writes TOML files"
+        case .isFolder(let path):
+            .couldnt("write \(private: path)", "it's a folder")
+        case .swapUnsupported(let path, let other):
+            .couldnt("swap \(private: path) with \(private: other)", "not supported on this system")
         }
     }
 }

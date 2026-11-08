@@ -16,11 +16,4 @@ public struct CommandResult: Equatable, Sendable {
 
     /// Whether the tool ran and exited with 0.
     public var succeeded: Bool { status == 0 }
-
-    /// Why it failed, for a message: the last line it wrote to stderr, or its exit status.
-    public var reason: String {
-        let lastLine = errors.split(separator: "\n").last.map(String.init)
-        guard let lastLine, !lastLine.isEmpty else { return status.map { "exited with \($0)" } ?? "didn't finish" }
-        return lastLine
-    }
 }

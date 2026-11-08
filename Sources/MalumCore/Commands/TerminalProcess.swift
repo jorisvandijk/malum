@@ -21,7 +21,7 @@ enum TerminalProcess {
         for pointer in arguments + variables { free(pointer) }
         guard started == 0 else {
             let reason = String(cString: strerror(started))
-            return CommandResult(status: nil, errors: "couldn't start \(command.executable): \(reason)")
+            return CommandResult(status: nil, errors: CommandResult.startFailure(command.executable, reason: reason))
         }
         let child = pid
         let watchdog = Task {

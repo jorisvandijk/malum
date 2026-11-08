@@ -84,7 +84,7 @@ public struct LocalFileSystem: FileSystem {
             guard renamex_np(path, other, UInt32(RENAME_SWAP)) != 0 else { return }
             throw .unswappable(path: path, other: other, reason: String(cString: strerror(errno)))
         #else
-            throw .unswappable(path: path, other: other, reason: "not supported on this system")
+            throw .swapUnsupported(path: path, other: other)
         #endif
     }
 

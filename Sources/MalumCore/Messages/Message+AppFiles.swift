@@ -81,8 +81,9 @@ extension Message {
 
     /// `path` was overwritten from `source` after its old text was kept; `changed` says whether it
     /// was a file Malum wrote that was changed by hand, rather than one that was there already.
-    /// `diff` is the command that shows what changed.
-    static func overwrote(_ path: String, from source: String, changed: Bool, diff: String) -> Message {
+    /// The old text is kept at `backup`, and the message gives the command that shows what changed.
+    static func overwrote(_ path: String, from source: String, changed: Bool, backup: String) -> Message {
+        let diff = "diff \(Escaping.shell(backup)) \(Escaping.shell(path))"
         let why: MessageText =
             changed
             ? "was changed outside \(Project.name), so it was overwritten from"

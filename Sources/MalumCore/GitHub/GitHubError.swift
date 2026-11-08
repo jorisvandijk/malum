@@ -2,6 +2,8 @@
 public enum GitHubError: Error, Equatable, Sendable {
     /// GitHub couldn't be reached.
     case unreachable(reason: String)
+    /// The address isn't a link.
+    case notALink(address: String)
     /// GitHub answered with an HTTP status other than the one expected.
     case refused(status: Int)
     /// GitHub's answer couldn't be read.

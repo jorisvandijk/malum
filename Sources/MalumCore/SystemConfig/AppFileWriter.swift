@@ -9,9 +9,6 @@ import Foundation
 /// it's missing is left to its app once it's there, and isn't recorded.
 @MainActor
 struct AppFileWriter {
-    /// What's added to a file's name for the copy of what was there before Malum overwrote it.
-    private static let backupExtension = ".backup"
-
     /// What writing or removing one file did.
     private enum Outcome {
         /// Nothing needed doing.
@@ -101,7 +98,7 @@ struct AppFileWriter {
     private func change(
         at path: String, item: FileItem?, current: String?, known: ManagedFile?, source: String
     ) throws -> Message {
-        if case .directory = item { throw FileSystemError.unwritable(path: path, reason: "it's a folder") }
+        if case .directory = item { throw FileSystemError.isFolder(path: path) }
         if case .link(let destination) = item {
             return .wrote(path, from: source, replacingLinkTo: destination)
         }
@@ -110,8 +107,7 @@ struct AppFileWriter {
         }
         guard let known, known.fingerprint == ManagedFile.fingerprint(of: current) else {
             let backup = try backUp(path, current)
-            let diff = "diff \(Escaping.shell(backup)) \(Escaping.shell(path))"
-            return .overwrote(path, from: source, changed: known != nil, diff: diff)
+            return .overwrote(path, from: source, changed: known != nil, backup: backup)
         }
         return .updated(path, from: source)
     }
@@ -138,7 +134,7 @@ struct AppFileWriter {
 
     /// Keeps `text`, the old contents of `path`, next to it, replacing an older copy, and says where.
     private func backUp(_ path: String, _ text: String) throws -> String {
-        let backup = path + Self.backupExtension
+        let backup = ManagedFile.backupPath(of: path)
         try files.write(text, to: backup)
         return backup
     }

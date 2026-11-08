@@ -50,11 +50,14 @@ private final class RunningProcess: @unchecked Sendable {  // SAFETY: failure is
     private let outputPipe = Pipe()
     /// The pipe for stderr.
     private let errorPipe = Pipe()
+    /// The path of the tool.
+    private let executable: String
     /// Why the process couldn't start, once start has returned nil.
     private(set) var failure: String?
 
     /// Sets up `command` to run with `environment` and no input.
     init(_ command: Command, environment: [String: String]) {
+        executable = command.executable
         process.executableURL = URL(fileURLWithPath: command.executable)
         process.arguments = command.arguments
         process.environment = environment
@@ -79,7 +82,7 @@ private final class RunningProcess: @unchecked Sendable {  // SAFETY: failure is
             do {
                 try process.run()
             } catch {
-                failure = "couldn't start \(process.executableURL?.path ?? "the tool"): \(error.localizedDescription)"
+                failure = CommandResult.startFailure(executable, reason: error.localizedDescription)
                 // Nothing will write to the pipes, so closing them ends the reads.
                 outputPipe.fileHandleForWriting.closeFile()
                 errorPipe.fileHandleForWriting.closeFile()
