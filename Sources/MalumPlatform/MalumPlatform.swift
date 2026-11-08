@@ -1,1 +1,1 @@
-// TODO: the AppKit, Accessibility, CGEvent and Security adapters, behind protocols defined in MalumCore.
+// TODO: the AppKit, Accessibility and CGEvent adapters, behind protocols defined in MalumCore.

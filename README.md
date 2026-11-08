@@ -10,7 +10,7 @@ It runs on macOS Tahoe, on Apple silicon.
 
 ## Install
 
-1. Download `Malum-macos-arm64.zip` from the latest [release](https://github.com/jorisvandijk/malum/releases).
+1. Download `Malum-macos-arm64.zip` from the latest [release](https://github.com/jorisvandijk/malum/releases), while signed in to GitHub, since the repository is private.
 2. Check the download against its `.sha256` file:
 
    ```sh
@@ -47,6 +47,12 @@ malum init <path to dots>
 ```
 
 This saves the path in `~/.config/malum/config`, the only file Malum keeps outside dots, and points `~/.local/bin/malum` at the app again, for example after the app has moved. Run it again whenever dots moves.
+
+After that, store a GitHub token so Malum can see its own releases, as the [GitHub token page](docs/github-token.md) explains:
+
+```sh
+malum token
+```
 
 ## Config
 
