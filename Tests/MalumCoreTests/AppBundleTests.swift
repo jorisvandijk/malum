@@ -8,7 +8,7 @@ struct AppBundleTests {
     private static let bundle = "/Applications/GarageBand.app"
 
     /// An `Info.plist` in XML with the bundle ID `bundleID` and the version `version`.
-    static func info(bundleID: String = "com.jorisvandijk.malum", version: String) -> String {
+    static func info(bundleID: String = Project.bundleID, version: String) -> String {
         """
         \(PlistText.header)
         <plist version="1.0">
