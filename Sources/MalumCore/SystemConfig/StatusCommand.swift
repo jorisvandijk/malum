@@ -7,22 +7,21 @@ public struct StatusCommand {
     private let paths: Paths
     /// Runs the outside tools that say what's installed.
     private let runner: any CommandRunner
-    /// The locks of the state folder.
-    private let locks: any FileLocks
+    /// Malum's state folder.
+    private let state: StateFolder
 
     /// Creates the command, which asks the outside tools through `runner` what's installed.
-    public init(files: any FileSystem, paths: Paths, runner: any CommandRunner, locks: any FileLocks) {
+    public init(files: any FileSystem, paths: Paths, runner: any CommandRunner, state: StateFolder) {
         self.files = files
         self.paths = paths
         self.runner = runner
-        self.locks = locks
+        self.state = state
     }
 
     /// Reports how many of each kind Malum manages, and each thing that doesn't match dots: listed
     /// but not installed, not listed anymore, missing, or changed outside Malum. Says whether it
     /// could tell everything.
     public func run(report: (Message) -> Void) async -> Bool {
-        let state = StateFolder(files: files, locks: locks, paths: paths)
         let dots: String
         let record: InstalledRecord
         do {
