@@ -15,7 +15,7 @@ struct PathsTests {
     }
 
     @Test func stateDirectoryIsNamedAfterBundleID() {
-        #expect(paths.stateDirectory == "/Users/test/Library/Application Support/com.jorisvandijk.malum")
+        #expect(paths.stateDirectory == "/Users/test/Library/Application Support/\(Project.bundleID)")
     }
 
     @Test func installedExecutableIsInHomeApplications() {
@@ -32,7 +32,7 @@ struct PathsTests {
     }
 
     @Test func loginAgentIsNamedAfterBundleID() {
-        #expect(paths.loginAgent == "/Users/test/Library/LaunchAgents/com.jorisvandijk.malum.plist")
+        #expect(paths.loginAgent == "/Users/test/Library/LaunchAgents/\(Project.bundleID).plist")
     }
 
     @Test func configTOMLIsAtTheTopOfDots() {

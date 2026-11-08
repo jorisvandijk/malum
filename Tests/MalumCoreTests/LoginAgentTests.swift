@@ -60,7 +60,7 @@ struct LoginAgentTests {
 
     @Test func agentStartsInstalledApp() {
         let plist = LoginAgent.plist(program: installed)
-        #expect(plist.contains("<string>com.jorisvandijk.malum</string>"))
+        #expect(plist.contains("<string>\(Project.bundleID)</string>"))
         #expect(plist.contains("<array>\n        <string>\(installed)</string>\n    </array>"))
     }
 

@@ -2,7 +2,7 @@
 /// and their formats, its preferences domain, or whether it lists extensions.
 enum AppConfigs {
     /// LibreWolf's folder, which holds its profiles.
-    private static let libreWolf = "Library/Application Support/LibreWolf"
+    private static let libreWolf = "\(Paths.applicationSupportRoot)/LibreWolf"
 
     /// LibreWolf's list of profiles, which makes it start with the one Malum writes to. LibreWolf
     /// keeps the list up to date itself.
@@ -19,7 +19,7 @@ enum AppConfigs {
         """
 
     /// Where the `librewolf` cask puts the app.
-    private static let libreWolfApp = "/Applications/LibreWolf.app"
+    private static let libreWolfApp = "\(Paths.systemApplications)/LibreWolf.app"
 
     /// What LibreWolf writes in a profile once it has used it. LibreWolf only takes a profile that
     /// has this, so the one Malum writes to is used from LibreWolf's first start. LibreWolf keeps
@@ -91,7 +91,8 @@ enum AppConfigs {
             name: "vscodium",
             files: [
                 AppConfigFile(
-                    "Library/Application Support/VSCodium/User/settings.json", .json(table: "settings"), always: true),
+                    "\(Paths.applicationSupportRoot)/VSCodium/User/settings.json", .json(table: "settings"),
+                    always: true),
                 AppConfigFile(".vscode-oss/argv.json", .json(table: "argv")),
             ],
             extensions: true),

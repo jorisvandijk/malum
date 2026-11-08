@@ -23,9 +23,11 @@ jobs:
         run: sudo xcode-select -s "$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)"
       - name: Test
         run: swift test
-      - name: Build Malum.app
+      - name: Build the app
         run: scripts/bundle.sh
       - name: Check the app
         run: |
-          codesign --verify --strict --verbose=2 build/Malum.app
-          build/Malum.app/Contents/MacOS/Malum --version
+          app="$(ls -d build/*.app)"
+          executable="$(plutil -extract CFBundleExecutable raw "$app/Contents/Info.plist")"
+          codesign --verify --strict --verbose=2 "$app"
+          "$app/Contents/MacOS/$executable" --version

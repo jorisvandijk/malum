@@ -5,7 +5,7 @@ public struct ReleaseFolders: Equatable, Sendable {
     /// The key of the folder programs go in.
     static let programsKey = "release_programs"
     /// Where apps go when the setting is left out.
-    static let defaultApps = "/Applications"
+    static let defaultApps = Paths.systemApplications
     /// Where programs go when the setting is left out.
     static let defaultPrograms = "~/" + Paths.binRoot
 
