@@ -483,4 +483,21 @@ Malum removes each one it finds on every run, so an app that the App Store or a 
 [info] removed /Applications/GarageBand.app, it's in [apple_apps] remove in macos.toml
 ```
 
+### Default apps
+
+`[default_apps]` in `macos.toml` picks the apps that open links and files, by bundle ID. `browser` opens web links (`http`, `https`) and web pages (`public.html`, `public.xhtml`). `video` opens video files (`public.mpeg-4`, `com.apple.quicktime-movie`, `public.avi`, `org.matroska.mkv`, `public.3gpp`, `public.mpeg`, `com.microsoft.windows-media-wmv`).
+
+```toml
+[default_apps]
+browser = "net.librewolf.librewolf"
+video = "io.mpv"
+```
+
+`osascript -e 'id of app "LibreWolf"'` gives an app's bundle ID. The app has to be installed, so put it in `packages.toml` too. A default app changed by hand is set back on the next run. A file type that no app on this Mac knows yet is skipped until one does. Taking a key out leaves the default app as it is. Setting them needs no password, but macOS asks you to confirm each change in a dialog of its own: one for the browser, which also covers `https` and `public.html`, and one for each video file type that changes. When you keep the old app, Malum stops asking for that key in this run, and the run ends with an error.
+
+```
+[info] macOS asks you to confirm net.librewolf.librewolf for http links, in a dialog of its own
+[info] made net.librewolf.librewolf the default app for http links from macos.toml
+```
+
 The messages also go to the macOS log, as the [log page](log.md) describes.

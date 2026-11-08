@@ -13,11 +13,14 @@ public struct RunCommand {
     private let locks: any FileLocks
     /// Whether it runs in a terminal, where sudo can ask for the password.
     private let canAsk: Bool
+    /// Says which app opens what, and changes it.
+    private let handlers: any AppHandlers
 
-    /// Creates the command, which asks for the password only when `canAsk` is set.
+    /// Creates the command, which asks for the password only when `canAsk` is set and sets the
+    /// default apps through `handlers`.
     public init(
         files: any FileSystem, paths: Paths, runner: any CommandRunner, github: any GitHub, locks: any FileLocks,
-        canAsk: Bool
+        canAsk: Bool, handlers: any AppHandlers
     ) {
         self.files = files
         self.paths = paths
@@ -25,6 +28,7 @@ public struct RunCommand {
         self.github = github
         self.locks = locks
         self.canAsk = canAsk
+        self.handlers = handlers
     }
 
     /// Loads `malum.toml` and runs each part of system config in order, reporting as it goes. Says
@@ -52,8 +56,9 @@ public struct RunCommand {
             let packages = await installPackages(dots: dots, folders: folders, sudo: sudo, state: state, report: report)
             let apps = await AppConfigFiles(files: files, runner: runner, sudo: sudo, state: state, paths: paths).run(
                 dots: dots, report: report)
-            let macOS = await MacOSSettings(files: files, runner: runner, sudo: sudo, state: state, paths: paths).run(
-                dots: dots, report: report)
+            let macOS = await MacOSSettings(
+                files: files, runner: runner, sudo: sudo, state: state, paths: paths, handlers: handlers
+            ).run(dots: dots, report: report)
             succeeded = packages && apps && macOS
         } catch {
             report(.failed(error))

@@ -36,6 +36,11 @@ extension MessageText {
         "\(path): a host name and its address can't be empty or hold spaces"
     }
 
+    /// The bundle ID at `path`, written dotted, is empty or holds spaces.
+    static func notBundleID(_ path: String) -> MessageText {
+        "\(path): a bundle ID can't be empty or hold spaces"
+    }
+
     /// `file` couldn't be read, for `reason`.
     static func unreadable(_ file: String, _ reason: String) -> MessageText {
         "couldn't read \(file): \(reason)"

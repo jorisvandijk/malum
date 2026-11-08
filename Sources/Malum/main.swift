@@ -74,7 +74,7 @@ func applySystemConfig() -> Never {
     Task {
         let command = RunCommand(
             files: files, paths: paths, runner: runner, github: GitHubAPI(), locks: locks,
-            canAsk: isatty(STDIN_FILENO) == 1)
+            canAsk: isatty(STDIN_FILENO) == 1, handlers: WorkspaceAppHandlers())
         let succeeded = await command.run { announce($0) }
         exit(succeeded ? EXIT_SUCCESS : EXIT_FAILURE)
     }
