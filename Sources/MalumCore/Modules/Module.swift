@@ -15,7 +15,8 @@ public protocol Module: AnyObject, Observable {
     /// Where the module is now, observed by the menu bar.
     var status: ModuleStatus { get }
 
-    // TODO: the hotkeys the module wants, once the hotkey registry exists.
+    /// The actions the module offers `keyboard.toml`, the keys it claims and whether it opens apps.
+    var hotkeys: HotkeyOffer { get }
 
     /// Undoes whatever an earlier run may have left behind system-wide, such as a key remap after a
     /// crash. Runs at every launch, before any module starts, whether the module is switched on or not.
@@ -27,4 +28,9 @@ public protocol Module: AnyObject, Observable {
     func apply(_ config: ConfigTable) throws
     /// Stops the module and undoes whatever it changed system-wide.
     func stop() async
+}
+
+extension Module {
+    /// No actions, no keys and no apps, for a module that has no shortcuts.
+    public var hotkeys: HotkeyOffer { HotkeyOffer() }
 }

@@ -26,4 +26,10 @@ struct ModifierTests {
         #expect(Modifier.modifiers(inTable: "ctrl__shift") == nil)
         #expect(Modifier.modifiers(inTable: "") == nil)
     }
+
+    @Test func namesAreInTheirOrderOrHyper() {
+        #expect(Modifier.names(of: [.shift, .cmd]) == ["cmd", "shift"])
+        #expect(Modifier.names(of: Set(Modifier.allCases)) == ["hyper"])
+        #expect(Modifier.names(of: []).isEmpty)
+    }
 }

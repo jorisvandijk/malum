@@ -76,6 +76,31 @@ extension MessageText {
         "\(path): \(name) is the hyper key, so it can't be remapped too"
     }
 
+    /// The shortcut at `path`, written dotted, binds `name`, which no module offers.
+    static func unknownAction(_ path: String, _ name: String) -> MessageText {
+        "\(path): no module offers \(name)"
+    }
+
+    /// The shortcut at `path`, written dotted, is `hotkey`, which `module` claims for itself.
+    static func hotkeyTaken(_ path: String, _ hotkey: String, _ module: String) -> MessageText {
+        "\(path): \(hotkey) is taken by \(module)"
+    }
+
+    /// `first` and `second` both claim `thing`, which only one module can have; `first` keeps it.
+    static func claimedTwice(_ thing: String, _ first: String, _ second: String) -> MessageText {
+        "\(first) and \(second) both claim \(thing), so \(second) doesn't get it"
+    }
+
+    /// `module` has shortcuts but is switched off.
+    static func moduleOff(_ module: String) -> MessageText {
+        "\(module) is switched off, so its keys do nothing"
+    }
+
+    /// Shortcuts name apps, but no module that opens apps is there yet.
+    static var noAppOpener: MessageText {
+        "no module opens apps yet, so the keys bound to apps do nothing"
+    }
+
     /// `file` couldn't be read, for `reason`.
     static func unreadable(_ file: String, _ reason: String) -> MessageText {
         "couldn't read \(file): \(reason)"

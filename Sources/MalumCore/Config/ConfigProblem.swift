@@ -21,4 +21,9 @@ public struct ConfigProblem: Error, Equatable, Sendable {
         self.column = column
         self.text = text
     }
+
+    /// `problems` in the order of their lines, those without a line last.
+    static func byLine(_ problems: [ConfigProblem]) -> [ConfigProblem] {
+        problems.sorted { ($0.line ?? Int.max) < ($1.line ?? Int.max) }
+    }
 }
