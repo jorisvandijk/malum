@@ -9,6 +9,8 @@ public struct Terminal: Sendable {
     private static let escape = "\u{1B}["
     /// The escape that ends a colour.
     private static let reset = "\u{1B}[0m"
+    /// The longest secret `readSecret` takes, in bytes.
+    private static let secretLength = 1024
 
     /// Whether tags are coloured.
     private let colorsTags: Bool
@@ -28,6 +30,21 @@ public struct Terminal: Sendable {
     /// Writes a tagged message.
     public func report(_ message: Message) {
         FileHandle.standardError.write(Data((Self.format(message, color: colorsTags) + "\n").utf8))
+    }
+
+    /// Reads a secret: on a terminal, after `prompt` and with typing hidden, the way `sudo` asks for
+    /// a password; otherwise one line from standard input, such as `pbpaste | malum token`. Nil when
+    /// there's nothing to read.
+    public func readSecret(prompt: String) -> String? {
+        #if os(macOS)
+            guard isatty(STDIN_FILENO) == 1 else { return readLine() }
+            var buffer = [CChar](repeating: 0, count: Self.secretLength)
+            defer { buffer.withUnsafeMutableBytes { _ = memset($0.baseAddress, 0, $0.count) } }
+            guard readpassphrase(prompt, &buffer, buffer.count, RPP_ECHO_OFF) != nil else { return nil }
+            return String(cString: buffer)
+        #else
+            return readLine()
+        #endif
     }
 
     /// The message as the terminal shows it: with `color`, the tag's word is green for info,

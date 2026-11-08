@@ -2,7 +2,7 @@
 public struct ReleaseAsset: Equatable, Sendable {
     /// The file's name.
     public let name: String
-    /// Where it downloads from.
+    /// The API link it downloads from, which works for private repositories too.
     public let url: String
 
     /// Creates the file called `name`, which downloads from `url`.
@@ -33,4 +33,6 @@ public protocol GitHub: Sendable {
     func latestRelease(of repo: String) async throws(GitHubError) -> Release?
     /// Downloads `asset` to a new file at `path`.
     func download(_ asset: ReleaseAsset, to path: String) async throws(GitHubError)
+    /// Checks that `token` can read `repo` (`owner/name`), and throws when GitHub refuses it.
+    func check(_ token: String, canRead repo: String) async throws(GitHubError)
 }

@@ -18,6 +18,8 @@ public enum Invocation: Equatable, Sendable {
     case run
     /// Show what Malum manages and what doesn't match dots.
     case status
+    /// Ask for the GitHub token and keep it in the keychain, or remove it when `remove` is set.
+    case token(remove: Bool)
     /// A command that's missing an argument, with what it needs.
     case incomplete(command: String, needs: String)
     /// An argument Malum doesn't know.
@@ -39,6 +41,8 @@ public enum Invocation: Equatable, Sendable {
             self = Self.initialize(rest)
         case "disable":
             self = Self.disable(rest)
+        case "token":
+            self = Self.token(rest)
         default:
             guard let plain = Self.plain[first] else {
                 self = .unknown(first)
@@ -58,6 +62,14 @@ public enum Invocation: Equatable, Sendable {
         guard let module = arguments.first else { return .incomplete(command: "disable", needs: "a module") }
         guard let extra = arguments.dropFirst().first else { return .disable(module: module) }
         return .unknown(extra)
+    }
+
+    /// Reads the arguments of `token`: none, or `--remove`. The token itself is never an argument,
+    /// so it can't end up in the shell's history.
+    private static func token(_ arguments: [String]) -> Self {
+        guard let first = arguments.first else { return .token(remove: false) }
+        guard first == "--remove" else { return .unknown(first) }
+        return arguments.dropFirst().first.map(Self.unknown) ?? .token(remove: true)
     }
 
     /// Reads the arguments of `init`: exactly one path.

@@ -10,6 +10,7 @@ extension Invocation {
                \(Project.command) permissions
                \(Project.command) run
                \(Project.command) status
+               \(Project.command) token [--remove]
 
           init         record where dots is checked out and link ~/.local/bin/\(Project.command)
           reload       ask the running app to reload
@@ -18,6 +19,8 @@ extension Invocation {
           permissions  check that this terminal has Full Disk Access
           run          make the Mac match dots: install the packages it lists
           status       show what \(Project.name) manages and what doesn't match dots
+          token        ask for the GitHub token and keep it in the login keychain
+                       (--remove deletes it)
           --version    show the version
           --help       show this help
         """

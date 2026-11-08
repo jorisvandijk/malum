@@ -18,4 +18,8 @@ struct ProjectTests {
     @Test func repositoryURLIsHTTPS() {
         #expect(URL(string: Project.repositoryURL)?.scheme == "https")
     }
+
+    @Test func repositoryURLEndsInTheRepository() {
+        #expect(Project.repositoryURL.hasSuffix("/\(Project.repository)"))
+    }
 }

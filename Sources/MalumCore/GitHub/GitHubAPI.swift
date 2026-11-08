@@ -4,24 +4,44 @@ import Foundation
     import FoundationNetworking
 #endif
 
-/// The real GitHub, over its public API. It has no token yet, so it sees only public repositories,
-/// and GitHub allows it 60 lookups an hour.
+/// The real GitHub, over its API. With a token it also sees the private repositories the token can
+/// read, and GitHub allows it 5000 lookups an hour instead of 60.
 public struct GitHubAPI: GitHub {
+    /// The API's host.
+    private static let host = "api.github.com"
     /// The API's address.
-    private static let api = "https://api.github.com"
+    private static let api = "https://\(host)"
+    /// What the API answers in.
+    private static let json = "application/vnd.github+json"
     /// The HTTP status of an answer that worked.
     private static let ok = 200
-    /// The HTTP status for a repository or release that doesn't exist.
+    /// The HTTP status for a token GitHub refuses.
+    private static let unauthorized = 401
+    /// The HTTP status for a repository the token isn't allowed to read.
+    private static let forbidden = 403
+    /// The HTTP status for a repository or release that doesn't exist, or can't be seen.
     private static let notFound = 404
+    /// The header that carries the token.
+    private static let authorization = "Authorization"
+    /// Follows GitHub's redirects to a download without the token.
+    private static let session = URLSession(
+        configuration: .ephemeral, delegate: RedirectWithoutToken(), delegateQueue: nil)
 
-    /// Creates access to GitHub.
-    public init() {}
+    /// The token sent with every request, or nil to ask without one.
+    private let token: String?
+
+    /// Creates access to GitHub, sending `token` with every request when there is one.
+    public init(token: String?) {
+        self.token = token
+    }
 
     /// Asks the API for the repository's latest release.
     public func latestRelease(of repo: String) async throws(GitHubError) -> Release? {
-        let (status, data) = try await fetch(
-            "\(Self.api)/repos/\(repo)/releases/latest", accept: "application/vnd.github+json")
-        guard status != Self.notFound else { return nil }
+        let (status, data) = try await fetch("\(Self.api)/repos/\(repo)/releases/latest", accept: Self.json)
+        guard status != Self.notFound else {
+            guard token != nil || repo != Project.repository else { throw .needsToken(repo: repo) }
+            return nil
+        }
         guard status == Self.ok else { throw .refused(status: status) }
         let answer: Answer
         do {
@@ -29,11 +49,10 @@ public struct GitHubAPI: GitHub {
         } catch {
             throw .unreadable
         }
-        return Release(
-            tag: answer.tagName, assets: answer.assets.map { ReleaseAsset(name: $0.name, url: $0.browserDownloadURL) })
+        return Release(tag: answer.tagName, assets: answer.assets.map { ReleaseAsset(name: $0.name, url: $0.url) })
     }
 
-    /// Downloads the file and writes it to `path`.
+    /// Downloads the file through the API, which redirects to a signed link, and writes it to `path`.
     public func download(_ asset: ReleaseAsset, to path: String) async throws(GitHubError) {
         let (status, data) = try await fetch(asset.url, accept: "application/octet-stream")
         guard status == Self.ok else { throw .refused(status: status) }
@@ -44,18 +63,57 @@ public struct GitHubAPI: GitHub {
         }
     }
 
+    /// Asks the API for the repository with `token`.
+    public func check(_ token: String, canRead repo: String) async throws(GitHubError) {
+        let (status, _) = try await GitHubAPI(token: token).fetch("\(Self.api)/repos/\(repo)", accept: Self.json)
+        switch status {
+        case Self.ok:
+            return
+        case Self.forbidden, Self.notFound:
+            throw .tokenCantRead(repo: repo)
+        default:
+            throw .refused(status: status)
+        }
+    }
+
+    /// `request`, a redirect, without the token when it leads away from the API, such as to the
+    /// signed link of a download, which doesn't need it.
+    static func redirect(_ request: URLRequest) -> URLRequest {
+        guard request.url?.host != host else { return request }
+        var stripped = request
+        stripped.setValue(nil, forHTTPHeaderField: authorization)
+        return stripped
+    }
+
     /// Sends a GET to `address`, and gives back the HTTP status and the body.
     private func fetch(_ address: String, accept: String) async throws(GitHubError) -> (Int, Data) {
         guard let url = URL(string: address) else { throw .unreachable(reason: "\(address) isn't a link") }
         var request = URLRequest(url: url)
         request.setValue(accept, forHTTPHeaderField: "Accept")
         request.setValue(Project.command, forHTTPHeaderField: "User-Agent")
+        if let token { request.setValue("Bearer \(token)", forHTTPHeaderField: Self.authorization) }
+        let status: Int
+        let data: Data
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            return ((response as? HTTPURLResponse)?.statusCode ?? 0, data)
+            let (body, response) = try await Self.session.data(for: request)
+            status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            data = body
         } catch {
             throw .unreachable(reason: error.localizedDescription)
         }
+        guard status != Self.unauthorized || token == nil else { throw .tokenRefused }
+        return (status, data)
+    }
+}
+
+/// Drops the token when GitHub redirects a download to its signed storage link.
+private final class RedirectWithoutToken: NSObject, URLSessionTaskDelegate, Sendable {
+    /// Follows the redirect, without the token when it leaves the API.
+    func urlSession(
+        _ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest, completionHandler: @escaping @Sendable (URLRequest?) -> Void
+    ) {
+        completionHandler(GitHubAPI.redirect(request))
     }
 }
 
@@ -77,12 +135,6 @@ private struct Answer: Decodable {
 private struct AnswerAsset: Decodable {
     /// The file's name.
     let name: String
-    /// Where it downloads from.
-    let browserDownloadURL: String
-
-    /// The API's names for the fields.
-    enum CodingKeys: String, CodingKey {
-        case name
-        case browserDownloadURL = "browser_download_url"
-    }
+    /// The API link it downloads from.
+    let url: String
 }

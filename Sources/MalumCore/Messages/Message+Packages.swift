@@ -249,6 +249,12 @@ extension GitHubError: ReportableError {
             "GitHub sent an answer \(Project.name) can't read"
         case .unsaved(let path, let reason):
             .couldnt("save \(private: path)", "\(reason)")
+        case .tokenRefused:
+            "GitHub refused the token, run \(Project.command) token with a new one"
+        case .tokenCantRead(let repo):
+            "the token can't read \(repo), give it access to that repository on GitHub"
+        case .needsToken(let repo):
+            "GitHub shows \(repo) only with a token, run \(Project.command) token"
         }
     }
 }

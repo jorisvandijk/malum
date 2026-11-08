@@ -8,4 +8,10 @@ public enum GitHubError: Error, Equatable, Sendable {
     case unreadable
     /// The download couldn't be saved at the path.
     case unsaved(path: String, reason: String)
+    /// GitHub refused the token: it's wrong, revoked or expired.
+    case tokenRefused
+    /// The token works, but can't read the repository.
+    case tokenCantRead(repo: String)
+    /// Malum's own repository can't be seen without a token, since it's private.
+    case needsToken(repo: String)
 }

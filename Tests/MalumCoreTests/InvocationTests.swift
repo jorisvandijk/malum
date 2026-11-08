@@ -26,6 +26,16 @@ struct InvocationTests {
         #expect(Invocation.usage.hasPrefix("usage: \(Project.command) "))
     }
 
+    @Test func tokenTakesNoToken() {
+        #expect(Invocation(arguments: ["token"]) == .token(remove: false))
+        #expect(Invocation(arguments: ["token", "ghp_secret"]) == .unknown("ghp_secret"))
+    }
+
+    @Test func tokenRemoveDeletesIt() {
+        #expect(Invocation(arguments: ["token", "--remove"]) == .token(remove: true))
+        #expect(Invocation(arguments: ["token", "--remove", "extra"]) == .unknown("extra"))
+    }
+
     @Test func initTakesThePathToDots() {
         #expect(Invocation(arguments: ["init", "~/git/dots"]) == .initialize(dots: "~/git/dots"))
     }

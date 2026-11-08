@@ -2,7 +2,8 @@ import Synchronization
 
 @testable import MalumCore
 
-/// GitHub held in memory: each repository's latest release, and the files a download writes.
+/// GitHub held in memory: each repository's latest release, the files a download writes, and
+/// the one token it accepts, `good`, which reads every repository but `other/repo`.
 final class FakeGitHub: GitHub {
     /// The latest release of each repository.
     let releases: [String: Release]
@@ -30,5 +31,10 @@ final class FakeGitHub: GitHub {
         } catch {
             throw .unsaved(path: path, reason: "read-only")
         }
+    }
+
+    func check(_ token: String, canRead repo: String) async throws(GitHubError) {
+        guard token == "good" else { throw .tokenRefused }
+        guard repo != "other/repo" else { throw .tokenCantRead(repo: repo) }
     }
 }

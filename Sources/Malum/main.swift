@@ -16,6 +16,8 @@ let paths = Paths(home: FileManager.default.homeDirectoryForCurrentUser.path)
 let state = StateFolder(files: files, locks: locks, paths: paths)
 /// Runs the outside tools.
 let runner = ProcessRunner(home: paths.home)
+/// The GitHub token, in the login keychain.
+let tokens = KeychainTokenStore()
 /// Malum's executable inside Malum.app, or nil when it runs from elsewhere, such as a build folder.
 let executable = Bundle.main.executableURL.flatMap { AppBundle.executable(at: $0.resolvingSymlinksInPath().path) }
 
@@ -63,6 +65,8 @@ func runCommand(_ invocation: Invocation) {
         applySystemConfig()
     case .status:
         showStatus()
+    case .token(let remove):
+        keepToken(remove: remove)
     case .incomplete, .unknown:
         reject(invocation)
     }
@@ -73,15 +77,51 @@ func runCommand(_ invocation: Invocation) {
 func applySystemConfig() -> Never {
     finishing {
         let command = RunCommand(
-            files: files, paths: paths, runner: runner, github: GitHubAPI(), locks: locks,
+            files: files, paths: paths, runner: runner, github: gitHub(), locks: locks,
             canAsk: isatty(STDIN_FILENO) == 1, handlers: WorkspaceAppHandlers())
         return await command.run { announce($0) }
+    }
+}
+
+/// GitHub, with the token from the keychain when one is stored. A token that can't be read is
+/// reported, and GitHub is asked without it.
+@MainActor
+func gitHub() -> GitHubAPI {
+    do {
+        return GitHubAPI(token: try tokens.token())
+    } catch {
+        announce(.tokenUnreadable(error))
+        return GitHubAPI(token: nil)
+    }
+}
+
+/// The command behind `malum token`, which checks a new token without the stored one.
+@MainActor
+func tokenCommand() -> TokenCommand {
+    TokenCommand(store: tokens, github: GitHubAPI(token: nil))
+}
+
+/// Runs `malum token`: asks for the token with typing hidden and keeps it, or removes it when
+/// `remove` is set. Exits once it's done.
+@MainActor
+func keepToken(remove: Bool) -> Never {
+    let command = tokenCommand()
+    guard !remove else {
+        finish([command.remove()])
+        exit(EXIT_SUCCESS)
+    }
+    let entered = terminal.readSecret(prompt: TokenCommand.prompt)
+    finishing {
+        let message = await command.save(entered)
+        terminal.report(message)
+        return message.level != .error
     }
 }
 
 /// Runs `malum status`, which only reports to the terminal, and exits once it's done.
 @MainActor
 func showStatus() -> Never {
+    terminal.report(tokenCommand().status())
     finishing {
         await StatusCommand(files: files, paths: paths, runner: runner, locks: locks).run { terminal.report($0) }
     }
@@ -105,7 +145,7 @@ func reject(_ invocation: Invocation) -> Never {
         terminal.report(.incomplete(command, needs: needs))
     case .unknown(let argument):
         terminal.report(.unknownArgument(argument))
-    case .version, .help, .initialize, .reload, .safe, .disable, .permissions, .run, .status:
+    case .version, .help, .initialize, .reload, .safe, .disable, .permissions, .run, .status, .token:
         break  // These make sense; runCommand runs them.
     }
     terminal.write(Invocation.usage)
