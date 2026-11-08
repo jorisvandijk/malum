@@ -14,7 +14,9 @@ public struct Paths: Equatable, Sendable {
     /// The extension of Malum's config files in dots.
     static let tomlExtension = "toml"
     /// The folder for apps' own data, relative to home.
-    private static let applicationSupportRoot = "Library/Application Support"
+    static let applicationSupportRoot = "Library/Application Support"
+    /// The folder of the apps every user has, where casks and the App Store put them.
+    static let systemApplications = "/Applications"
     /// The folder Malum is installed in, relative to home.
     private static let applicationsRoot = "Applications"
     /// The folder of the user's login agents, relative to home.
@@ -68,10 +70,10 @@ public struct Paths: Equatable, Sendable {
     public static var configTOMLName: String { "\(Project.command).\(tomlExtension)" }
 
     /// `packages.toml`, the name of the file in dots that lists what system config installs.
-    public static let packagesTOMLName = "packages.toml"
+    public static var packagesTOMLName: String { "packages.\(tomlExtension)" }
 
     /// `macos.toml`, the name of the file in dots that holds macOS's settings.
-    public static let macOSTOMLName = "macos.toml"
+    public static var macOSTOMLName: String { "macos.\(tomlExtension)" }
 
     /// `apps`, the folder in dots that holds one file for each app whose config Malum writes.
     public static let appsFolderName = "apps"

@@ -10,7 +10,7 @@ struct AppleApps {
     /// The key in `[apple_apps]` that lists the apps to remove.
     static let removeKey = "remove"
     /// Where the Apple apps are.
-    private static let folder = "/Applications"
+    private static let folder = Paths.systemApplications
     /// What every Apple app's bundle ID starts with.
     private static let applePrefix = "com.apple."
 

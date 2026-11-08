@@ -157,7 +157,7 @@ struct HomebrewPackagesTests {
                     .error,
                     """
                     couldn't install packages: couldn't read /Users/test/Library/Application Support/\
-                    com.jorisvandijk.malum/installed.json, the record of what Malum installed
+                    \(Project.bundleID)/installed.json, the record of what Malum installed
                     """)
             ])
         #expect(runner.commands.isEmpty)

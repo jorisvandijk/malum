@@ -55,7 +55,7 @@ struct SelfSigningTests {
     @Test func loadedAgentIsRestarted() async throws {
         let runner = FakeRunner()
         try await signing(runner, files: FakeFileSystem()).restart(userID: 501)
-        #expect(runner.commands.last == Launchctl.restart("gui/501/com.jorisvandijk.malum"))
+        #expect(runner.commands.last == Launchctl.restart("gui/501/\(Project.bundleID)"))
     }
 
     @Test func unloadedAgentIsLoaded() async throws {

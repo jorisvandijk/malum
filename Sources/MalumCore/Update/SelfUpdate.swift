@@ -11,7 +11,7 @@ public struct SelfUpdate {
     /// The state folder's folder the download is unpacked in, removed after each update.
     private static let scratchName = "update"
     /// The release's file that holds the app.
-    static let assetName = "\(Project.name)-macos-arm64.zip"
+    static let assetName = Project.name + Project.assetSuffix
     /// What the checksum file adds to the asset's name.
     private static let checksumExtension = ".sha256"
 

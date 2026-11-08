@@ -91,8 +91,8 @@ struct CommandFilesTests {
     }
 
     @Test func launchctlNamesTheUsersSession() {
-        let service = Launchctl.service("com.jorisvandijk.malum", userID: 501)
-        #expect(service == "gui/501/com.jorisvandijk.malum")
+        let service = Launchctl.service(Project.bundleID, userID: 501)
+        #expect(service == "gui/501/\(Project.bundleID)")
         #expect(Launchctl.describe(service) == Command("/bin/launchctl", ["print", service]))
         #expect(Launchctl.restart(service) == Command("/bin/launchctl", ["kickstart", "-k", service]))
         #expect(

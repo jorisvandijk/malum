@@ -13,7 +13,7 @@ extension Invocation {
                \(Project.command) status
                \(Project.command) token [--remove]
 
-          init         record where dots is checked out and link ~/.local/bin/\(Project.command)
+          init         record where dots is checked out and link ~/\(Paths.binRoot)/\(Project.command)
           reload       ask the running app to reload
           safe         keep every module off until you leave safe mode from the menu bar
           disable      keep one module off until you enable it from the menu bar

@@ -6,7 +6,7 @@ import Testing
 @MainActor
 struct GitHubReleasesTests {
     private let paths = Paths(home: "/Users/test")
-    private let state = "/Users/test/Library/Application Support/com.jorisvandijk.malum"
+    private let state = "/Users/test/Library/Application Support/\(Project.bundleID)"
     private let mpv = ReleaseEntry("mpv", repo: "mpv-player/mpv", asset: "mpv-*-arm.zip")
     private let pagefind = ReleaseEntry("pagefind", repo: "CloudCannon/pagefind")
 

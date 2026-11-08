@@ -24,7 +24,7 @@ struct SelfUpdateTests {
     private func github(_ files: FakeFileSystem, tag: String = "v0.3.0", sum: String = "abc123") -> FakeGitHub {
         FakeGitHub(
             [
-                "jorisvandijk/malum": Release(
+                Project.repository: Release(
                     tag: tag,
                     assets: [
                         ReleaseAsset(name: zip, url: "zip"),
@@ -36,7 +36,7 @@ struct SelfUpdateTests {
     /// A runner whose unzip puts an app of version `version` in the folder, whose apps have the
     /// bundle ID `bundleID`, and whose downloaded app says it's `says`. Every other tool works.
     private func runner(
-        _ files: FakeFileSystem, version: String = "0.3.0", bundleID: String = "com.jorisvandijk.malum",
+        _ files: FakeFileSystem, version: String = "0.3.0", bundleID: String = Project.bundleID,
         says: String = "0.3.0"
     ) -> FakeRunner {
         let listed = listed
@@ -159,19 +159,20 @@ struct SelfUpdateTests {
             messages == [
                 Message(
                     .error,
-                    "couldn't update Malum: jorisvandijk/malum has no published release on GitHub, or it's private")
+                    "couldn't update Malum: \(Project.repository) has no published release on GitHub, or it's private")
             ])
     }
 
     @Test func missingTokenIsReported() async {
         let files = disk()
-        let github = FailingGitHub(error: .needsToken(repo: "jorisvandijk/malum"))
+        let github = FailingGitHub(error: .needsToken(repo: Project.repository))
         let (succeeded, messages) = await run(update(files, github: github))
         #expect(!succeeded)
         #expect(
             messages == [
                 Message(
-                    .error, "couldn't update Malum: GitHub shows jorisvandijk/malum only with a token, run malum token")
+                    .error,
+                    "couldn't update Malum: GitHub shows \(Project.repository) only with a token, run malum token")
             ])
     }
 
@@ -191,7 +192,7 @@ struct SelfUpdateTests {
         #expect(
             messages.last
                 == Message(
-                    .error, "couldn't update Malum: the downloaded app is com.example.other, not com.jorisvandijk.malum"
+                    .error, "couldn't update Malum: the downloaded app is com.example.other, not \(Project.bundleID)"
                 ))
         #expect(files.text(at: installedInfo) == AppBundleTests.info(version: "0.2.0"))
     }

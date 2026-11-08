@@ -15,6 +15,8 @@ public enum Project {
     public static let repositoryURL = "https://github.com/\(repository)"
     /// The keychain service of the GitHub token that lets Malum see its repository while it's private.
     public static let tokenService = "\(bundleID).github"
+    /// What the release's zip file adds to the app's name.
+    public static let assetSuffix = "-macos-arm64.zip"
     /// The version. The release workflow writes the tag's version here before it builds.
     public static let version = "dev"
 }
