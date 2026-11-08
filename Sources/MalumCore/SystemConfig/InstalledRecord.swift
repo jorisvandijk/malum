@@ -2,7 +2,7 @@ import Foundation
 
 /// What Malum installed or took over, kept in the state folder and shaped like `packages.toml`,
 /// plus the app config files it wrote, the app preferences and macOS settings it set, the files in
-/// `/etc` it wrote and the VSCodium extensions it installed. Only what's in here is ever
+/// `/etc` it wrote, the power settings it set and the VSCodium extensions it installed. Only what's in here is ever
 /// uninstalled or removed.
 public struct InstalledRecord: Codable, Equatable, Sendable {
     /// The record's file in the state folder.
@@ -25,6 +25,8 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
     /// The files only root can change that Malum wrote from `macos.toml`, by path, with the
     /// fingerprint of what it wrote.
     public var systemFiles: [String: String] = [:]
+    /// The power settings Malum set from `macos.toml`, by power source and name.
+    public var power: [String: [String: ManagedPower]] = [:]
     /// The VSCodium extensions, as `apps/vscodium.toml` lists them.
     public var extensions: Set<String> = []
 
@@ -40,6 +42,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         case preferences
         case macOS = "macos"
         case systemFiles = "system_files"
+        case power
         case extensions = "vscodium_extensions"
     }
 
@@ -63,6 +66,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         preferences = try container.decodeIfPresent([String: ManagedPreferences].self, forKey: .preferences) ?? [:]
         macOS = try container.decodeIfPresent([String: ManagedPreferences].self, forKey: .macOS) ?? [:]
         systemFiles = try container.decodeIfPresent([String: String].self, forKey: .systemFiles) ?? [:]
+        power = try container.decodeIfPresent([String: [String: ManagedPower]].self, forKey: .power) ?? [:]
         extensions = Set(try container.decodeIfPresent([String].self, forKey: .extensions) ?? [])
     }
 
@@ -78,6 +82,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         try container.encode(preferences, forKey: .preferences)
         try container.encode(macOS, forKey: .macOS)
         try container.encode(systemFiles, forKey: .systemFiles)
+        try container.encode(power, forKey: .power)
         try container.encode(extensions.sorted(), forKey: .extensions)
     }
 

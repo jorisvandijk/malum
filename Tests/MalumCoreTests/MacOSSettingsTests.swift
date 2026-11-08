@@ -112,6 +112,25 @@ struct MacOSSettingsTests {
             ])
     }
 
+    @Test func readsPowerBySource() {
+        let (wanted, problems) = MacOSSettings.read(
+            """
+            [power.battery]
+            lessbright = 0
+            [power.charger]
+            displaysleep = "never"
+            [power.ups]
+            lessbright = 0
+            """)
+        #expect(wanted == nil)
+        #expect(
+            problems.map(\.message) == [
+                Message(.error, "macos.toml line 4: power.charger.displaysleep should be a whole number"),
+                Message(.warn, "macos.toml line 5: unknown table power.ups"),
+            ])
+        #expect(MacOSSettings.read("[power.battery]\nlessbright = 0\n").wanted?.power == [.battery: ["lessbright": 0]])
+    }
+
     @Test func unknownTableIsAWarning() {
         let (wanted, problems) = MacOSSettings.read("[dock]\nautohide = true\n")
         #expect(wanted == MacOSSettings.Wanted())

@@ -8,4 +8,9 @@ public enum Remove {
     public static func file(_ file: String) -> Command {
         Command(path, ["-f", file])
     }
+
+    /// Removes the folder at `folder` with everything in it, such as an app.
+    public static func folder(_ folder: String) -> Command {
+        Command(path, ["-rf", folder])
+    }
 }
