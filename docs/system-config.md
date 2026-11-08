@@ -70,7 +70,7 @@ An install that fails is reported with the last line Homebrew wrote, and the res
 
 Homebrew itself has to be installed at `/opt/homebrew/bin/brew`. Taking a package out of the list uninstalls it, as [Removing](#removing) describes.
 
-A cask that runs an installer package needs your password, which `malum run` can't ask for yet, so its install fails.
+A cask that runs an installer package needs your password, which `malum run` can't ask for, so its install fails.
 
 ## App Store apps
 
@@ -524,5 +524,3 @@ When nothing is off, the last line says so:
 ```
 
 App preferences and macOS settings are only counted. VSCodium extensions are checked against what Malum installed, not against `apps/vscodium.toml`. A problem in `packages.toml` is reported, and `malum status` then exits with an error.
-
-The messages also go to the macOS log, as the [log page](log.md) describes.

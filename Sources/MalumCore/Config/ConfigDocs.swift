@@ -11,7 +11,7 @@ public enum ConfigDocs {
         # Config reference
 
         Every setting `malum.toml` takes, by module. Each module's settings go in a table named after \
-        the module, such as `[window_manager]`. A module is off until its table sets `enabled = true`. \
+        the module, such as `[system_config]`. A module is off until its table sets `enabled = true`. \
         A setting that's left out takes its default, when it has one.
 
         """
