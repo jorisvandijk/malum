@@ -98,4 +98,23 @@ struct ConfigModuleFileTests {
         #expect(report.changed == ["launcher"])
         #expect(config.settings == ["launcher": [:]])
     }
+
+    @Test func moduleThatChecksItsOwnFileGetsItsProblemsAtTheirLines() {
+        var config = Config(schemas: ["keyboard": ConfigSchema(about: "Keys.", settings: [:], fileCheck: .keyboard)])
+        let file = "/dots/keyboard.toml"
+        let keyboard = "[hyper]\nf = \"com.apple.finder\"\n\n[shift_ctrl]\na = \"launcher\"\n"
+        let report = config.load("", from: path, moduleFiles: ["keyboard": .text(path: file, keyboard)])
+        #expect(report.problems == KeyboardConfig.read(keyboard).problems)
+        #expect(report.problems.map(\.line) == [4])
+        #expect(report.kept == ["keyboard"])
+    }
+
+    @Test func moduleThatChecksItsOwnFileTakesItWhole() {
+        var config = Config(schemas: ["keyboard": ConfigSchema(about: "Keys.", settings: [:], fileCheck: .keyboard)])
+        let keyboard = "hyper_key = \"caps_lock\"\n\n[hyper]\nf = \"com.apple.finder\"\n"
+        let file = "/dots/keyboard.toml"
+        let report = config.load("", from: path, moduleFiles: ["keyboard": .text(path: file, keyboard)])
+        #expect(report.problems.isEmpty)
+        #expect(config.settings["keyboard"]?["hyper_key"] == .string("caps_lock"))
+    }
 }

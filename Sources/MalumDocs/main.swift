@@ -5,7 +5,7 @@ import MalumCore
 // repository after changing a schema: `swift run MalumDocs`. CI fails when the page is out of date.
 
 /// Each module's schema, by the module's id.
-let schemas = ConfigSchemas.all(modules: Modules.all())
+let schemas = ConfigSchemas.all
 /// Where the tool reports what it did.
 let terminal = Terminal()
 /// The page, from the folder the tool runs in.

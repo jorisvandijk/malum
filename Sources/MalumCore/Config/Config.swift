@@ -91,9 +91,11 @@ public struct Config: Sendable {
         of module: String, schema: ConfigSchema, from file: ModuleFile, problems: inout [ConfigProblem]
     ) -> ConfigTable? {
         let name = Paths.moduleTOMLName(module)
+        let text: String
         var reader: TableReader
         do {
-            reader = try TableReader(try file.text(named: name), file: name)
+            text = try file.text(named: name)
+            reader = try TableReader(text, file: name)
         } catch {
             problems.append(error)
             return nil
@@ -102,11 +104,16 @@ public struct Config: Sendable {
         if document[ConfigSchema.switchKey] != nil {
             reader.add(.error, at: [ConfigSchema.switchKey], .switchOutsideConfig(module))
         }
-        for (key, text) in schema.problems(in: document, at: []) where key != ConfigSchema.switchKey {
-            reader.add(.error, at: [key], text)
+        var checked: [ConfigProblem] = []
+        if let check = schema.fileCheck {
+            checked = check.problems(in: text)
+        } else {
+            for (key, problem) in schema.problems(in: document, at: []) where key != ConfigSchema.switchKey {
+                reader.add(.error, at: [key], problem)
+            }
         }
-        problems += reader.problems
-        return reader.problems.isEmpty ? document : nil
+        problems += reader.problems + checked
+        return reader.problems.isEmpty && checked.isEmpty ? document : nil
     }
 
     /// Takes `table` as the settings of `module`, adding it to `changed` when they differ from the

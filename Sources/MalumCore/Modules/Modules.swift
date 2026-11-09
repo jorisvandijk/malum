@@ -2,9 +2,14 @@
 /// so they all take them from here.
 @MainActor
 public enum Modules {
-    /// Builds every module, in the order they're started. Building one starts nothing, so the docs
-    /// tool builds them only to read their schemas.
-    public static func all() -> [any Module] {
-        []
+    /// Every module's schema, by the module's id, without building the modules.
+    public static let schemas: [String: ConfigSchema] = [KeyboardConfig.module: KeyboardModule.configSchema]
+
+    /// Builds every module, in the order they're started, with what they need from the app. Building
+    /// one starts nothing.
+    public static func all(
+        files: any FileSystem, paths: Paths, remapper: KeyRemapper, keyCatcher: any KeyCatcher, log: Log
+    ) -> [any Module] {
+        [KeyboardModule(files: files, paths: paths, remapper: remapper, keyCatcher: keyCatcher, log: log)]
     }
 }

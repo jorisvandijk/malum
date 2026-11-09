@@ -91,6 +91,8 @@ The app and the command keep their shared state in `~/Library/Application Suppor
 
 The [menu bar page](docs/menu-bar.md) explains Malum's icon and its menu.
 
+The keyboard module gives you a hyper key, swaps keys around and catches shortcuts for the other modules. The [keyboard page](docs/keyboard.md) explains `keyboard.toml`.
+
 A module that's missing a permission waits until you grant it, and `malum permissions` checks that your terminal has Full Disk Access. The [permissions page](docs/permissions.md) explains both.
 
 `malum run` makes the Mac match dots: it installs the Homebrew packages, App Store apps and GitHub releases listed in `packages.toml`, writes the app config files and preferences in `apps/`, and sets the macOS settings in `macos.toml`. `malum status` shows what Malum manages and what doesn't match dots. The [system config page](docs/system-config.md) explains how.
