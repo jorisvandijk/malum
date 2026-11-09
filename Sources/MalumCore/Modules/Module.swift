@@ -23,9 +23,9 @@ public protocol Module: AnyObject, Observable {
     func cleanUp() async throws
     /// Starts the module with the settings it was last given.
     func start() async throws
-    /// Takes new settings from the module's table in `malum.toml`, without a restart. The table has
-    /// already been checked against `schema`.
-    func apply(_ config: ConfigTable) throws
+    /// Takes new settings without a restart: its table, and the text of its own file when the settings
+    /// are there. Both have already been checked against `schema`, so the module never reads them again.
+    func apply(_ settings: ModuleSettings) throws
     /// Stops the module and undoes whatever it changed system-wide.
     func stop() async
     /// Looks again at what macOS doesn't announce, such as secure input. Runs every few seconds while

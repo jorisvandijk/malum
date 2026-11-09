@@ -23,10 +23,6 @@ final class KeyboardModule: Module {
     /// Where the module is now.
     private(set) var status = ModuleStatus.off
 
-    /// The disk, where `keyboard.toml` is read from.
-    @ObservationIgnored private let files: any FileSystem
-    /// Where dots is recorded.
-    @ObservationIgnored private let paths: Paths
     /// Sets and undoes the hyper key and the remaps.
     @ObservationIgnored private let remapper: KeyRemapper
     /// Catches the keys.
@@ -45,11 +41,8 @@ final class KeyboardModule: Module {
     /// The last restart asked for. Each one waits for the one before it, so `stop` waits for them all.
     @ObservationIgnored private var restart: Task<Void, Never>?
 
-    /// Creates the module, off, reading `keyboard.toml` through `files`, working through `system` and
-    /// logging to `log`.
-    init(files: any FileSystem, paths: Paths, system: KeyboardSystem, log: Log) {
-        self.files = files
-        self.paths = paths
+    /// Creates the module, off, working through `system` and logging to `log`.
+    init(system: KeyboardSystem, log: Log) {
         remapper = system.remapper
         keyCatcher = system.keyCatcher
         state = system.state
@@ -61,13 +54,12 @@ final class KeyboardModule: Module {
         try await remapper.clear()
     }
 
-    /// Reads `keyboard.toml` again, which the config has already checked, and puts it to work when
-    /// the module runs. The table holds nothing besides the switch.
-    func apply(_: ConfigTable) throws {
-        let text = try readFile()
-        guard let config = KeyboardConfig.read(text).config else {
-            throw ConfigProblem(.error, .fixFirst(Paths.moduleTOMLName(id)))
-        }
+    /// Takes `keyboard.toml` as the config checked it, and puts it to work when the module runs. No
+    /// file means no hyper key, remaps or shortcuts.
+    func apply(_ settings: ModuleSettings) {
+        let text = settings.file ?? ""
+        // The config only hands over text that reads without errors, so this never falls back.
+        let config = KeyboardConfig.read(text).config ?? KeyboardConfig()
         self.config = config
         // TODO: every module's offer and which are on, once a module offers actions (the window manager).
         registry = HotkeyRegistry(bindings: config.bindings, offers: [:], switchedOn: [], lines: TOMLLines(text))
@@ -193,11 +185,5 @@ final class KeyboardModule: Module {
     /// Shows that the module failed because of `error`.
     private func fail(_ error: any Error) {
         status = .failed(reason: MessageText(error: error).description)
-    }
-
-    /// The text of `keyboard.toml`, empty when dots isn't known or the file isn't there.
-    private func readFile() throws -> String {
-        guard let dots = try DotsPointer(files: files, paths: paths).read() else { return "" }
-        return try files.text(ifFileAt: paths.moduleTOML(id, in: dots)) ?? ""
     }
 }

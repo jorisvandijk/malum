@@ -77,7 +77,7 @@ final class LiveConfig {
         follow(reloader.path, with: reloader.watchedFiles)
         onUpdate()
         let switchedOn = overrides.allowed(reloader.enabled)
-        let settings = reloader.settings
+        let settings = reloader.moduleSettings
         Task { [weak self] in
             guard let self else { return }
             // Read when the update is queued, so an update can't start modules after quitting stopped them.
@@ -102,7 +102,7 @@ final class LiveConfig {
         quitting = true
         modulesAllowed = false
         recheck?.cancel()
-        let messages = await modules.update(enabled: [], settings: reloader.settings, changed: [])
+        let messages = await modules.update(enabled: [], settings: reloader.moduleSettings, changed: [])
         messages.forEach(announce)
     }
 

@@ -130,4 +130,23 @@ struct ConfigModuleFileTests {
         #expect(report.problems.isEmpty)
         #expect(config.settings["keyboard"]?["hyper_key"] == .string("caps_lock"))
     }
+
+    @Test func moduleFileTextIsHandedOverAsChecked() {
+        var config = config()
+        _ = load(&config, "[launcher]\nenabled = true\n", launcher: "size = 3\n")
+        #expect(config.moduleSettings["launcher"] == ModuleSettings(table: ["size": .integer(3)], file: "size = 3\n"))
+    }
+
+    @Test func settingsInConfigHaveNoFileText() {
+        var config = config()
+        _ = config.load("[launcher]\nsize = 3\n", from: path)
+        #expect(config.moduleSettings["launcher"] == ModuleSettings(table: ["size": .integer(3)]))
+    }
+
+    @Test func fileChangeThatKeepsTheSettingsStillCountsAsChanged() {
+        var config = config()
+        _ = load(&config, "", launcher: "size = 3\n")
+        let report = load(&config, "", launcher: "# moved down\nsize = 3\n")
+        #expect(report.changed == ["launcher"])
+    }
 }
