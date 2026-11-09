@@ -3,14 +3,14 @@
 /// The names are one short set with no aliases. The codes are platform constants: the virtual key
 /// code is the `kVK_` constant from Carbon's `Events.h` that the event tap sees, and the HID usages
 /// are what `hidutil` remaps.
-struct Key: Hashable, Sendable {
+public struct Key: Hashable, Sendable {
     /// The HID page of the keyboard's own keys, shifted to where `hidutil` wants it.
     private static let keyboardPage: UInt64 = 0x7_0000_0000
 
     /// The name, such as `caps_lock`.
     let name: String
     /// The virtual key code, such as `0x39` for caps lock.
-    let keyCode: UInt16
+    public let keyCode: UInt16
     /// The key's HID usages, page included. A key sent on more than one page has each, the first
     /// being the one a remap turns other keys into.
     let hidUsages: [UInt64]
@@ -60,7 +60,10 @@ struct Key: Hashable, Sendable {
     static let f18 = Key("f18", keyCode: 0x4F, usage: 0x6D, canBeHyper: true)
 
     /// Tab, which opens the app switcher with the hyper key held, as it does with cmd.
-    static let tab = Key("tab", keyCode: 0x30, usage: 0x2B)
+    public static let tab = Key("tab", keyCode: 0x30, usage: 0x2B)
+
+    /// Left cmd, which the event tap holds down to keep the app switcher open.
+    public static let leftCommand = Key("left_command", keyCode: 0x37, usage: 0xE3)
 
     /// Every key Malum knows, in the order the docs list them.
     static let all: [Key] = [
@@ -115,7 +118,7 @@ struct Key: Hashable, Sendable {
         Key("left_shift", keyCode: 0x38, usage: 0xE1), Key("right_shift", keyCode: 0x3C, usage: 0xE5),
         Key("left_option", keyCode: 0x3A, usage: 0xE2, canBeHyper: true),
         Key("right_option", keyCode: 0x3D, usage: 0xE6, canBeHyper: true),
-        Key("left_command", keyCode: 0x37, usage: 0xE3),
+        leftCommand,
         Key("right_command", keyCode: 0x36, usage: 0xE7, canBeHyper: true),
     ]
     // swiftlint:enable no_magic_numbers

@@ -1,7 +1,7 @@
 /// One of the four modifiers a table of shortcuts in `keyboard.toml` is named after.
 ///
 /// The cases are in the order a table joins them, such as `[ctrl_shift]`.
-enum Modifier: String, CaseIterable, Sendable {
+public enum Modifier: String, CaseIterable, Sendable {
     /// Control.
     case ctrl
     /// Option.
