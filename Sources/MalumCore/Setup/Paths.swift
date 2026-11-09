@@ -46,7 +46,10 @@ public struct Paths: Equatable, Sendable {
     /// `~/Library/Application Support/<bundle ID>`, the state folder the app and the command share.
     public var stateDirectory: String { "\(home)/\(Self.applicationSupportRoot)/\(Project.bundleID)" }
     /// `~/Applications/Malum.app`, the installed app.
-    public var installedBundle: String { "\(home)/\(Self.applicationsRoot)/\(Project.name).app" }
+    public var installedBundle: String { "\(userApplications)/\(Project.name).app" }
+
+    /// The user's own apps folder, `~/Applications`, where Malum and Safari's web apps are.
+    public var userApplications: String { "\(home)/\(Self.applicationsRoot)" }
     /// `~/Applications/Malum.app/Contents/MacOS/Malum`, the executable of the installed app.
     public var installedExecutable: String { Self.executable(in: installedBundle) }
     /// The state folder's `previous/Malum.app`, the version the last update replaced, for `malum rollback`.
