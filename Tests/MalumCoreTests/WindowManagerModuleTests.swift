@@ -138,15 +138,6 @@ struct WindowManagerModuleTests {
         #expect(apps.calls == ["hide Finder"])
     }
 
-    @Test func hideOthersOffHidesNothing() async throws {
-        apps.running = [kitty.bundleID ?? "": kitty, finder.bundleID ?? "": finder]
-        let module = module()
-        module.apply(["hide_others": .boolean(false)])
-        try await module.start()
-        watcher.send(.activated(kitty))
-        #expect(apps.calls.isEmpty)
-    }
-
     @Test func appShortcutRunsTheApp() async throws {
         let module = module()
         try await module.start()
@@ -160,6 +151,44 @@ struct WindowManagerModuleTests {
         try await module.start()
         module.perform(.module("launcher"))
         #expect(module.raising == nil)
+    }
+
+    @Test func changedScreenLaysTheWindowsOutAgainOnceSettled() async throws {
+        let window = window(of: kitty.pid)
+        watcher.apps = [kitty]
+        let module = module()
+        try await module.start()
+        screens.screen = ScreenRects(
+            full: CGRect(x: 0, y: 0, width: 2560, height: 1440), visible: CGRect(x: 0, y: 0, width: 2560, height: 1415))
+        watcher.send(.screensChanged)
+        watcher.send(.screensChanged)
+        #expect(window.frame == visibleArea)
+        #expect(scheduler.pending.count == 1)
+        scheduler.runPending()
+        #expect(window.frame == CGRect(x: 0, y: 25, width: 2560, height: 1415))
+    }
+
+    @Test func resumeLaysTheWindowsOutAgain() async throws {
+        let window = window(of: kitty.pid)
+        watcher.apps = [kitty]
+        let module = module()
+        try await module.start()
+        window.frame = CGRect(x: 40, y: 40, width: 500, height: 400)
+        await module.resume()
+        #expect(window.frame == visibleArea)
+    }
+
+    @Test func noScreenLeavesTheWindowsWhereTheyAre() async throws {
+        let window = window(of: kitty.pid)
+        watcher.apps = [kitty]
+        let module = module()
+        try await module.start()
+        let moved = CGRect(x: 40, y: 40, width: 500, height: 400)
+        window.frame = moved
+        screens.screen = nil
+        watcher.send(.screensChanged)
+        scheduler.runPending()
+        #expect(window.frame == moved)
     }
 
     @Test func stopLeavesEveryApp() async throws {

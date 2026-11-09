@@ -31,7 +31,7 @@ The [keyboard page](keyboard.md) explains the shortcuts.
 
 ## Hiding the others
 
-When an app comes to the front, in any way, every other app is hidden, so only one app is in view at a time. Apps without a Dock icon, such as menu bar apps, hide nothing, and neither does an app that floats as a whole. `hide_others = false` switches this off.
+When an app comes to the front, in any way, every other app is hidden, so only one app is in view at a time. Apps without a Dock icon, such as menu bar apps, hide nothing, and neither does an app that floats as a whole.
 
 ## Filling the screen
 
@@ -43,7 +43,7 @@ Each app's windows fill the screen:
 
 A window that's moved or resized snaps back to its place. A window that's dragged follows the pointer. Let go of it over another window's place and the two swap; let go anywhere else and it drops back into its own place. A window that can't grow to its place is centred in it, and one that can't shrink is pinned to its top left. An app that keeps resizing its own window is left where it settles.
 
-Malum fills the screen with the menu bar. Other screens are left alone.
+Malum fills the screen with the menu bar. Other screens are left alone. When a display is plugged in, unplugged or rearranged, and when the Mac wakes, the windows are laid out again on the screen that has the menu bar then.
 
 ## Hiding and minimising
 
@@ -70,12 +70,10 @@ title = "^Picture-in-Picture$"
 
 ```toml
 frame = "visible"
-hide_others = true
 block_hide_minimize = true
 ```
 
 - `frame`: `"visible"` fills the screen below the menu bar and outside the Dock, and `"full"` fills the whole screen.
-- `hide_others`: hides every other app when one comes to the front.
 - `block_hide_minimize`: swallows cmd+H, cmd+M and cmd+option+M, which would hide an app or minimise a window.
 
 Every key is optional, and the values above are the defaults. The [config reference](config.md) lists them all.

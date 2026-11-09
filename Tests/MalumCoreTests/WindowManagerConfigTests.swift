@@ -22,14 +22,12 @@ struct WindowManagerConfigTests {
         #expect(problems.isEmpty)
         #expect(config == WindowManagerConfig())
         #expect(config?.frame == .visible)
-        #expect(config?.hidesOthers == true)
         #expect(config?.blocksHideMinimize == true)
     }
 
     @Test func everySettingIsRead() {
         let text = """
             frame = "full"
-            hide_others = false
             block_hide_minimize = false
 
             [[float]]
@@ -44,7 +42,7 @@ struct WindowManagerConfigTests {
         #expect(
             config
                 == WindowManagerConfig(
-                    frame: .full, hidesOthers: false, blocksHideMinimize: false,
+                    frame: .full, blocksHideMinimize: false,
                     floats: [
                         FloatRule(app: "com.apple.systempreferences", title: nil),
                         FloatRule(app: "org.mozilla.librewolf", title: "^Picture-in-Picture$"),

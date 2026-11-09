@@ -16,6 +16,9 @@ final class WindowManagerModule: Module {
     private static let watchTries = 10
     /// How long to wait before looking again, so all tries take about two seconds.
     private static let watchDelayMilliseconds = 200
+    /// How long to wait after the screens change before laying the windows out again, since macOS
+    /// sends a burst of changes while a display comes and goes.
+    private static let settleMilliseconds = 500
     /// The action of the keys it swallows, which isn't offered to `keyboard.toml`.
     private static let blockAction = "block"
     /// cmd+H, cmd+M and cmd+option+M, which hide the app or minimise windows, for
@@ -52,6 +55,8 @@ final class WindowManagerModule: Module {
     @ObservationIgnored private var trackers: [Int32: AppTracker] = [:]
     /// Whether the module runs, so a late look at an app doesn't start tracking it after a stop.
     @ObservationIgnored private var isStarted = false
+    /// Whether laying the windows out again after a change to the screens is waiting.
+    @ObservationIgnored private var isLayoutPending = false
     /// The last app raised for a shortcut, which tests wait for.
     @ObservationIgnored private(set) var raising: Task<Void, Never>?
 
@@ -71,9 +76,8 @@ final class WindowManagerModule: Module {
         config = WindowManagerConfig.read(settings.table) { _, _ in }
         for tracker in trackers.values {
             tracker.config = config
-            tracker.area = area
-            tracker.reconcile()
         }
+        layOutAgain()
     }
 
     /// Starts following the apps, and fills the screen with the windows of those that run.
@@ -98,6 +102,12 @@ final class WindowManagerModule: Module {
         status = .off
     }
 
+    /// Lays the windows out again after the Mac wakes or the user switches back to this login, since
+    /// macOS may have moved them, or the screen may have changed meanwhile.
+    func resume() async {
+        layOutAgain()
+    }
+
     /// Starts the app a shortcut names, or brings it into view. A swallowed key does nothing.
     func perform(_ action: KeyAction) {
         guard case .app(let bundleID) = action else { return }
@@ -120,6 +130,27 @@ final class WindowManagerModule: Module {
             runRaise.hideOthers(except: app, config: config)
         case .unhidden(let pid):
             trackers[pid]?.reconcile()
+        case .screensChanged:
+            layOutOnceSettled()
+        }
+    }
+
+    /// Lays the windows out again once a burst of changes to the screens has passed.
+    private func layOutOnceSettled() {
+        guard !isLayoutPending else { return }
+        isLayoutPending = true
+        system.scheduler.after(.milliseconds(Self.settleMilliseconds)) { [weak self] in
+            self?.isLayoutPending = false
+            self?.layOutAgain()
+        }
+    }
+
+    /// Fills the screen as it is now with every app's windows. With no screen, windows stay put.
+    private func layOutAgain() {
+        let area = area
+        for tracker in trackers.values {
+            tracker.area = area
+            tracker.reconcile()
         }
     }
 

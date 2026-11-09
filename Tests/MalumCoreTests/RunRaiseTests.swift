@@ -84,9 +84,8 @@ struct RunRaiseTests {
         #expect(writer.entries.map(\.text) == [Message.couldntHide(["Finder"]).text])
     }
 
-    @Test func nothingIsHiddenWhenTheSettingsSayNo() {
+    @Test func appsWithoutADockIconOrThatFloatHideNothing() {
         let kitty = app(1, "kitty", active: true)
-        #expect(!RunRaise.hidesOthers(for: kitty, config: WindowManagerConfig(hidesOthers: false)))
         #expect(!RunRaise.hidesOthers(for: app(1, "Menu", regular: false), config: WindowManagerConfig()))
         let floats = WindowManagerConfig(floats: [FloatRule(app: "test.kitty", title: nil)])
         #expect(!RunRaise.hidesOthers(for: kitty, config: floats))
