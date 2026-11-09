@@ -35,17 +35,25 @@ func runApp() -> Never {
     config.start()
     Task { await startWhenSigned(config: config, menu: menu) }
     let hangup = SignalWatcher(SIGHUP) { config.reload(force: true) }
-    let terminate = SignalWatcher(SIGTERM) { NSApplication.shared.terminate(nil) }
+    let terminate = SignalWatcher(SIGTERM) { stopAndQuit(config) }
     let keyboards = KeyboardChangeWatcher { config.resume() }
     let quit = NotificationCenter.default.addObserver(
         forName: NSApplication.willTerminateNotification, object: nil, queue: .main
     ) { _ in MainActor.assumeIsolated { forget(launches) } }
     let app = NSApplication.shared
-    let delegate = AppDelegate(config: config)
-    app.delegate = delegate
     app.setActivationPolicy(.accessory)
-    withExtendedLifetime((menu, config, hangup, terminate, keyboards, quit, delegate)) { app.run() }
+    withExtendedLifetime((menu, config, hangup, terminate, keyboards, quit)) { app.run() }
     exit(EXIT_SUCCESS)
+}
+
+/// Stops every module, so what they changed system-wide is undone, then quits. The modules stop
+/// before AppKit is asked to quit, since AppKit waits for an answer on the main thread they stop on.
+@MainActor
+func stopAndQuit(_ config: LiveConfig) {
+    Task {
+        await config.stopModules()
+        NSApplication.shared.terminate(nil)
+    }
 }
 
 /// Lets the modules start once the installed app is signed with Malum's own certificate. A new
