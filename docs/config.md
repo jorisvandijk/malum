@@ -70,6 +70,31 @@ The servers, one `[[server]]` each, with `name`, `host`, `user` and `shares`, th
 
 - Value: a list of tables
 
+## `screenshots`
+
+Screenshots you crop and draw on before they're saved. See [screenshots](screenshots.md).
+
+### `screenshots.colors`
+
+The quick colors in the toolbar, 1 to 7 as "#rrggbb". The first is the color you start with.
+
+- Value: a list of text in quotes
+- Default: `["#ff3b30", "#ff9500", "#ffcc00", "#34c759", "#007aff", "#ffffff", "#000000"]`
+
+### `screenshots.enabled`
+
+Switches the module on. The module stays off until this is set to true.
+
+- Value: true or false
+- Default: `false`
+
+### `screenshots.folder`
+
+The folder screenshots are saved in.
+
+- Value: text in quotes
+- Default: `"~/Documents"`
+
 ## `system_config`
 
 Makes the Mac match dots when you run `malum run`, installing what `packages.toml` lists, writing the app config files and preferences in `apps/` and setting the macOS settings in `macos.toml`. At the end of the run, Malum updates itself. Nothing happens in the background: the app only reads the switch, and `malum run` does the work.
