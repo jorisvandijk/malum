@@ -162,6 +162,44 @@ struct WindowManagerModuleTests {
         #expect(module.raising == nil)
     }
 
+    @Test func changedScreenLaysTheWindowsOutAgainOnceSettled() async throws {
+        let window = window(of: kitty.pid)
+        watcher.apps = [kitty]
+        let module = module()
+        try await module.start()
+        screens.screen = ScreenRects(
+            full: CGRect(x: 0, y: 0, width: 2560, height: 1440), visible: CGRect(x: 0, y: 0, width: 2560, height: 1415))
+        watcher.send(.screensChanged)
+        watcher.send(.screensChanged)
+        #expect(window.frame == visibleArea)
+        #expect(scheduler.pending.count == 1)
+        scheduler.runPending()
+        #expect(window.frame == CGRect(x: 0, y: 25, width: 2560, height: 1415))
+    }
+
+    @Test func resumeLaysTheWindowsOutAgain() async throws {
+        let window = window(of: kitty.pid)
+        watcher.apps = [kitty]
+        let module = module()
+        try await module.start()
+        window.frame = CGRect(x: 40, y: 40, width: 500, height: 400)
+        await module.resume()
+        #expect(window.frame == visibleArea)
+    }
+
+    @Test func noScreenLeavesTheWindowsWhereTheyAre() async throws {
+        let window = window(of: kitty.pid)
+        watcher.apps = [kitty]
+        let module = module()
+        try await module.start()
+        let moved = CGRect(x: 40, y: 40, width: 500, height: 400)
+        window.frame = moved
+        screens.screen = nil
+        watcher.send(.screensChanged)
+        scheduler.runPending()
+        #expect(window.frame == moved)
+    }
+
     @Test func stopLeavesEveryApp() async throws {
         _ = window(of: kitty.pid)
         watcher.apps = [kitty]

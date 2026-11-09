@@ -43,7 +43,7 @@ Each app's windows fill the screen:
 
 A window that's moved or resized snaps back to its place. A window that's dragged follows the pointer. Let go of it over another window's place and the two swap; let go anywhere else and it drops back into its own place. A window that can't grow to its place is centred in it, and one that can't shrink is pinned to its top left. An app that keeps resizing its own window is left where it settles.
 
-Malum fills the screen with the menu bar. Other screens are left alone.
+Malum fills the screen with the menu bar. Other screens are left alone. When a display is plugged in, unplugged or rearranged, and when the Mac wakes, the windows are laid out again on the screen that has the menu bar then.
 
 ## Hiding and minimising
 

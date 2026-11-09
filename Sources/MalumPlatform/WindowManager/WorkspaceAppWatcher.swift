@@ -12,8 +12,10 @@ public final class WorkspaceAppWatcher {
         (NSWorkspace.didUnhideApplicationNotification, { .unhidden($0.pid) }),
     ]
 
-    /// The observers while it runs.
+    /// The workspace observers while it runs.
     private var observers: [any NSObjectProtocol] = []
+    /// The observer of changes to the screens while it runs.
+    private var screenObserver: (any NSObjectProtocol)?
 
     /// Creates the watcher, not yet watching.
     public init() {}
@@ -33,8 +35,8 @@ extension WorkspaceAppWatcher: AppWatcher {
         NSWorkspace.shared.runningApplications.filter { !$0.isTerminated }.map(WorkspaceApps.describe)
     }
 
-    /// Sends the workspace's launch, quit, activation and unhide notifications to `onEvent`. They
-    /// arrive on the main queue.
+    /// Sends the workspace's launch, quit, activation and unhide notifications, and AppKit's changes
+    /// to the screens, to `onEvent`. They arrive on the main queue.
     public func start(_ onEvent: @escaping @MainActor @Sendable (AppEvent) -> Void) {
         stop()
         let center = NSWorkspace.shared.notificationCenter
@@ -45,6 +47,11 @@ extension WorkspaceAppWatcher: AppWatcher {
                 MainActor.assumeIsolated { onEvent(happened) }
             }
         }
+        screenObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
+        ) { _ in
+            MainActor.assumeIsolated { onEvent(.screensChanged) }
+        }
     }
 
     /// Stops following the notifications.
@@ -54,5 +61,9 @@ extension WorkspaceAppWatcher: AppWatcher {
             center.removeObserver(observer)
         }
         observers = []
+        if let screenObserver {
+            NotificationCenter.default.removeObserver(screenObserver)
+        }
+        screenObserver = nil
     }
 }
