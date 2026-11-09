@@ -40,6 +40,11 @@ struct KeyTests {
         #expect(Key.named("Caps_Lock") == nil)
     }
 
+    @Test func everyKeyIsFoundByItsCode() {
+        #expect(Key.all.allSatisfy { Key.coded($0.keyCode) == $0 })
+        #expect(Key.coded(.max) == nil)
+    }
+
     @Test func hyperKeysAreTheDecidedOnes() {
         let names = ["caps_lock", "left_option", "right_option", "right_command"] + (13...20).map { "f\($0)" }
         #expect(Set(Key.hyperKeys.map(\.name)) == Set(names))
