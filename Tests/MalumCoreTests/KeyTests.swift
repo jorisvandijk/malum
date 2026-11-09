@@ -51,3 +51,10 @@ struct KeyTests {
         #expect(Key.hyperKeys.count == names.count)
     }
 }
+
+@Suite(.timeLimit(.minutes(1)))
+struct KeyPasteTests {
+    @Test func pasteIsV() {
+        #expect(Key.paste?.keyCode == 0x09)
+    }
+}

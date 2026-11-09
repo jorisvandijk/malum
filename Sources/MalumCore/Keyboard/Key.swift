@@ -65,6 +65,9 @@ public struct Key: Hashable, Sendable {
     /// Left cmd, which the event tap holds down to keep the app switcher open.
     public static let leftCommand = Key("left_command", keyCode: 0x37, usage: 0xE3)
 
+    /// V, which pastes with cmd held, for the clipboard history.
+    public static var paste: Key? { named("v") }
+
     /// Every key Malum knows, in the order the docs list them.
     static let all: [Key] = [
         Key("a", keyCode: 0x00, usage: 0x04), Key("b", keyCode: 0x0B, usage: 0x05),

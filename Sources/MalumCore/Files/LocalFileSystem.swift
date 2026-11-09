@@ -60,6 +60,29 @@ public struct LocalFileSystem: FileSystem {
         }
     }
 
+    /// Creates the folder with `rwx------`.
+    public func createPrivateDirectory(_ path: String) throws(FileSystemError) {
+        do {
+            try FileManager.default.createDirectory(
+                atPath: path, withIntermediateDirectories: true, attributes: [.posixPermissions: Self.privateFolderMode]
+            )
+            try FileManager.default.setAttributes([.posixPermissions: Self.privateFolderMode], ofItemAtPath: path)
+        } catch {
+            throw .noDirectory(path: path, reason: error.localizedDescription)
+        }
+    }
+
+    /// Writes to a temporary file first, then moves it over `path` and sets `rw-------`.
+    public func writePrivate(_ data: Data, to path: String) throws(FileSystemError) {
+        try refuseTOML(path)
+        do {
+            try data.write(to: URL(fileURLWithPath: path), options: .atomic)
+            try FileManager.default.setAttributes([.posixPermissions: Self.privateFileMode], ofItemAtPath: path)
+        } catch {
+            throw .unwritable(path: path, reason: error.localizedDescription)
+        }
+    }
+
     /// Removes a link already at `path`, then links it to `destination`.
     public func link(_ path: String, to destination: String) throws(FileSystemError) {
         try refuseTOML(path)
@@ -138,4 +161,8 @@ public struct LocalFileSystem: FileSystem {
 
     /// `rwxr-xr-x`.
     private static let executableMode = 0o755
+    /// `rwx------`, a folder only the user can open.
+    private static let privateFolderMode = 0o700
+    /// `rw-------`, a file only the user can read.
+    private static let privateFileMode = 0o600
 }
