@@ -11,6 +11,10 @@ final class FakeFileSystem: FileSystem {
     private let texts: Mutex<[String: String]>
     /// Files that can be run.
     private let executables: Mutex<Set<String>>
+    /// Files and folders only the user can read.
+    private let privates = Mutex<Set<String>>([])
+    /// The bytes of files written as data.
+    private let blobs = Mutex<[String: Data]>([:])
     /// Paths whose writes fail.
     let failing: Set<String>
     /// Paths spelled differently from how they are on disk, with their spelling on disk.
@@ -53,13 +57,31 @@ final class FakeFileSystem: FileSystem {
     }
 
     func data(at path: String) throws(FileSystemError) -> Data {
-        Data(try read(path).utf8)
+        if let blob = blobs.withLock({ $0[path] }) { return blob }
+        return Data(try read(path).utf8)
+    }
+
+    /// Whether `path` was made readable only by the user.
+    func isPrivate(_ path: String) -> Bool {
+        privates.withLock { $0.contains(path) }
+    }
+
+    func createPrivateDirectory(_ path: String) throws(FileSystemError) {
+        try createDirectory(path)
+        privates.withLock { _ = $0.insert(path) }
+    }
+
+    func writePrivate(_ data: Data, to path: String) throws(FileSystemError) {
+        try write(String(bytes: data, encoding: .utf8) ?? "", to: path)
+        blobs.withLock { $0[path] = data }
+        privates.withLock { _ = $0.insert(path) }
     }
 
     func write(_ text: String, to path: String) throws(FileSystemError) {
         guard !failing.contains(path) else { throw .unwritable(path: path, reason: "read-only") }
         items.withLock { $0[path] = .file }
         texts.withLock { $0[path] = text }
+        blobs.withLock { $0[path] = nil }
     }
 
     func createDirectory(_ path: String) throws(FileSystemError) {
@@ -100,6 +122,7 @@ final class FakeFileSystem: FileSystem {
         items.withLock { $0 = $0.filter { !Self.isInside($0.key, path) } }
         texts.withLock { $0 = $0.filter { !Self.isInside($0.key, path) } }
         executables.withLock { $0 = $0.filter { !Self.isInside($0, path) } }
+        blobs.withLock { $0 = $0.filter { !Self.isInside($0.key, path) } }
     }
 
     func contents(of path: String) throws(FileSystemError) -> [String] {
