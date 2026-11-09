@@ -10,6 +10,8 @@ struct TOMLLines {
 
     /// Quote marks come in pairs, so an odd number of them on a line opens or closes a string.
     private static let pair = 2
+    /// What an array of tables' header starts with.
+    private static let arrayHeader = "[["
 
     /// The first line of each table and key, by its path from the top.
     private var lines: [[String]: Int] = [:]
@@ -17,6 +19,10 @@ struct TOMLLines {
     private var table: [String] = []
     /// The mark that ends the multi-line string being read, if inside one.
     private var openString: String?
+    /// How many `[[array of tables]]` headers each path has had so far.
+    private var arrayCounts: [[String]: Int] = [:]
+    /// The path of the array of tables the lines being read belong to, without the table's place.
+    private var arrayTable: [String]?
 
     /// Scans `text`.
     init(_ text: String) {
@@ -49,16 +55,30 @@ struct TOMLLines {
         }
         guard let equals = line.firstIndex(of: "="), let key = Self.keyPath(line[..<equals]) else { return }
         record(table + key, number: number)
+        if let arrayTable {
+            record(arrayTable + key, number: number)
+        }
         let value = line[line.index(after: equals)...]
         openString = Self.multiLineQuotes.first { Self.isOdd(Self.count(of: $0, in: value)) }
     }
 
-    /// Starts a new table at a `[table]` or `[[array of tables]]` header.
+    /// Starts a new table at a `[table]` or `[[array of tables]]` header. Each table of an array is
+    /// found by its place in it, counted from 0, such as `float.1.app`, and without it at its first
+    /// line, such as `float.app`.
     private mutating func header(_ line: String, number: Int) {
         let name = line.drop { $0 == "[" }.prefix { $0 != "]" }
         guard let path = Self.keyPath(name) else { return }
-        table = path
         record(path, number: number)
+        guard line.hasPrefix(Self.arrayHeader) else {
+            table = path
+            arrayTable = nil
+            return
+        }
+        arrayTable = path
+        let index = arrayCounts[path, default: 0]
+        arrayCounts[path] = index + 1
+        table = path + [String(index)]
+        record(table, number: number)
     }
 
     /// Keeps the first line a path is seen on.

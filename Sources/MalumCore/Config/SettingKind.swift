@@ -12,6 +12,8 @@ public enum SettingKind: Sendable {
     case strings
     /// A table, which the module checks itself.
     case table
+    /// A list of tables, such as `[[float]]`, which the module checks itself.
+    case tables
 
     /// Whether `value` is of this kind.
     func accepts(_ value: ConfigValue) -> Bool {
@@ -21,6 +23,8 @@ public enum SettingKind: Sendable {
             true
         case (.strings, .array(let items)):
             items.allSatisfy { if case .string = $0 { true } else { false } }
+        case (.tables, .array(let items)):
+            items.allSatisfy { if case .table = $0 { true } else { false } }
         default:
             false
         }

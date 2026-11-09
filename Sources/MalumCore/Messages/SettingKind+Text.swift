@@ -16,6 +16,8 @@ extension SettingKind: CustomStringConvertible {
             "a list of text in quotes"
         case .table:
             "a table"
+        case .tables:
+            "a list of tables"
         }
     }
 }

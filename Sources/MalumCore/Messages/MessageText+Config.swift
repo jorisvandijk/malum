@@ -156,6 +156,14 @@ extension MessageText {
     /// What a shortcut in `keyboard.toml` does.
     static var keyAction: MessageText { "an app's bundle ID or a module's action, such as \"launcher\"" }
 
+    /// What a window manager's `frame` should be.
+    static var screenFrame: MessageText {
+        MessageText(ScreenFrame.allCases.map { "\"\($0.rawValue)\"" }.joined(separator: " or "))
+    }
+
+    /// What a float rule's `title` should be.
+    static var titlePattern: MessageText { "a pattern for the window's title, such as \"^Picture-in-Picture$\"" }
+
     /// What a list of VSCodium extensions has to be.
     static var extensionList: MessageText { "a list of extensions as \"publisher.name\"" }
 }
