@@ -25,13 +25,13 @@ f = "com.apple.finder"
 return = "net.kovidgoyal.kitty"
 ```
 
-Pressing it starts the app when it isn't running. When it is, Malum shows it if it's hidden, brings it to the front, opens a new window when it has none, and brings back a minimised window when every window is minimised. Pressing it again while the app is already in front does nothing.
+Pressing it starts the app when it isn't running. When it is, Malum shows it if it's hidden, brings it to the front, opens a new window when it has none, and brings back a minimised window when every window is minimised. Pressing it again while the app is already in front does nothing. When macOS keeps another app in front, Malum asks again a few times within half a second, and the log says so if the app still didn't come to the front.
 
 The [keyboard page](keyboard.md) explains the shortcuts.
 
 ## Hiding the others
 
-When an app comes to the front, in any way, every other app is hidden, so only one app is in view at a time. Apps without a Dock icon, such as menu bar apps, hide nothing, and neither does an app that floats as a whole.
+When an app comes to the front, in any way, every other app is hidden, so only one app is in view at a time. Apps without a Dock icon, such as menu bar apps, hide nothing, and neither does an app that floats as a whole. An app that macOS doesn't hide straight away, often because it's still letting go of the front, is hidden again a moment later.
 
 ## Filling the screen
 

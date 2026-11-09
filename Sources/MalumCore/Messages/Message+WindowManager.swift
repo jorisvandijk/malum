@@ -12,6 +12,11 @@ extension Message {
         couldnt("hide \(apps.joined(separator: ", "))", "macOS didn't hide them", level: .warn)
     }
 
+    /// `app` didn't come to the front after its shortcut, however often it was asked.
+    static func couldntRaise(_ app: String) -> Message {
+        couldnt("bring \(app) to the front", "macOS kept another app in front", level: .warn)
+    }
+
     /// The window titled `title` of `app` is now `kind`.
     static func window(_ title: String?, of app: String, is kind: WindowKind) -> Message {
         let window: MessageText =
