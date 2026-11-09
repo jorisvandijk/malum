@@ -36,7 +36,8 @@ public protocol Module: AnyObject, Observable {
     func resume() async
     /// Does one of the actions in `hotkeys`, or opens an app, for a shortcut that was pressed.
     func perform(_ action: KeyAction)
-    /// Learns that `malum.toml` switched other modules on or off, for a module that routes to them.
+    /// Learns that `malum.toml` switched other modules on or off, or that what a module offers changed
+    /// with its settings, for a module that routes to them.
     func modulesSwitched()
 }
 

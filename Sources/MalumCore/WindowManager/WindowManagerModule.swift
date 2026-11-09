@@ -16,6 +16,15 @@ final class WindowManagerModule: Module {
     private static let watchTries = 10
     /// How long to wait before looking again, so all tries take about two seconds.
     private static let watchDelayMilliseconds = 200
+    /// The action of the keys it swallows, which isn't offered to `keyboard.toml`.
+    private static let blockAction = "block"
+    /// cmd+H, cmd+M and cmd+option+M, which hide the app or minimise windows, for
+    /// `block_hide_minimize`. Hidden apps and minimised windows would leave a gap in the layout.
+    private static let blockedKeys: [Hotkey: String] = Dictionary(
+        uniqueKeysWithValues: [("h", [Modifier.cmd]), ("m", [.cmd]), ("m", [.cmd, .option])].compactMap {
+            name, modifiers in
+            Key.named(name).map { (Hotkey(modifiers: Set(modifiers), key: $0), blockAction) }
+        })
 
     /// The module's id, which names `window_manager.toml`.
     let id = WindowManagerConfig.module
@@ -23,8 +32,11 @@ final class WindowManagerModule: Module {
     let permissions: Set<Permission> = [.accessibility]
     /// Its settings.
     var schema: ConfigSchema { WindowManagerConfig.schema }
-    /// It opens the apps the shortcuts in `keyboard.toml` name.
-    let hotkeys = HotkeyOffer(opensApps: true)
+    /// It opens the apps the shortcuts in `keyboard.toml` name, and swallows the keys that hide and
+    /// minimise when `block_hide_minimize` is on.
+    var hotkeys: HotkeyOffer {
+        HotkeyOffer(fixedKeys: config.blocksHideMinimize ? Self.blockedKeys : [:], opensApps: true)
+    }
     /// Where the module is now.
     private(set) var status = ModuleStatus.off
 
@@ -86,7 +98,7 @@ final class WindowManagerModule: Module {
         status = .off
     }
 
-    /// Starts the app a shortcut names, or brings it into view.
+    /// Starts the app a shortcut names, or brings it into view. A swallowed key does nothing.
     func perform(_ action: KeyAction) {
         guard case .app(let bundleID) = action else { return }
         raising = Task { [runRaise] in await runRaise.raise(bundleID) }

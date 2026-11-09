@@ -15,6 +15,8 @@ public protocol WindowAccess: AnyObject {
     func watch(_ pid: Int32, onChange: @escaping @MainActor (WindowEvent) -> Void) -> (any WatchedApp)?
     /// Whether the pointer's main button is held, as it is while a window is dragged.
     var isPointerDown: Bool { get }
+    /// Where the pointer is, in Accessibility's coordinates.
+    var pointerLocation: CGPoint { get }
 }
 
 /// What happened to a watched app's windows.

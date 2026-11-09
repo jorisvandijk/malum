@@ -115,6 +115,7 @@ public final class ModuleSwitch {
     private func run(enabled: Set<String>, settings: [String: ModuleSettings], changed: Set<String>) async -> [Message]
     {
         lastSettings = settings
+        let offers = routes.offers
         if routes.switchOn(enabled) {
             // A module being switched off now is stopped below, so only the ones that stay on hear it.
             for module in modules where started.contains(module.id) && enabled.contains(module.id) {
@@ -142,6 +143,12 @@ public final class ModuleSwitch {
             }
         }
         switchedOn = enabled
+        if routes.offers != offers {
+            // New settings changed what a module offers, such as the keys it claims.
+            for module in modules where started.contains(module.id) {
+                module.modulesSwitched()
+            }
+        }
         return messages
     }
 

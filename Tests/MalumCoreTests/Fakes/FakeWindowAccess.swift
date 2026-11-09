@@ -8,6 +8,7 @@ final class FakeWindowAccess: WindowAccess {
     /// The apps it watches, by process ID.
     var apps: [Int32: FakeWatchedApp] = [:]
     var isPointerDown = false
+    var pointerLocation = CGPoint.zero
 
     func watch(_ pid: Int32, onChange: @escaping @MainActor (WindowEvent) -> Void) -> (any WatchedApp)? {
         apps[pid]

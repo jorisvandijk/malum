@@ -26,6 +26,8 @@ final class RecordingModule: Module {
     var failsToCleanUp = false
     /// What it offers the hotkey registry.
     var hotkeys = HotkeyOffer()
+    /// What it offers once it's given settings, or nil to keep `hotkeys`.
+    var hotkeysOnApply: HotkeyOffer?
 
     init(id: String, permissions: Set<Permission> = []) {
         self.id = id
@@ -47,6 +49,9 @@ final class RecordingModule: Module {
 
     func apply(_ settings: ModuleSettings) throws {
         calls.append("apply " + settings.table.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value.toml)" }.joined())
+        if let hotkeysOnApply {
+            hotkeys = hotkeysOnApply
+        }
         guard !failsToApply else { throw FakeError.failed }
     }
 
