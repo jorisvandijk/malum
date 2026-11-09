@@ -38,6 +38,15 @@ public final class ModuleRoutes {
         return true
     }
 
+    /// Opens the app with `bundleID` through a running module that opens apps, such as the window
+    /// manager, so it's raised as its shortcut would. Says whether one took it.
+    func openApp(_ bundleID: String) -> Bool {
+        let opener = entries.values.compactMap(\.module).first { $0.hotkeys.opensApps && $0.status.isActive }
+        guard let opener else { return false }
+        opener.perform(.app(bundleID))
+        return true
+    }
+
     /// Runs `target` on its module, only while that module runs. A shortcut for a module that is
     /// starting, waiting or failed does nothing.
     func run(_ target: HotkeyTarget) {
