@@ -35,11 +35,19 @@ struct Key: Hashable, Sendable {
         byName[name]
     }
 
+    /// The key whose virtual key code is `keyCode`, or nil when no key in the table has it.
+    static func coded(_ keyCode: UInt16) -> Key? {
+        byCode[keyCode]
+    }
+
     /// The keys `hyper_key` can be, in the order `all` lists them.
     static var hyperKeys: [Key] { all.filter(\.canBeHyper) }
 
     /// Every key, by name.
     private static let byName = Dictionary(uniqueKeysWithValues: all.map { ($0.name, $0) })
+
+    /// Every key, by virtual key code.
+    private static let byCode = Dictionary(uniqueKeysWithValues: all.map { ($0.keyCode, $0) })
 
     // The codes below are platform constants, each named by the key on its row, so a constant per
     // number would only type every name twice.
@@ -50,6 +58,9 @@ struct Key: Hashable, Sendable {
 
     /// F18, which the hyper key types as, so the event tap can tell it from every other key.
     static let f18 = Key("f18", keyCode: 0x4F, usage: 0x6D, canBeHyper: true)
+
+    /// Tab, which opens the app switcher with the hyper key held, as it does with cmd.
+    static let tab = Key("tab", keyCode: 0x30, usage: 0x2B)
 
     /// Every key Malum knows, in the order the docs list them.
     static let all: [Key] = [
@@ -85,7 +96,7 @@ struct Key: Hashable, Sendable {
         f18,
         Key("f19", keyCode: 0x50, usage: 0x6E, canBeHyper: true),
         Key("f20", keyCode: 0x5A, usage: 0x6F, canBeHyper: true),
-        Key("return", keyCode: 0x24, usage: 0x28), Key("tab", keyCode: 0x30, usage: 0x2B),
+        Key("return", keyCode: 0x24, usage: 0x28), tab,
         Key("space", keyCode: 0x31, usage: 0x2C), Key("delete", keyCode: 0x33, usage: 0x2A),
         Key("delete_forward", keyCode: 0x75, usage: 0x4C), Key("escape", keyCode: 0x35, usage: 0x29),
         Key("left", keyCode: 0x7B, usage: 0x50), Key("right", keyCode: 0x7C, usage: 0x4F),
