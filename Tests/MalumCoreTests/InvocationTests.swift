@@ -31,6 +31,17 @@ struct InvocationTests {
         #expect(Invocation(arguments: ["token", "ghp_secret"]) == .unknown("ghp_secret"))
     }
 
+    @Test func sambaPasswordTakesOneServer() {
+        #expect(Invocation(arguments: ["samba", "password", "nas"]) == .sambaPassword(server: "nas"))
+        #expect(Invocation(arguments: ["samba", "password", "nas", "secret"]) == .unknown("secret"))
+        #expect(Invocation(arguments: ["samba", "mount"]) == .unknown("mount"))
+        #expect(
+            Invocation(arguments: ["samba"]) == .incomplete(command: "samba", needs: Invocation.needsSambaCommand))
+        #expect(
+            Invocation(arguments: ["samba", "password"])
+                == .incomplete(command: "samba password", needs: Invocation.needsServer))
+    }
+
     @Test func tokenRemoveDeletesIt() {
         #expect(Invocation(arguments: ["token", "--remove"]) == .token(remove: true))
         #expect(Invocation(arguments: ["token", "--remove", "extra"]) == .unknown("extra"))

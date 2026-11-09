@@ -5,6 +5,7 @@ public enum Modules {
     /// Every module's schema, by the module's id, without building the modules.
     public static let schemas: [String: ConfigSchema] = [
         KeyboardConfig.module: KeyboardModule.configSchema, WindowManagerConfig.module: WindowManagerConfig.schema,
+        SambaConfig.module: SambaConfig.schema,
     ]
 
     /// Builds every module, in the order they're started, with what they need from the app and the

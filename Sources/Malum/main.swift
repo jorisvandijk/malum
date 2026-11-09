@@ -62,8 +62,8 @@ func runCommand(_ invocation: Invocation) {
         finishing { await selfUpdate(github: GitHubAPI(token: nil)).rollBack { announce($0) } }
     case .status:
         showStatus()
-    case .token(let remove):
-        keepToken(remove: remove)
+    case .token, .sambaPassword:
+        keepSecret(invocation)
     case .incomplete, .unknown:
         reject(invocation)
     }
@@ -121,6 +121,25 @@ func keepToken(remove: Bool) -> Never {
     }
 }
 
+/// Runs `malum token`, or `malum samba password` when `invocation` is that.
+@MainActor
+func keepSecret(_ invocation: Invocation) -> Never {
+    guard case .sambaPassword(let server) = invocation else { keepToken(remove: invocation == .token(remove: true)) }
+    keepSambaPassword(server: server)
+}
+
+/// Runs `malum samba password`: asks for the password of the server called `name` with typing
+/// hidden and keeps it in the login keychain. Exits once it's done.
+@MainActor
+func keepSambaPassword(server name: String) -> Never {
+    let command = SambaPasswordCommand(files: files, paths: paths) {
+        KeychainTokenStore(service: Project.sambaService, account: $0.account)
+    }
+    guard let server = command.server(named: name, report: terminal.report) else { exit(EXIT_FAILURE) }
+    finish([command.save(terminal.readSecret(prompt: SambaPasswordCommand.prompt(for: server)), for: server)])
+    exit(EXIT_SUCCESS)
+}
+
 /// Updates the installed app from `github`, and rolls it back.
 @MainActor
 func selfUpdate(github: any GitHub) -> SelfUpdate {
@@ -158,7 +177,8 @@ func reject(_ invocation: Invocation) -> Never {
         terminal.report(.incomplete(command, needs: needs))
     case .unknown(let argument):
         terminal.report(.unknownArgument(argument))
-    case .version, .help, .initialize, .reload, .safe, .disable, .permissions, .run, .rollback, .status, .token:
+    case .version, .help, .initialize, .reload, .safe, .disable, .permissions, .run, .rollback, .status, .token,
+        .sambaPassword:
         break  // These make sense; runCommand runs them.
     }
     terminal.write(Invocation.usage)

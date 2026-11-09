@@ -17,6 +17,23 @@ Switches the module on. The module stays off until this is set to true.
 - Value: true or false
 - Default: `false`
 
+## `samba`
+
+Samba shares mounted under `/Volumes`. See [Samba](samba.md).
+
+### `samba.enabled`
+
+Switches the module on. The module stays off until this is set to true.
+
+- Value: true or false
+- Default: `false`
+
+### `samba.server`
+
+The servers, one `[[server]]` each, with `name`, `host`, `user` and `shares`, the list of shares to mount.
+
+- Value: a list of tables
+
 ## `system_config`
 
 Makes the Mac match dots when you run `malum run`, installing what `packages.toml` lists, writing the app config files and preferences in `apps/` and setting the macOS settings in `macos.toml`. At the end of the run, Malum updates itself. Nothing happens in the background: the app only reads the switch, and `malum run` does the work.

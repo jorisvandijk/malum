@@ -36,6 +36,11 @@ extension MessageText {
         "\(path): the name can't be empty, start with a dot or hold /"
     }
 
+    /// The name at `path`, written dotted, is already another entry's name.
+    static func takenName(_ path: String) -> MessageText {
+        "\(path): another entry already has this name"
+    }
+
     /// The name at `path`, written dotted, of a `name value` line is empty or holds spaces.
     static func notLineName(_ path: String) -> MessageText {
         "\(path): the name can't be empty or hold spaces"
@@ -163,6 +168,12 @@ extension MessageText {
 
     /// What a float rule's `title` should be.
     static var titlePattern: MessageText { "a pattern for the window's title, such as \"^Picture-in-Picture$\"" }
+
+    /// What a Samba server's host and user have to be.
+    static var sambaText: MessageText { "text without spaces, such as \"nas.local\"" }
+
+    /// What a Samba server's shares have to be.
+    static var shareList: MessageText { "a list of one or more share names" }
 
     /// What a list of VSCodium extensions has to be.
     static var extensionList: MessageText { "a list of extensions as \"publisher.name\"" }
