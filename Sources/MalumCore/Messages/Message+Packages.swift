@@ -51,13 +51,9 @@ extension Message {
         couldnt("run \(SystemConfig.id)", "it's off, set enabled = true in its table in \(private: path)")
     }
 
-    /// How the run ended.
-    static func systemConfigFinished(succeeded: Bool) -> Message {
-        if succeeded {
-            Message(.info, "\(SystemConfig.id) is done")
-        } else {
-            Message(.error, "\(SystemConfig.id) finished with errors")
-        }
+    /// The run ended with nothing failed. A failed run ends with its numbered issues instead.
+    static var systemConfigDone: Message {
+        Message(.info, "\(SystemConfig.id) is done")
     }
 
     /// There's no `packages.toml` at `path`.

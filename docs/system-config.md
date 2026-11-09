@@ -66,7 +66,19 @@ A table or setting Malum doesn't know only gets a warning. Without a `packages.t
 [info] system_config is done
 ```
 
-An install that fails is reported with the last line Homebrew wrote, and the rest still go ahead. The run then ends with `[error] system_config finished with errors` and exits with an error.
+An install that fails is reported with the last line Homebrew wrote, and the rest of the run still goes ahead: the other packages, the app config files and the macOS settings.
+
+Every warning and error in a run gets a number as it happens, and the run ends with all of them again, so none get lost in the output. It then exits with an error when any of them is one:
+
+```
+[info] installing Homebrew cask lulu
+[error] #1 couldn't install Homebrew cask lulu: Download failed on Cask 'lulu'
+[info] wrote ~/.gitconfig from apps/git.toml
+[warn] #2 apps/kitty.toml line 4: unknown setting settings.fontsize
+[error] 2 issues in this run:
+[error] #1 couldn't install Homebrew cask lulu: Download failed on Cask 'lulu'
+[warn] #2 apps/kitty.toml line 4: unknown setting settings.fontsize
+```
 
 Homebrew itself has to be installed at `/opt/homebrew/bin/brew`. Taking a package out of the list uninstalls it, as [Removing](#removing) describes.
 
