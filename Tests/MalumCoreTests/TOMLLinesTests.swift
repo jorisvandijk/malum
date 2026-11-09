@@ -51,4 +51,12 @@ struct TOMLLinesTests {
         #expect(lines.line(of: ["a", "\"x"]) == 1)
         #expect(lines.line(of: ["a", "next"]) == 5)
     }
+
+    @Test func eachTableOfAnArrayHasItsPlace() {
+        let lines = TOMLLines("[[float]]\napp = \"a\"\n\n[[float]]\napp = \"b\"\ntitle = \"x\"\n")
+        #expect(lines.line(of: ["float"]) == 1)
+        #expect(lines.line(of: ["float", "0", "app"]) == 2)
+        #expect(lines.line(of: ["float", "1"]) == 4)
+        #expect(lines.line(of: ["float", "1", "title"]) == 6)
+    }
 }

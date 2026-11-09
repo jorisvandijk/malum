@@ -6,6 +6,8 @@ public struct ConfigSchema: Equatable, Sendable {
     public let settings: [String: Setting]
     /// How the module's own file is checked, or nil when its keys are checked against `settings`.
     let fileCheck: FileCheck?
+    /// What the module checks on top of the kinds of its settings, wherever they are, or nil.
+    let settingsCheck: SettingsCheck?
 
     /// The key that switches a module on or off.
     public static let switchKey = "enabled"
@@ -16,11 +18,15 @@ public struct ConfigSchema: Equatable, Sendable {
 
     /// Creates a schema from what the module does and each of its settings, by key. `enabled` is
     /// added for every module, in place of any setting of that name. With `fileCheck`, the module's
-    /// own file is checked that way instead of against `settings`.
-    public init(about: String, settings: [String: Setting], fileCheck: FileCheck? = nil) {
+    /// own file is checked that way instead of against `settings`. With `settingsCheck`, settings
+    /// whose kinds are right are checked further that way.
+    public init(
+        about: String, settings: [String: Setting], fileCheck: FileCheck? = nil, settingsCheck: SettingsCheck? = nil
+    ) {
         self.about = about
         self.settings = settings.merging([Self.switchKey: Self.switchSetting]) { _, common in common }
         self.fileCheck = fileCheck
+        self.settingsCheck = settingsCheck
     }
 
     /// What's wrong with `table`, found at `path`, keyed by the setting it's about. Empty when the

@@ -83,6 +83,7 @@ public struct Config: Sendable {
             for (key, text) in schema.problems(in: table, at: [module]) {
                 reader.add(.error, at: [module, key], text)
             }
+            schema.settingsCheck?.check(table, at: [module], in: &reader)
         }
         guard reader.problems.count == before, case .table(let table) = value else { return nil }
         return table
@@ -114,6 +115,7 @@ public struct Config: Sendable {
             for (key, problem) in schema.problems(in: document, at: []) where key != ConfigSchema.switchKey {
                 reader.add(.error, at: [key], problem)
             }
+            schema.settingsCheck?.check(document, at: [], in: &reader)
         }
         problems += reader.problems + checked
         guard reader.problems.isEmpty, checked.isEmpty else { return nil }
