@@ -21,8 +21,11 @@ struct KeyboardModuleTests {
         }
         let state = StateFolder(files: files, locks: FakeFileLocks(), paths: paths)
         return KeyboardModule(
-            files: files, paths: paths, remapper: KeyRemapper(runner: runner ?? self.runner, state: state),
-            keyCatcher: catcher, state: keyboardState, log: Log(writer: RecordingLogWriter()))
+            files: files, paths: paths,
+            system: KeyboardSystem(
+                remapper: KeyRemapper(runner: runner ?? self.runner, state: state), keyCatcher: catcher,
+                state: keyboardState),
+            log: Log(writer: RecordingLogWriter()))
     }
 
     /// The mapping `text` asks for.

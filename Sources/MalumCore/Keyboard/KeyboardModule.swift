@@ -44,16 +44,14 @@ final class KeyboardModule: Module {
     /// New settings being put to work, which `stop` waits for.
     @ObservationIgnored private var restart: Task<Void, Never>?
 
-    /// Creates the module, off, reading `keyboard.toml` through `files` and logging to `log`.
-    init(
-        files: any FileSystem, paths: Paths, remapper: KeyRemapper, keyCatcher: any KeyCatcher,
-        state: any KeyboardState, log: Log
-    ) {
+    /// Creates the module, off, reading `keyboard.toml` through `files`, working through `system` and
+    /// logging to `log`.
+    init(files: any FileSystem, paths: Paths, system: KeyboardSystem, log: Log) {
         self.files = files
         self.paths = paths
-        self.remapper = remapper
-        self.keyCatcher = keyCatcher
-        self.state = state
+        remapper = system.remapper
+        keyCatcher = system.keyCatcher
+        state = system.state
         self.log = log.module(KeyboardConfig.module)
     }
 

@@ -23,8 +23,10 @@ func runApp() -> Never {
     let launches = LaunchRecord(state: state)
     checkCrashLoop(launches, overrides: OverrideStore(state: state))
     let modules = Modules.all(
-        files: files, paths: paths, remapper: KeyRemapper(runner: runner, state: state), keyCatcher: EventTap(),
-        keyboardState: SystemKeyboardState(), log: systemLog)
+        files: files, paths: paths,
+        keyboard: KeyboardSystem(
+            remapper: KeyRemapper(runner: runner, state: state), keyCatcher: EventTap(), state: SystemKeyboardState()),
+        log: systemLog)
     let config = LiveConfig(
         reloader: ConfigReloader(files: files, paths: paths, schemas: ConfigSchemas.all),
         modules: ModuleSwitch(modules: modules, permissions: PermissionProbe(home: paths.home)),
