@@ -36,11 +36,13 @@ final class AccessibilityApp {
 
     /// Hands an `AXObserver` notification to the app it was registered for. The observer's source is
     /// on the main run loop, so this runs on the main thread.
+    /// The pointer crosses into the main actor as a plain number, since a raw pointer isn't Sendable.
     private static let callback: AXObserverCallback = { _, _, notification, refcon in
-        guard let refcon else { return }
+        let address = UInt(bitPattern: refcon)
         let name = notification as String
         MainActor.assumeIsolated {
-            Unmanaged<AccessibilityApp>.fromOpaque(refcon).takeUnretainedValue().handle(name)
+            guard let pointer = UnsafeMutableRawPointer(bitPattern: address) else { return }
+            Unmanaged<AccessibilityApp>.fromOpaque(pointer).takeUnretainedValue().handle(name)
         }
     }
 
