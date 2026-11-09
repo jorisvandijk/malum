@@ -34,7 +34,8 @@ public struct SambaVolumes: SambaShares {
         }
     }
 
-    /// Opens a connection to the Samba port, and says whether it's up before the timeout.
+    /// Opens a connection to the Samba port, and says whether it's up before the timeout. A connection
+    /// that waits, such as for the Local Network permission, gets until the timeout too.
     public func isReachable(_ host: String) async -> Bool {
         let connection = NWConnection(host: NWEndpoint.Host(host), port: Self.port, using: .tcp)
         let reachable = await withCheckedContinuation { continuation in
@@ -42,8 +43,8 @@ public struct SambaVolumes: SambaShares {
             connection.stateUpdateHandler = { state in
                 switch state {
                 case .ready: answer.give(true)
-                case .failed, .cancelled, .waiting: answer.give(false)
-                case .setup, .preparing: break
+                case .failed, .cancelled: answer.give(false)
+                case .setup, .preparing, .waiting: break
                 @unknown default: break
                 }
             }
