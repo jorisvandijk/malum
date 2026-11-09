@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds Malum.app from the release executable and Resources/Info.plist.
+# Builds Malum.app from the release executable, Resources/Info.plist and Resources/Bundle.
 #
 # usage: scripts/bundle.sh [output folder]   (default: build)
 #
@@ -33,8 +33,9 @@ swift build -c release --arch arm64 --product "$executable"
 bin="$(swift build -c release --arch arm64 --show-bin-path)/$executable"
 
 rm -rf "$app"
-mkdir -p "$app/Contents/MacOS"
+mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$bin" "$app/Contents/MacOS/$executable"
+cp Resources/Bundle/* "$app/Contents/Resources/"
 
 plist="$app/Contents/Info.plist"
 cp Resources/Info.plist "$plist"
