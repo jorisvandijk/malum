@@ -45,7 +45,7 @@ One table per set of modifiers, each a flat list of keys and what they do. Name 
 
 The value is what the key does:
 
-- Text with a dot is an app's bundle ID. The keyboard module opens no apps itself: it hands these keys to the module that handles apps. Until there is one, the key goes on to the front app as a normal shortcut, and the menu bar shows a warning on the module's line.
+- Text with a dot is an app's bundle ID. The keyboard module opens no apps itself: it hands these keys to the [window manager](window-manager.md), which runs or raises the app. While the window manager is off, the key goes on to the front app as a normal shortcut, and the menu bar shows a warning on the module's line.
 - Text without a dot is an action another module offers, named in that module's docs. An action no module offers is a config error at its line.
 
 ### Key names

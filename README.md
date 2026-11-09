@@ -93,6 +93,8 @@ The [menu bar page](docs/menu-bar.md) explains Malum's icon and its menu.
 
 The keyboard module gives you a hyper key, swaps keys around and catches shortcuts for the other modules. The [keyboard page](docs/keyboard.md) explains `keyboard.toml`.
 
+The window manager runs or raises apps from those shortcuts, hides the other apps, and fills the screen with each app's windows. The [window manager page](docs/window-manager.md) explains `window_manager.toml`.
+
 A module that's missing a permission waits until you grant it, and `malum permissions` checks that your terminal has Full Disk Access. The [permissions page](docs/permissions.md) explains both.
 
 `malum run` makes the Mac match dots: it installs the Homebrew packages, App Store apps and GitHub releases listed in `packages.toml`, writes the app config files and preferences in `apps/`, and sets the macOS settings in `macos.toml`. `malum status` shows what Malum manages and what doesn't match dots. The [system config page](docs/system-config.md) explains how.
