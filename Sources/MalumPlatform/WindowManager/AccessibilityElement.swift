@@ -52,9 +52,10 @@ struct AccessibilityElement {
         return settable.boolValue
     }
 
-    /// Sets `attribute` to `value`.
-    func set(_ attribute: String, _ value: Bool) {
-        AXUIElementSetAttributeValue(element, attribute as CFString, value as CFTypeRef)
+    /// Sets `attribute` to `value`, and says whether the element took it.
+    @discardableResult
+    func set(_ attribute: String, _ value: Bool) -> Bool {
+        AXUIElementSetAttributeValue(element, attribute as CFString, value as CFTypeRef) == .success
     }
 
     /// Sets `attribute` to the point `point`.
