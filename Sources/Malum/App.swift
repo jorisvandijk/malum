@@ -24,7 +24,7 @@ func runApp() -> Never {
     checkCrashLoop(launches, overrides: OverrideStore(state: state))
     let modules = Modules.all(
         files: files, paths: paths, remapper: KeyRemapper(runner: runner, state: state), keyCatcher: EventTap(),
-        log: systemLog)
+        keyboardState: SystemKeyboardState(), log: systemLog)
     let config = LiveConfig(
         reloader: ConfigReloader(files: files, paths: paths, schemas: ConfigSchemas.all),
         modules: ModuleSwitch(modules: modules, permissions: PermissionProbe(home: paths.home)),
@@ -32,13 +32,17 @@ func runApp() -> Never {
     let menu = MenuFeed(modules: modules, config: config)
     config.start()
     Task { await startWhenSigned(config: config, menu: menu) }
-    let hangup = HangupWatcher { config.reload(force: true) }
+    let hangup = SignalWatcher(SIGHUP) { config.reload(force: true) }
+    let terminate = SignalWatcher(SIGTERM) { NSApplication.shared.terminate(nil) }
+    let keyboards = KeyboardChangeWatcher { config.resume() }
     let quit = NotificationCenter.default.addObserver(
         forName: NSApplication.willTerminateNotification, object: nil, queue: .main
     ) { _ in MainActor.assumeIsolated { forget(launches) } }
     let app = NSApplication.shared
+    let delegate = AppDelegate(config: config)
+    app.delegate = delegate
     app.setActivationPolicy(.accessory)
-    withExtendedLifetime((menu, config, hangup, quit)) { app.run() }
+    withExtendedLifetime((menu, config, hangup, terminate, keyboards, quit, delegate)) { app.run() }
     exit(EXIT_SUCCESS)
 }
 

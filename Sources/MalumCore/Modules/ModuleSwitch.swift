@@ -39,10 +39,23 @@ public final class ModuleSwitch {
         await enqueue { await $0.run(enabled: enabled, settings: settings, changed: changed) }
     }
 
-    /// Starts the waiting modules whose permissions have been granted since, and says what it did.
-    /// Does nothing while every waiting module misses the same permissions as before.
-    public func retryWaiting() async -> [Message] {
-        await enqueue { await $0.retry() }
+    /// Stops the running modules that lost a permission, so they wait for it again, starts the waiting
+    /// modules whose permissions were granted since, and has the others check what macOS doesn't
+    /// announce. Says what it did.
+    public func recheck() async -> [Message] {
+        await enqueue { await $0.recheckAll() }
+    }
+
+    /// Has the running modules set up again what macOS may have dropped, and says which did.
+    public func resume() async -> [Message] {
+        await enqueue { switcher in
+            var messages: [Message] = []
+            for module in switcher.modules where switcher.started.contains(module.id) {
+                await module.resume()
+                messages.append(.resumed(module.id))
+            }
+            return messages
+        }
     }
 
     /// Runs `work` once everything asked for before it has finished.
@@ -68,6 +81,23 @@ public final class ModuleSwitch {
             }
         }
         return messages
+    }
+
+    /// Stops each running module that lost a permission and has the others check, then retries the
+    /// waiting ones.
+    private func recheckAll() async -> [Message] {
+        var messages: [Message] = []
+        for module in modules where started.contains(module.id) {
+            let missing = permissions.missing(from: module.permissions)
+            guard missing.isEmpty else {
+                await module.stop()
+                started.remove(module.id)
+                messages += [.stopped(module.id)] + wait(module.id, for: missing)
+                continue
+            }
+            module.check()
+        }
+        return messages + (await retry())
     }
 
     /// Runs the last update again when a waiting module's missing permissions have changed.

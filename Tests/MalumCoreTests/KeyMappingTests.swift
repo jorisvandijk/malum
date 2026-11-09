@@ -50,4 +50,24 @@ struct KeyMappingTests {
                 KeyMapping.Entry(source: 0x7_0000_00E0, destination: 0xFF_0000_0003)
             ])
     }
+
+    /// A Modifier Keys swap of `from` to `to`, as macOS keeps it.
+    private func swap(_ from: String, to: String) throws -> [String: UInt64] {
+        [
+            "HIDKeyboardModifierMappingSrc": try #require(try key(from).hidUsages.first),
+            "HIDKeyboardModifierMappingDst": try #require(try key(to).hidUsages.first),
+        ]
+    }
+
+    @Test func swapOfTheKeyOnAnyKeyboardCounts() throws {
+        let swaps = [try swap("left_control", to: "left_control"), try swap("caps_lock", to: "escape")]
+        #expect(KeyMapping.isSwapped(try key("caps_lock"), in: swaps))
+        #expect(!KeyMapping.isSwapped(try key("left_control"), in: swaps))
+    }
+
+    @Test func swapToItselfOrHalfWrittenDoesntCount() throws {
+        let halfWritten = try swap("caps_lock", to: "escape").filter { $0.key == "HIDKeyboardModifierMappingSrc" }
+        let swaps = [try swap("caps_lock", to: "caps_lock"), halfWritten]
+        #expect(!KeyMapping.isSwapped(try key("caps_lock"), in: swaps))
+    }
 }

@@ -52,6 +52,17 @@ The value is what the key does:
 
 `a` to `z`, `0` to `9`, `f1` to `f20`, `return`, `tab`, `space`, `delete`, `delete_forward`, `escape`, `left`, `right`, `up`, `down`, `home`, `end`, `page_up`, `page_down`, `minus`, `equal`, `open_bracket`, `close_bracket`, `backslash`, `semicolon`, `quote`, `grave`, `comma`, `period`, `slash`, `non_us_backslash`, `caps_lock`, `fn`, and `left_` or `right_` followed by `control`, `shift`, `option` or `command`.
 
+## Staying on
+
+Malum sets the hyper key and the remaps again, and starts catching keys again, when the Mac wakes from sleep, when you switch back to your login from another user, and when a keyboard is plugged in or reconnects. The log says `set up keyboard again` each time.
+
+The module's line in the [menu bar](menu-bar.md) warns, as `degraded`, about what keeps your keys from working:
+
+- **Secure input:** while a password field or an app such as Terminal with Secure Keyboard Entry has secure input on, macOS hands no keys to Malum, so no shortcut works. The line names the app that holds it, and goes back to `running` once it lets go.
+- **Modifier Keys:** System Settings > Keyboard > Keyboard Shortcuts > Modifier Keys can change a key on one keyboard, such as caps lock to escape. When it changes your `hyper_key`, the hyper key doesn't work on that keyboard. Set that key back to itself there.
+
+Taking away Accessibility stops the module and undoes the hyper key and the remaps, so no key is left dead. It starts again once you grant it (see [permissions](permissions.md)).
+
 ## Problems
 
 Every problem in `keyboard.toml` is listed in the menu bar and the [log](log.md) with its line. A file with errors leaves the module on its last good settings.

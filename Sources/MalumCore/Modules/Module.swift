@@ -28,9 +28,21 @@ public protocol Module: AnyObject, Observable {
     func apply(_ config: ConfigTable) throws
     /// Stops the module and undoes whatever it changed system-wide.
     func stop() async
+    /// Looks again at what macOS doesn't announce, such as secure input. Runs every few seconds while
+    /// the module runs.
+    func check()
+    /// Sets up again what macOS may have dropped while the module ran: after the Mac wakes, the user
+    /// switches back to this login, or a keyboard is plugged in.
+    func resume() async
 }
 
 extension Module {
     /// No actions, no keys and no apps, for a module that has no shortcuts.
     public var hotkeys: HotkeyOffer { HotkeyOffer() }
+
+    /// Nothing to look at, for a module that macOS tells everything it needs.
+    public func check() {}
+
+    /// Nothing to set up again, for a module that sets nothing macOS can drop.
+    public func resume() async {}
 }
