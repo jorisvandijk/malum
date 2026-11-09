@@ -62,8 +62,7 @@ public final class FullScreenOverlay: NSObject, ScreenshotOverlay {
     /// Takes the color picker's color for what's drawn next.
     @objc private func picked(_ panel: NSColorPanel) {
         guard let view, let color = ScreenshotColor(panel.color) else { return }
-        _ = view.session.pick(color)
-        view.needsDisplay = true
+        view.pick(color)
     }
 
     /// Closes the overlay and the picker, and hands `edits` back.
