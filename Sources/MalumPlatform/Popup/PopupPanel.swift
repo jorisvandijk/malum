@@ -10,7 +10,7 @@ public final class PopupPanel: NSObject, Popup {
     /// The window, built the first time the popup opens.
     private var window: PopupWindow?
     /// What it shows.
-    private var content = PopupContent(placeholder: "", label: "", rows: [], selection: nil, canDelete: false)
+    private var content = PopupContent.empty
     /// The pictures shown so far, until the popup closes.
     private var icons: [PopupIcon: NSImage] = [:]
     /// Whether clear all was clicked once and waits for the second click.
