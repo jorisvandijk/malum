@@ -97,6 +97,8 @@ The window manager runs or raises apps from those shortcuts, hides the other app
 
 The launcher opens a popup with every app, to search and start one. The [launcher page](docs/launcher.md) explains it. The clipboard history keeps what you copy in the same popup; the [clipboard page](docs/clipboard.md) explains it.
 
+The Samba module keeps your Samba shares mounted under `/Volumes` while their servers answer, and `malum samba password <server>` keeps each password in the login keychain. The [Samba page](docs/samba.md) explains `samba.toml`.
+
 A module that's missing a permission waits until you grant it, and `malum permissions` checks that your terminal has Full Disk Access. The [permissions page](docs/permissions.md) explains both.
 
 `malum run` makes the Mac match dots: it installs the Homebrew packages, App Store apps and GitHub releases listed in `packages.toml`, writes the app config files and preferences in `apps/`, and sets the macOS settings in `macos.toml`. `malum status` shows what Malum manages and what doesn't match dots. The [system config page](docs/system-config.md) explains how.

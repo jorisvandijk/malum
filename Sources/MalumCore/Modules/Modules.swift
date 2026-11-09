@@ -17,6 +17,7 @@ public enum Modules {
             WindowManagerModule(system: systems.windows, log: log),
             LauncherModule(system: systems.launcher, routes: routes, log: log),
             ClipboardModule(system: systems.clipboard, log: log),
+            SambaModule(system: systems.samba, log: log),
         ]
     }
 }

@@ -55,7 +55,10 @@ func makeModules(routes: ModuleRoutes) -> [any Module] {
             apps: apps, windows: AccessibilityWindows(), watcher: WorkspaceAppWatcher(), screens: MainScreen()),
         launcher: LauncherSystem(
             files: files, paths: paths, state: state, apps: apps, folders: FolderWatcher(), popup: popup),
-        clipboard: ClipboardSystem(files: files, state: state, clipboard: PasteboardClipboard(), popup: popup))
+        clipboard: ClipboardSystem(files: files, state: state, clipboard: PasteboardClipboard(), popup: popup),
+        samba: SambaSystem(shares: SambaVolumes(), network: NetworkWatcher(), runner: runner, files: files) {
+            KeychainTokenStore(service: Project.sambaService, account: $0.account)
+        })
     return Modules.all(systems, routes: routes, log: systemLog)
 }
 

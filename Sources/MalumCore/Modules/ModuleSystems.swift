@@ -9,14 +9,18 @@ public struct ModuleSystems {
     let launcher: LauncherSystem
     /// The clipboard history's.
     let clipboard: ClipboardSystem
+    /// The Samba module's.
+    let samba: SambaSystem
 
     /// Gathers them.
     public init(
-        keyboard: KeyboardSystem, windows: WindowManagerSystem, launcher: LauncherSystem, clipboard: ClipboardSystem
+        keyboard: KeyboardSystem, windows: WindowManagerSystem, launcher: LauncherSystem, clipboard: ClipboardSystem,
+        samba: SambaSystem
     ) {
         self.keyboard = keyboard
         self.windows = windows
         self.launcher = launcher
         self.clipboard = clipboard
+        self.samba = samba
     }
 }
