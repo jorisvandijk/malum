@@ -7,9 +7,7 @@ public enum Modules {
 
     /// Builds every module, in the order they're started, with what they need from the app. Building
     /// one starts nothing.
-    public static func all(
-        files: any FileSystem, paths: Paths, keyboard: KeyboardSystem, log: Log
-    ) -> [any Module] {
-        [KeyboardModule(files: files, paths: paths, system: keyboard, log: log)]
+    public static func all(keyboard: KeyboardSystem, log: Log) -> [any Module] {
+        [KeyboardModule(system: keyboard, log: log)]
     }
 }

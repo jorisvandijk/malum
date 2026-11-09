@@ -10,22 +10,21 @@ struct KeyboardModuleTests {
     private let runner = FakeRunner()
     private let catcher = FakeKeyCatcher()
     private let keyboardState = FakeKeyboardState()
-    private let dots = "/dots"
     private var marker: String { "\(paths.stateDirectory)/\(KeyRemapper.markerName)" }
 
-    /// The module, with `text` as `keyboard.toml` in dots, or no dots at all when it's nil.
-    private func module(_ text: String?, runner: FakeRunner? = nil) throws -> KeyboardModule {
-        if let text {
-            try DotsPointer(files: files, paths: paths).write(dots)
-            try files.write(text, to: paths.moduleTOML(KeyboardConfig.module, in: dots))
-        }
+    /// The module, off, running its commands through `runner`.
+    private func module(runner: FakeRunner? = nil) -> KeyboardModule {
         let state = StateFolder(files: files, locks: FakeFileLocks(), paths: paths)
         return KeyboardModule(
-            files: files, paths: paths,
             system: KeyboardSystem(
                 remapper: KeyRemapper(runner: runner ?? self.runner, state: state), keyCatcher: catcher,
                 state: keyboardState),
             log: Log(writer: RecordingLogWriter()))
+    }
+
+    /// Settings with `text` as the checked `keyboard.toml`, or no file when it's nil.
+    private func settings(_ text: String?) -> ModuleSettings {
+        ModuleSettings(file: text)
     }
 
     /// The mapping `text` asks for.
@@ -35,17 +34,17 @@ struct KeyboardModuleTests {
 
     @Test func startCatchesKeysAndSetsTheHyperKey() async throws {
         let text = "hyper_key = \"caps_lock\"\n"
-        let keyboard = try module(text)
-        try keyboard.apply([:])
+        let keyboard = module()
+        keyboard.apply(settings(text))
         try await keyboard.start()
         #expect(catcher.isRunning)
         #expect(runner.commands == [Hidutil.set(try mapping(text))])
         #expect(keyboard.status == .running)
     }
 
-    @Test func withoutDotsItRunsWithNoRemaps() async throws {
-        let keyboard = try module(nil)
-        try keyboard.apply([:])
+    @Test func withoutAFileItRunsWithNoRemaps() async throws {
+        let keyboard = module()
+        keyboard.apply(settings(nil))
         try await keyboard.start()
         #expect(catcher.isRunning)
         #expect(runner.commands.isEmpty)
@@ -53,8 +52,8 @@ struct KeyboardModuleTests {
     }
 
     @Test func appKeysWarnThatNothingOpensApps() async throws {
-        let keyboard = try module("[hyper]\nf = \"com.apple.finder\"\n")
-        try keyboard.apply([:])
+        let keyboard = module()
+        keyboard.apply(settings("[hyper]\nf = \"com.apple.finder\"\n"))
         try await keyboard.start()
         let problem = ConfigProblem(.warn, file: Paths.moduleTOMLName(KeyboardConfig.module), line: 2, .noAppOpener)
         #expect(keyboard.status == .degraded(reason: problem.message.text.description))
@@ -62,8 +61,8 @@ struct KeyboardModuleTests {
 
     @Test func refusedTapFailsWithoutRemapping() async throws {
         catcher.refuses = true
-        let keyboard = try module("hyper_key = \"caps_lock\"\n")
-        try keyboard.apply([:])
+        let keyboard = module()
+        keyboard.apply(settings("hyper_key = \"caps_lock\"\n"))
         await #expect(throws: KeyboardError.tapRefused) { try await keyboard.start() }
         #expect(runner.commands.isEmpty)
         #expect(keyboard.status == .failed(reason: KeyboardError.tapRefused.text.description))
@@ -71,15 +70,15 @@ struct KeyboardModuleTests {
 
     @Test func failedRemapStopsTheTap() async throws {
         let failing = FakeRunner { _ in CommandResult(status: 1, errors: "denied") }
-        let keyboard = try module("hyper_key = \"caps_lock\"\n", runner: failing)
-        try keyboard.apply([:])
+        let keyboard = module(runner: failing)
+        keyboard.apply(settings("hyper_key = \"caps_lock\"\n"))
         await #expect(throws: KeyRemapError.unset(reason: "denied")) { try await keyboard.start() }
         #expect(!catcher.isRunning)
     }
 
     @Test func stopLetsGoAndUndoesTheRemaps() async throws {
-        let keyboard = try module("hyper_key = \"caps_lock\"\n")
-        try keyboard.apply([:])
+        let keyboard = module()
+        keyboard.apply(settings("hyper_key = \"caps_lock\"\n"))
         try await keyboard.start()
         await keyboard.stop()
         #expect(!catcher.isRunning)
@@ -89,37 +88,26 @@ struct KeyboardModuleTests {
     }
 
     @Test func newSettingsWhileRunningRestartTheTap() async throws {
-        let keyboard = try module("")
-        try keyboard.apply([:])
+        let keyboard = module()
+        keyboard.apply(settings(""))
         try await keyboard.start()
         let text = "hyper_key = \"caps_lock\"\n"
-        try files.write(text, to: paths.moduleTOML(KeyboardConfig.module, in: dots))
-        try keyboard.apply([:])
+        keyboard.apply(settings(text))
         await keyboard.stop()
         #expect(catcher.starts == 2)
         #expect(runner.commands.first == Hidutil.set(try mapping(text)))
     }
 
-    @Test func badFileKeepsTheLastGoodSettings() async throws {
-        let keyboard = try module("hyper_key = \"caps_lock\"\n")
-        try keyboard.apply([:])
-        try files.write("hyper_key = \"nope\"\n", to: paths.moduleTOML(KeyboardConfig.module, in: dots))
-        let problem = ConfigProblem(.error, .fixFirst(Paths.moduleTOMLName(KeyboardConfig.module)))
-        #expect(throws: problem) { try keyboard.apply([:]) }
-        try await keyboard.start()
-        #expect(runner.commands == [Hidutil.set(try mapping("hyper_key = \"caps_lock\"\n"))])
-    }
-
     @Test func cleanUpUndoesARemapLeftByACrash() async throws {
-        let keyboard = try module(nil)
+        let keyboard = module()
         try files.write("{}", to: marker)
         try await keyboard.cleanUp()
         #expect(runner.commands == [Hidutil.set(.none)])
     }
 
     @Test func secureInputShowsWithTheAppThatHoldsIt() async throws {
-        let keyboard = try module("hyper_key = \"caps_lock\"\n")
-        try keyboard.apply([:])
+        let keyboard = module()
+        keyboard.apply(settings("hyper_key = \"caps_lock\"\n"))
         try await keyboard.start()
         keyboardState.secureInput = .on(app: "Terminal")
         keyboard.check()
@@ -130,7 +118,7 @@ struct KeyboardModuleTests {
     }
 
     @Test func modifierKeysSwapOfTheHyperKeyWarns() async throws {
-        let keyboard = try module("hyper_key = \"caps_lock\"\n")
+        let keyboard = module()
         let caps = try #require(Key.named("caps_lock"))
         let escape = try #require(Key.named("escape"))
         keyboardState.modifierSwaps = [
@@ -139,13 +127,13 @@ struct KeyboardModuleTests {
                 "HIDKeyboardModifierMappingDst": try #require(escape.hidUsages.first),
             ]
         ]
-        try keyboard.apply([:])
+        keyboard.apply(settings("hyper_key = \"caps_lock\"\n"))
         try await keyboard.start()
         #expect(keyboard.status == .degraded(reason: MessageText.hyperKeySwapped(caps).description))
     }
 
     @Test func checkLeavesAStoppedModuleOff() async throws {
-        let keyboard = try module(nil)
+        let keyboard = module()
         keyboardState.secureInput = .on(app: nil)
         keyboard.check()
         #expect(keyboard.status == .off)
@@ -153,8 +141,8 @@ struct KeyboardModuleTests {
 
     @Test func resumeStartsTheTapAndSetsTheRemapsAgain() async throws {
         let text = "hyper_key = \"caps_lock\"\n"
-        let keyboard = try module(text)
-        try keyboard.apply([:])
+        let keyboard = module()
+        keyboard.apply(settings(text))
         try await keyboard.start()
         await keyboard.resume()
         #expect(catcher.starts == 2)
@@ -164,8 +152,8 @@ struct KeyboardModuleTests {
 
     @Test func tapSwitchedOffIsStartedAgain() async throws {
         let text = "hyper_key = \"caps_lock\"\n"
-        let keyboard = try module(text)
-        try keyboard.apply([:])
+        let keyboard = module()
+        keyboard.apply(settings(text))
         try await keyboard.start()
         catcher.isRunning = false
         keyboard.check()
@@ -177,8 +165,8 @@ struct KeyboardModuleTests {
 
     @Test func switchedOffTapThatIsRefusedUndoesTheRemapsAndFails() async throws {
         let text = "hyper_key = \"caps_lock\"\n"
-        let keyboard = try module(text)
-        try keyboard.apply([:])
+        let keyboard = module()
+        keyboard.apply(settings(text))
         try await keyboard.start()
         catcher.isRunning = false
         catcher.refuses = true
@@ -191,8 +179,8 @@ struct KeyboardModuleTests {
 
     @Test func refusedResumeUndoesTheRemapsAndFails() async throws {
         let text = "hyper_key = \"caps_lock\"\n"
-        let keyboard = try module(text)
-        try keyboard.apply([:])
+        let keyboard = module()
+        keyboard.apply(settings(text))
         try await keyboard.start()
         catcher.refuses = true
         await keyboard.resume()
@@ -209,11 +197,10 @@ struct KeyboardModuleTests {
             guard command == refused else { return CommandResult(status: 0) }
             return CommandResult(status: 1, errors: "denied")
         }
-        let keyboard = try module(first, runner: failing)
-        try keyboard.apply([:])
+        let keyboard = module(runner: failing)
+        keyboard.apply(settings(first))
         try await keyboard.start()
-        try files.write(second, to: paths.moduleTOML(KeyboardConfig.module, in: dots))
-        try keyboard.apply([:])
+        keyboard.apply(settings(second))
         await keyboard.resume()
         #expect(failing.commands.contains(refused))
         #expect(failing.commands.last == Hidutil.set(.none))
@@ -223,11 +210,11 @@ struct KeyboardModuleTests {
     }
 
     @Test func stopWaitsForEveryRestart() async throws {
-        let keyboard = try module("")
-        try keyboard.apply([:])
+        let keyboard = module()
+        keyboard.apply(settings(""))
         try await keyboard.start()
-        try keyboard.apply([:])
-        try keyboard.apply([:])
+        keyboard.apply(settings(""))
+        keyboard.apply(settings(""))
         await keyboard.stop()
         #expect(catcher.starts == 3)
         #expect(!catcher.isRunning)
@@ -235,7 +222,7 @@ struct KeyboardModuleTests {
     }
 
     @Test func resumeLeavesAStoppedModuleAlone() async throws {
-        let keyboard = try module("hyper_key = \"caps_lock\"\n")
+        let keyboard = module()
         await keyboard.resume()
         #expect(catcher.starts == 0)
         #expect(runner.commands.isEmpty)

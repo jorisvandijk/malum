@@ -25,6 +25,8 @@ public final class ConfigReloader {
 
     /// Each module's last good settings, by the module's id.
     public var settings: [String: ConfigTable] { config.settings }
+    /// Each module's last good settings with the checked text of its own file, by the module's id.
+    public var moduleSettings: [String: ModuleSettings] { config.moduleSettings }
     /// The modules switched on, by their last good table.
     public var enabled: Set<String> { config.enabled }
 

@@ -43,8 +43,8 @@ final class RecordingModule: Module {
         status = .running
     }
 
-    func apply(_ config: ConfigTable) throws {
-        calls.append("apply " + config.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value.toml)" }.joined())
+    func apply(_ settings: ModuleSettings) throws {
+        calls.append("apply " + settings.table.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value.toml)" }.joined())
         guard !failsToApply else { throw FakeError.failed }
     }
 

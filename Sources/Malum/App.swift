@@ -23,7 +23,6 @@ func runApp() -> Never {
     let launches = LaunchRecord(state: state)
     checkCrashLoop(launches, overrides: OverrideStore(state: state))
     let modules = Modules.all(
-        files: files, paths: paths,
         keyboard: KeyboardSystem(
             remapper: KeyRemapper(runner: runner, state: state), keyCatcher: EventTap(), state: SystemKeyboardState()),
         log: systemLog)

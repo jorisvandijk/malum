@@ -12,7 +12,7 @@ public final class ModuleSwitch {
     /// only when its table changes.
     private var switchedOn: Set<String> = []
     /// The settings the last update gave, for starting a module once its permissions are granted.
-    private var lastSettings: [String: ConfigTable] = [:]
+    private var lastSettings: [String: ModuleSettings] = [:]
     /// The switched-on modules that wait for permissions, with the ones they're missing.
     public private(set) var waiting: [String: Set<Permission>] = [:]
     /// The update still running, so the next one waits for it.
@@ -34,7 +34,7 @@ public final class ModuleSwitch {
     /// `changed` their new settings, and says what it did. Updates run one at a time, in the order
     /// they're asked for.
     public func update(
-        enabled: Set<String>, settings: [String: ConfigTable], changed: Set<String>
+        enabled: Set<String>, settings: [String: ModuleSettings], changed: Set<String>
     ) async -> [Message] {
         await enqueue { await $0.run(enabled: enabled, settings: settings, changed: changed) }
     }
@@ -107,18 +107,19 @@ public final class ModuleSwitch {
     }
 
     /// One update, after the one before it has finished.
-    private func run(enabled: Set<String>, settings: [String: ConfigTable], changed: Set<String>) async -> [Message] {
+    private func run(enabled: Set<String>, settings: [String: ModuleSettings], changed: Set<String>) async -> [Message]
+    {
         lastSettings = settings
         var messages: [Message] = []
         for module in modules {
-            let table = settings[module.id] ?? [:]
+            let given = settings[module.id] ?? ModuleSettings()
             let isNew =
                 !switchedOn.contains(module.id) || changed.contains(module.id) || waiting[module.id] != nil
             switch (enabled.contains(module.id), started.contains(module.id)) {
             case (true, false) where isNew:
-                messages += await start(module, with: table)
+                messages += await start(module, with: given)
             case (true, true) where changed.contains(module.id):
-                messages += apply(table, to: module)
+                messages += apply(given, to: module)
             case (false, true):
                 await module.stop()
                 started.remove(module.id)
@@ -134,12 +135,12 @@ public final class ModuleSwitch {
     }
 
     /// Gives `module` its settings, then starts it, once it has every permission it needs.
-    private func start(_ module: any Module, with table: ConfigTable) async -> [Message] {
+    private func start(_ module: any Module, with settings: ModuleSettings) async -> [Message] {
         let missing = permissions.missing(from: module.permissions)
         guard missing.isEmpty else { return wait(module.id, for: missing) }
         waiting[module.id] = nil
         do {
-            try module.apply(table)
+            try module.apply(settings)
             try await module.start()
         } catch {
             return [.startFailed(module.id, error)]
@@ -156,9 +157,9 @@ public final class ModuleSwitch {
     }
 
     /// Gives a running module its new settings, saying so only when it couldn't take them.
-    private func apply(_ table: ConfigTable, to module: any Module) -> [Message] {
+    private func apply(_ settings: ModuleSettings, to module: any Module) -> [Message] {
         do {
-            try module.apply(table)
+            try module.apply(settings)
         } catch {
             return [.applyFailed(module.id, error)]
         }
