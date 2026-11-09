@@ -95,7 +95,7 @@ The keyboard module gives you a hyper key, swaps keys around and catches shortcu
 
 The window manager runs or raises apps from those shortcuts, hides the other apps, and fills the screen with each app's windows. The [window manager page](docs/window-manager.md) explains `window_manager.toml`.
 
-The launcher opens a popup with every app, to search and start one. The [launcher page](docs/launcher.md) explains it.
+The launcher opens a popup with every app, to search and start one. The [launcher page](docs/launcher.md) explains it. The clipboard history keeps what you copy in the same popup; the [clipboard page](docs/clipboard.md) explains it.
 
 A module that's missing a permission waits until you grant it, and `malum permissions` checks that your terminal has Full Disk Access. The [permissions page](docs/permissions.md) explains both.
 

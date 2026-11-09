@@ -6,6 +6,31 @@ Every setting `malum.toml` takes, by module. Each module's settings go in a tabl
 
 A module's settings can go in a file of their own in dots instead, next to `malum.toml` and named after the module, such as `system_config.toml`. That file holds the same settings without the table around them. `enabled` always stays in `malum.toml`, and a module's settings go in one of the two places, never both.
 
+## `clipboard`
+
+A history of what you copy, in the popup. See [clipboard history](clipboard.md).
+
+### `clipboard.enabled`
+
+Switches the module on. The module stays off until this is set to true.
+
+- Value: true or false
+- Default: `false`
+
+### `clipboard.paste`
+
+Pastes an entry into the app below when you pick it, besides putting it on the clipboard.
+
+- Value: true or false
+- Default: `true`
+
+### `clipboard.size`
+
+How many copies the history keeps, at least 1.
+
+- Value: a whole number
+- Default: `300`
+
 ## `keyboard`
 
 The hyper key, key remaps and shortcuts, set in `keyboard.toml`. See [keyboard](keyboard.md).

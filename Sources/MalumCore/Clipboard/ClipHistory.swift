@@ -18,7 +18,7 @@ public final class ClipHistory {
     /// The entries, newest first.
     public private(set) var entries: [ClipEntry] = []
     /// How many entries are kept.
-    public var limit: Int
+    public private(set) var limit: Int
 
     /// Creates an empty history in `folder` that keeps `limit` entries.
     public init(files: any FileSystem, folder: String, limit: Int, now: @escaping () -> Date = Date.init) {
@@ -57,6 +57,12 @@ public final class ClipHistory {
         entries.insert(entry, at: 0)
         try trimAndSave(saving: true)
         return true
+    }
+
+    /// Keeps `limit` entries from now on, dropping the oldest past it straight away.
+    public func resize(to limit: Int) throws(ClipHistoryError) {
+        self.limit = limit
+        try trimAndSave(saving: false)
     }
 
     /// Makes the entry with `id` the newest, after it was picked.
