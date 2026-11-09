@@ -61,7 +61,7 @@ The module's line in the [menu bar](menu-bar.md) warns, as `degraded`, about wha
 - **Secure input:** while a password field or an app such as Terminal with Secure Keyboard Entry has secure input on, macOS hands no keys to Malum, so no shortcut works. The line names the app that holds it, and goes back to `running` once it lets go.
 - **Modifier Keys:** System Settings > Keyboard > Keyboard Shortcuts > Modifier Keys can change a key on one keyboard, such as caps lock to escape. When it changes your `hyper_key`, the hyper key doesn't work on that keyboard. Set that key back to itself there.
 
-Taking away Accessibility stops the module and undoes the hyper key and the remaps, so no key is left dead. It starts again once you grant it (see [permissions](permissions.md)).
+Taking away Accessibility stops the module and undoes the hyper key and the remaps, so no key is left dead. It starts again once you grant it (see [permissions](permissions.md)). When you take it away and give it back within a few seconds, Malum notices that macOS switched off its key catching and starts it again. When the module can't catch keys or set the remaps while it runs, it shows as `failed` and undoes the hyper key and the remaps, so your hyper key types as itself until the next change to `keyboard.toml` or the next wake.
 
 ## Problems
 
