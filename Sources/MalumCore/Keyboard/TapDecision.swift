@@ -1,5 +1,5 @@
 /// What the event tap does with an event, as `KeyTap` decides it.
-enum TapDecision: Equatable, Sendable {
+public enum TapDecision: Equatable, Sendable {
     /// Let the event through as it is.
     case pass
     /// Let the event through with exactly these modifiers held.

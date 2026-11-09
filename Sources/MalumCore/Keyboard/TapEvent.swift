@@ -1,5 +1,5 @@
 /// What the event tap hands to `KeyTap`.
-enum TapEvent: Equatable, Sendable {
+public enum TapEvent: Equatable, Sendable {
     /// A key went down or up.
     case key(KeyPress)
     /// A modifier went down or up, leaving these held.
