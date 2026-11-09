@@ -9,8 +9,6 @@ struct WindowManagerConfig: Equatable, Sendable {
     static let module = "window_manager"
     /// The key of the part of the screen windows fill.
     private static let frameKey = "frame"
-    /// The key that hides the other apps on run or raise.
-    private static let hideOthersKey = "hide_others"
     /// The key that blocks cmd+H, cmd+M and cmd+option+M.
     private static let blockKey = "block_hide_minimize"
     /// The list of float rules.
@@ -30,8 +28,6 @@ struct WindowManagerConfig: Equatable, Sendable {
                 "The part of the screen windows fill: \"\(ScreenFrame.visible.rawValue)\" (below the menu bar and "
                     + "outside the Dock) or \"\(ScreenFrame.full.rawValue)\" (the whole screen).",
                 default: .string(ScreenFrame.visible.rawValue)),
-            hideOthersKey: Setting(
-                .boolean, "Hides every other app when an app is run or raised.", default: .boolean(true)),
             blockKey: Setting(
                 .boolean, "Swallows cmd+H, cmd+M and cmd+option+M, which would hide an app or minimise a window.",
                 default: .boolean(true)),
@@ -44,8 +40,6 @@ struct WindowManagerConfig: Equatable, Sendable {
 
     /// The part of the screen windows fill.
     let frame: ScreenFrame
-    /// Whether run or raise hides every other app.
-    let hidesOthers: Bool
     /// Whether cmd+H, cmd+M and cmd+option+M are swallowed.
     let blocksHideMinimize: Bool
     /// The windows left alone.
@@ -53,11 +47,10 @@ struct WindowManagerConfig: Equatable, Sendable {
 
     /// Creates a config, by default the one used when nothing is set.
     init(
-        frame: ScreenFrame = .visible, hidesOthers: Bool = true, blocksHideMinimize: Bool = true,
+        frame: ScreenFrame = .visible, blocksHideMinimize: Bool = true,
         floats: [FloatRule] = []
     ) {
         self.frame = frame
-        self.hidesOthers = hidesOthers
         self.blocksHideMinimize = blocksHideMinimize
         self.floats = floats
     }
@@ -75,7 +68,7 @@ struct WindowManagerConfig: Equatable, Sendable {
         }
         let floats = floatRules(table[floatKey], report: report)
         return Self(
-            frame: frame, hidesOthers: boolean(table[hideOthersKey]), blocksHideMinimize: boolean(table[blockKey]),
+            frame: frame, blocksHideMinimize: boolean(table[blockKey]),
             floats: floats)
     }
 

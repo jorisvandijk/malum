@@ -35,10 +35,10 @@ final class RunRaise {
         return steps
     }
 
-    /// Whether `config` has the others hidden when `app` comes to the front. Apps without a Dock icon
-    /// and apps that float as a whole hide nothing.
+    /// Whether the others are hidden when `app` comes to the front. Apps without a Dock icon and apps
+    /// that float as a whole in `config` hide nothing.
     static func hidesOthers(for app: RunningApp, config: WindowManagerConfig) -> Bool {
-        guard config.hidesOthers, app.isRegular else { return false }
+        guard app.isRegular else { return false }
         return !config.floats.contains { $0.app == app.bundleID && $0.title == nil }
     }
 

@@ -138,15 +138,6 @@ struct WindowManagerModuleTests {
         #expect(apps.calls == ["hide Finder"])
     }
 
-    @Test func hideOthersOffHidesNothing() async throws {
-        apps.running = [kitty.bundleID ?? "": kitty, finder.bundleID ?? "": finder]
-        let module = module()
-        module.apply(["hide_others": .boolean(false)])
-        try await module.start()
-        watcher.send(.activated(kitty))
-        #expect(apps.calls.isEmpty)
-    }
-
     @Test func appShortcutRunsTheApp() async throws {
         let module = module()
         try await module.start()

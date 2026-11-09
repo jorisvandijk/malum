@@ -72,10 +72,3 @@ The part of the screen windows fill: "visible" (below the menu bar and outside t
 
 - Value: text in quotes
 - Default: `"visible"`
-
-### `window_manager.hide_others`
-
-Hides every other app when an app is run or raised.
-
-- Value: true or false
-- Default: `true`

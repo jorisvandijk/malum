@@ -31,7 +31,7 @@ The [keyboard page](keyboard.md) explains the shortcuts.
 
 ## Hiding the others
 
-When an app comes to the front, in any way, every other app is hidden, so only one app is in view at a time. Apps without a Dock icon, such as menu bar apps, hide nothing, and neither does an app that floats as a whole. `hide_others = false` switches this off.
+When an app comes to the front, in any way, every other app is hidden, so only one app is in view at a time. Apps without a Dock icon, such as menu bar apps, hide nothing, and neither does an app that floats as a whole.
 
 ## Filling the screen
 
@@ -70,12 +70,10 @@ title = "^Picture-in-Picture$"
 
 ```toml
 frame = "visible"
-hide_others = true
 block_hide_minimize = true
 ```
 
 - `frame`: `"visible"` fills the screen below the menu bar and outside the Dock, and `"full"` fills the whole screen.
-- `hide_others`: hides every other app when one comes to the front.
 - `block_hide_minimize`: swallows cmd+H, cmd+M and cmd+option+M, which would hide an app or minimise a window.
 
 Every key is optional, and the values above are the defaults. The [config reference](config.md) lists them all.
