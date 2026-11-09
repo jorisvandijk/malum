@@ -63,7 +63,7 @@ public struct RunCommand {
             report(.failed(error))
             return false
         }
-        report(.systemConfigFinished(succeeded: succeeded))
+        if succeeded { report(.systemConfigDone) }
         return succeeded
     }
 

@@ -70,16 +70,18 @@ func runCommand(_ invocation: Invocation) {
 }
 
 /// Runs `malum run`, then updates Malum, installing an older release too when `force` is set,
-/// reporting as it goes, and exits once it's done.
+/// reporting as it goes with every issue numbered, and exits once it's done.
 @MainActor
 func applySystemConfig(force: Bool) -> Never {
     finishing {
+        let issues = IssueList { announce($0) }
         let github = gitHub()
         let command = RunCommand(
             files: files, paths: paths, runner: runner, github: github, state: state,
             canAsk: isatty(STDIN_FILENO) == 1, handlers: WorkspaceAppHandlers())
-        let applied = await command.run { announce($0) }
-        let updated = await selfUpdate(github: github).run(force: force) { announce($0) }
+        let applied = await command.run { issues.add($0) }
+        let updated = await selfUpdate(github: github).run(force: force) { issues.add($0) }
+        issues.finish()
         return applied && updated
     }
 }

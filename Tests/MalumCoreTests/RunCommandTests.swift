@@ -63,7 +63,6 @@ struct RunCommandTests {
                 Message(.error, "couldn't install packages: fix \(packages) first"),
                 Message(.info, "no app config files to write: /Users/test/dots/apps doesn't exist"),
                 Message(.info, "no macOS settings to set: /Users/test/dots/macos.toml doesn't exist"),
-                Message(.error, "system_config finished with errors"),
             ])
         #expect(runner.commands.isEmpty)
     }
@@ -96,13 +95,15 @@ struct RunCommandTests {
         #expect(messages == [Message(.error, "couldn't load \(file): it doesn't exist")])
     }
 
-    @Test func failedInstallEndsWithAnError() async {
+    @Test func failedInstallIsReportedAndTheRunGoesOn() async {
         let runner = FakeRunner { command in
             CommandResult(status: command.arguments.first == "install" ? 1 : 0, errors: "Error: nope\n")
         }
         let (succeeded, messages) = await run(switchedOn, packages: "[homebrew]\nkitty = \"cask\"\n", runner: runner)
         #expect(!succeeded)
-        #expect(messages.last == Message(.error, "system_config finished with errors"))
+        #expect(messages.contains(Message(.error, "couldn't install Homebrew cask kitty: Error: nope")))
+        #expect(
+            messages.last == Message(.info, "no macOS settings to set: /Users/test/dots/macos.toml doesn't exist"))
     }
 
     @Test func appStoreAppsInstallAfterHomebrew() async {
@@ -128,7 +129,6 @@ struct RunCommandTests {
                 ),
                 Message(.info, "no app config files to write: /Users/test/dots/apps doesn't exist"),
                 Message(.info, "no macOS settings to set: /Users/test/dots/macos.toml doesn't exist"),
-                Message(.error, "system_config finished with errors"),
             ])
     }
 
