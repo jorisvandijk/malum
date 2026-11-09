@@ -3,7 +3,8 @@ name: attribution
 # Fails when a commit, the pull request text, the branch name, a file path or a changed line
 # names an AI tool, or when a commit is authored by anyone else. Runs on every change, docs
 # included, because it takes seconds. This file is the only path it skips, since it has to
-# spell out the words it looks for.
+# spell out the words it looks for. The pull request text is read from the API, not the event,
+# and checked again for up to two minutes, so a footer removed right after opening does not fail.
 on:
   pull_request:
     types: [opened, edited, reopened, synchronize]
@@ -12,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: attribution-${{ github.event.pull_request.number || github.ref }}
@@ -20,15 +22,17 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-24.04
-    timeout-minutes: 3
+    timeout-minutes: 5
     env:
       WORDS: "claude|anthropic"
       GENERATED: "generated with"
       AUTHOR: "Joris van Dijk <joris@jorisvandijk.com>"
       SELF: ".github/workflows/attribution.yml"
       EVENT: ${{ github.event_name }}
-      PR_TITLE: ${{ github.event.pull_request.title }}
-      PR_BODY: ${{ github.event.pull_request.body }}
+      GH_TOKEN: ${{ github.token }}
+      PR_API: repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}
+      PR_TRIES: 9
+      PR_WAIT: 15
       PR_BRANCH: ${{ github.event.pull_request.head.ref }}
       PR_BASE: ${{ github.event.pull_request.base.sha }}
       PR_HEAD: ${{ github.event.pull_request.head.sha }}
@@ -55,8 +59,20 @@ jobs:
             head="$PR_HEAD"
             base="$(git merge-base "$PR_BASE" "$PR_HEAD")"
             commits="$(git rev-list "$PR_BASE..$PR_HEAD")"
-            printf '%s\n%s\n' "$PR_TITLE" "$PR_BODY" | has_word && fail "the pull request title or description names an AI tool"
-            printf '%s\n' "$PR_BODY" | has_generated && fail "the pull request description says \"Generated with\""
+            try=1
+            while :; do
+              pr="$(gh api "$PR_API")"
+              title="$(printf '%s' "$pr" | jq -r '.title')"
+              body="$(printf '%s' "$pr" | jq -r '.body // ""')"
+              text_problem=""
+              printf '%s\n%s\n' "$title" "$body" | has_word && text_problem="the pull request title or description names an AI tool"
+              printf '%s\n' "$body" | has_generated && text_problem="the pull request description says \"Generated with\""
+              [ -n "$text_problem" ] && [ "$try" -lt "$PR_TRIES" ] || break
+              echo "[info] pull request text not clean yet, checking again in ${PR_WAIT}s ($try/$PR_TRIES)"
+              try=$((try + 1))
+              sleep "$PR_WAIT"
+            done
+            [ -z "$text_problem" ] || fail "$text_problem"
           else
             branch="$PUSH_BRANCH"
             head="$PUSH_AFTER"
