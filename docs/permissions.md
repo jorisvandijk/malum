@@ -6,7 +6,7 @@ macOS asks before an app watches the keyboard, controls other apps or reads othe
 
 Each module needs its own permissions. A module that's switched on but missing one doesn't start. Its line in the [menu bar](menu-bar.md) says `needs` with the permissions it's missing, and an item under it for each one opens the page in System Settings where you grant it. For Accessibility, Input Monitoring and Screen Recording, picking the item also adds Malum to the list on that page, so you only have to switch it on. For the others, add `~/Applications/Malum.app` with the **+** button.
 
-Malum checks every 2 seconds while a module waits, and starts it as soon as its permissions are granted, without a restart. The log says when a module waits and when it starts.
+Malum checks every 2 seconds while a module runs or waits. A module that waits starts as soon as its permissions are granted, without a restart. A running module that loses a permission, such as when you switch Malum off in System Settings, stops, undoes what it changed, and waits for it again. The log says when a module stops, waits and starts.
 
 macOS has no way to tell whether an app has App Management, Automation, Local Network or Network Volumes. A module that needs one of those starts anyway, and says so itself when macOS refuses.
 

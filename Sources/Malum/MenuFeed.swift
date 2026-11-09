@@ -53,7 +53,9 @@ final class MenuFeed {
             config.change { store throws(StateError) in try store.leaveSafeMode() }
         case .enable(let module):
             config.change { store throws(StateError) in try store.enable(module) }
-        case .openFile, .showFolder, .openSettings, .quit:
+        case .quit:
+            stopAndQuit(config)
+        case .openFile, .showFolder, .openSettings:
             break  // MenuBar does these itself.
         }
     }

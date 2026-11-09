@@ -8,8 +8,8 @@ public enum Modules {
     /// Builds every module, in the order they're started, with what they need from the app. Building
     /// one starts nothing.
     public static func all(
-        files: any FileSystem, paths: Paths, remapper: KeyRemapper, keyCatcher: any KeyCatcher, log: Log
+        files: any FileSystem, paths: Paths, keyboard: KeyboardSystem, log: Log
     ) -> [any Module] {
-        [KeyboardModule(files: files, paths: paths, remapper: remapper, keyCatcher: keyCatcher, log: log)]
+        [KeyboardModule(files: files, paths: paths, system: keyboard, log: log)]
     }
 }

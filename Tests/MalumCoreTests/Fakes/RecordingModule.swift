@@ -53,4 +53,13 @@ final class RecordingModule: Module {
         calls.append("stop")
         status = .off
     }
+
+    func check() {
+        calls.append("check")
+    }
+
+    func resume() async {
+        await Task.yield()
+        calls.append("resume")
+    }
 }

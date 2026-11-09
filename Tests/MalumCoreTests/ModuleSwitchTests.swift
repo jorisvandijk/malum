@@ -119,9 +119,9 @@ struct ModuleSwitchTests {
         let permissions = FakePermissions([.accessibility: .missing])
         let modules = moduleSwitch(permissions)
         _ = await modules.update(enabled: ["keyboard"], settings: ["keyboard": ["size": .integer(3)]], changed: [])
-        #expect(await modules.retryWaiting().isEmpty)
+        #expect(await modules.recheck().isEmpty)
         permissions.set(.accessibility, .granted)
-        #expect(await modules.retryWaiting() == [Message(.info, "started keyboard")])
+        #expect(await modules.recheck() == [Message(.info, "started keyboard")])
         #expect(keyboard.calls == ["apply size=3", "start"])
         #expect(modules.waiting.isEmpty)
     }
@@ -132,7 +132,7 @@ struct ModuleSwitchTests {
         _ = await modules.update(enabled: ["keyboard"], settings: [:], changed: [])
         #expect(await modules.update(enabled: ["keyboard"], settings: [:], changed: ["keyboard"]).isEmpty)
         permissions.set(.inputMonitoring, .granted)
-        let messages = await modules.retryWaiting()
+        let messages = await modules.recheck()
         #expect(messages == [Message(.warn, "couldn't start keyboard yet: it needs Accessibility")])
         #expect(modules.waiting == ["keyboard": [.accessibility]])
     }
@@ -143,5 +143,37 @@ struct ModuleSwitchTests {
         #expect(await modules.update(enabled: [], settings: [:], changed: []).isEmpty)
         #expect(modules.waiting.isEmpty)
         #expect(keyboard.calls.isEmpty)
+    }
+
+    @Test func recheckHasRunningModulesCheck() async {
+        let modules = moduleSwitch()
+        _ = await modules.update(enabled: ["launcher"], settings: [:], changed: [])
+        #expect(await modules.recheck().isEmpty)
+        #expect(launcher.calls == ["apply ", "start", "check"])
+    }
+
+    @Test func runningModuleThatLosesAPermissionStopsAndWaitsForIt() async {
+        let permissions = FakePermissions()
+        let modules = moduleSwitch(permissions)
+        _ = await modules.update(enabled: ["keyboard"], settings: [:], changed: [])
+        permissions.set(.accessibility, .missing)
+        #expect(
+            await modules.recheck() == [
+                Message(.info, "stopped keyboard"),
+                Message(.warn, "couldn't start keyboard yet: it needs Accessibility"),
+            ])
+        #expect(modules.started.isEmpty)
+        #expect(modules.waiting == ["keyboard": [.accessibility]])
+        permissions.set(.accessibility, .granted)
+        #expect(await modules.recheck() == [Message(.info, "started keyboard")])
+        #expect(keyboard.calls == ["apply ", "start", "stop", "apply ", "start"])
+    }
+
+    @Test func resumeReachesOnlyRunningModules() async {
+        let modules = moduleSwitch()
+        _ = await modules.update(enabled: ["launcher"], settings: [:], changed: [])
+        #expect(await modules.resume() == [Message(.info, "set up launcher again")])
+        #expect(launcher.calls == ["apply ", "start", "resume"])
+        #expect(screenshots.calls.isEmpty)
     }
 }

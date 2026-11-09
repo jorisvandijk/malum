@@ -6,7 +6,8 @@ import MalumPlatform
 /// Each load switches the modules on and off and hands them their new settings.
 @MainActor
 final class LiveConfig {
-    /// How long to wait between checks for permissions granted in System Settings, which doesn't say when.
+    /// How long to wait between checks for permissions granted or taken away in System Settings, and
+    /// for what else macOS doesn't announce.
     private static let recheckSeconds = 2
 
     /// Reads and checks the file.
@@ -23,7 +24,7 @@ final class LiveConfig {
     private(set) var report: ConfigReport?
     /// Whether modules may run, which they may only once Malum is signed with its own certificate.
     private var modulesAllowed = false
-    /// Checks again and again for the permissions waiting modules need, while any module waits.
+    /// Checks the modules again and again, while any module runs or waits.
     private var recheck: Task<Void, Never>?
     /// Runs after each load, and again once the modules have been switched.
     var onUpdate: @MainActor () -> Void = {}
@@ -79,35 +80,55 @@ final class LiveConfig {
             let messages = await self.modules.update(enabled: enabled, settings: settings, changed: report.changed)
             messages.forEach(announce)
             self.onUpdate()
-            self.watchPermissions()
+            self.watchModules()
         }
+    }
+
+    /// Has the running modules set up again what macOS may have dropped.
+    func resume() {
+        Task { [weak self] in
+            guard let self else { return }
+            await self.modules.resume().forEach(announce)
+        }
+    }
+
+    /// Stops every module and keeps them off from now on, for quitting.
+    func stopModules() async {
+        modulesAllowed = false
+        recheck?.cancel()
+        let messages = await modules.update(enabled: [], settings: reloader.settings, changed: [])
+        messages.forEach(announce)
     }
 
     /// The switched-on modules that wait for permissions, with the ones they're missing.
     var waiting: [String: Set<Permission>] { modules.waiting }
 
-    /// Starts checking for granted permissions while a module waits for them, unless that runs already.
-    private func watchPermissions() {
-        guard !modules.waiting.isEmpty, recheck == nil else { return }
+    /// Whether a module runs or waits, so the modules need checking.
+    private var hasModulesToCheck: Bool { !modules.started.isEmpty || !modules.waiting.isEmpty }
+
+    /// Starts checking the modules while one runs or waits, unless that runs already.
+    private func watchModules() {
+        guard hasModulesToCheck, recheck == nil else { return }
         recheck = Task { [weak self] in
-            while await self?.recheckPermissions() == true {}
+            while await self?.recheckModules() == true {}
         }
     }
 
-    /// Waits a moment, starts the modules whose permissions were granted, and says whether to keep checking.
-    private func recheckPermissions() async -> Bool {
+    /// Waits a moment, has the modules check their permissions and what else macOS doesn't announce,
+    /// and says whether to keep checking.
+    private func recheckModules() async -> Bool {
         do {
             try await Task.sleep(for: .seconds(Self.recheckSeconds))
         } catch {
             recheck = nil
             return false
         }
-        let messages = await modules.retryWaiting()
+        let messages = await modules.recheck()
         messages.forEach(announce)
         if !messages.isEmpty {
             onUpdate()
         }
-        guard !modules.waiting.isEmpty else {
+        guard hasModulesToCheck else {
             recheck = nil
             return false
         }

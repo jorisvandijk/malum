@@ -23,7 +23,9 @@ func runApp() -> Never {
     let launches = LaunchRecord(state: state)
     checkCrashLoop(launches, overrides: OverrideStore(state: state))
     let modules = Modules.all(
-        files: files, paths: paths, remapper: KeyRemapper(runner: runner, state: state), keyCatcher: EventTap(),
+        files: files, paths: paths,
+        keyboard: KeyboardSystem(
+            remapper: KeyRemapper(runner: runner, state: state), keyCatcher: EventTap(), state: SystemKeyboardState()),
         log: systemLog)
     let config = LiveConfig(
         reloader: ConfigReloader(files: files, paths: paths, schemas: ConfigSchemas.all),
@@ -32,14 +34,26 @@ func runApp() -> Never {
     let menu = MenuFeed(modules: modules, config: config)
     config.start()
     Task { await startWhenSigned(config: config, menu: menu) }
-    let hangup = HangupWatcher { config.reload(force: true) }
+    let hangup = SignalWatcher(SIGHUP) { config.reload(force: true) }
+    let terminate = SignalWatcher(SIGTERM) { stopAndQuit(config) }
+    let keyboards = KeyboardChangeWatcher { config.resume() }
     let quit = NotificationCenter.default.addObserver(
         forName: NSApplication.willTerminateNotification, object: nil, queue: .main
     ) { _ in MainActor.assumeIsolated { forget(launches) } }
     let app = NSApplication.shared
     app.setActivationPolicy(.accessory)
-    withExtendedLifetime((menu, config, hangup, quit)) { app.run() }
+    withExtendedLifetime((menu, config, hangup, terminate, keyboards, quit)) { app.run() }
     exit(EXIT_SUCCESS)
+}
+
+/// Stops every module, so what they changed system-wide is undone, then quits. The modules stop
+/// before AppKit is asked to quit, since AppKit waits for an answer on the main thread they stop on.
+@MainActor
+func stopAndQuit(_ config: LiveConfig) {
+    Task {
+        await config.stopModules()
+        NSApplication.shared.terminate(nil)
+    }
 }
 
 /// Lets the modules start once the installed app is signed with Malum's own certificate. A new

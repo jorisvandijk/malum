@@ -30,6 +30,8 @@ final class KeyboardModule: Module {
     @ObservationIgnored private let remapper: KeyRemapper
     /// Catches the keys.
     @ObservationIgnored private let keyCatcher: any KeyCatcher
+    /// Tells what keeps keys from reaching the tap, such as secure input.
+    @ObservationIgnored private let state: any KeyboardState
     /// The module's own log.
     @ObservationIgnored private let log: Log
     /// The settings last read without errors.
@@ -42,12 +44,14 @@ final class KeyboardModule: Module {
     /// New settings being put to work, which `stop` waits for.
     @ObservationIgnored private var restart: Task<Void, Never>?
 
-    /// Creates the module, off, reading `keyboard.toml` through `files` and logging to `log`.
-    init(files: any FileSystem, paths: Paths, remapper: KeyRemapper, keyCatcher: any KeyCatcher, log: Log) {
+    /// Creates the module, off, reading `keyboard.toml` through `files`, working through `system` and
+    /// logging to `log`.
+    init(files: any FileSystem, paths: Paths, system: KeyboardSystem, log: Log) {
         self.files = files
         self.paths = paths
-        self.remapper = remapper
-        self.keyCatcher = keyCatcher
+        remapper = system.remapper
+        keyCatcher = system.keyCatcher
+        state = system.state
         self.log = log.module(KeyboardConfig.module)
     }
 
@@ -99,6 +103,19 @@ final class KeyboardModule: Module {
         status = .off
     }
 
+    /// Shows in the status what keeps keys from working now, such as secure input.
+    func check() {
+        guard isStarted, status.isActive else { return }
+        showStatus()
+    }
+
+    /// Starts the tap again and sets the remaps again, which a keyboard plugged in doesn't have yet.
+    func resume() async {
+        await restart?.value
+        guard isStarted else { return }
+        await restartTap()
+    }
+
     /// Starts the tap with the current settings, then sets the remaps. The tap goes first, so a
     /// refused tap never leaves the hyper key typing as a key nothing catches.
     private func catchKeys() async throws {
@@ -112,7 +129,27 @@ final class KeyboardModule: Module {
             keyCatcher.stop()
             throw error
         }
-        status = registry.problems.first.map { .degraded(reason: $0.message.text.description) } ?? .running
+        showStatus()
+    }
+
+    /// Shows what keeps keys from working, worst first: secure input, a Modifier Keys swap of the hyper
+    /// key, then the first problem in the bindings.
+    private func showStatus() {
+        let reason = blocker ?? registry.problems.first?.message.text
+        let shown = reason.map { ModuleStatus.degraded(reason: $0.description) } ?? .running
+        guard shown != status else { return }
+        status = shown
+    }
+
+    /// What keeps keys from reaching Malum now, or nil when nothing does.
+    private var blocker: MessageText? {
+        if case .on(let app) = state.secureInput {
+            return .secureInput(in: app)
+        }
+        guard let hyperKey = config.hyperKey, KeyMapping.isSwapped(hyperKey, in: state.modifierSwaps) else {
+            return nil
+        }
+        return .hyperKeySwapped(hyperKey)
     }
 
     /// Puts new settings to work while the module runs.

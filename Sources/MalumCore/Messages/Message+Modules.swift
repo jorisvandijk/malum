@@ -10,6 +10,11 @@ extension Message {
         Message(.info, "stopped \(module)")
     }
 
+    /// `module` set up again what macOS may have dropped, such as after the Mac woke.
+    static func resumed(_ module: String) -> Message {
+        Message(.info, "set up \(module) again")
+    }
+
     /// Starting `module` failed.
     static func startFailed(_ module: String, _ error: any Error) -> Message {
         failed("start \(module)", error)

@@ -11,13 +11,13 @@ public final class MenuBar: NSObject {
 
     /// The icon and its menu.
     private let item: NSStatusItem
-    /// What to do with the items the app handles: reloading and changing the overrides.
+    /// What to do with the items the app handles: reloading, changing the overrides and quitting.
     private let onPick: @MainActor (MenuFix) -> Void
     /// What each item that can be picked does, by the item's tag.
     private var fixes: [MenuFix] = []
 
     /// Puts the icon in the menu bar. `onPick` runs when the user picks an item the app handles:
-    /// reload, leave safe mode, or enable a module.
+    /// reload, leave safe mode, enable a module, or quit.
     public init(onPick: @escaping @MainActor (MenuFix) -> Void) {
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         self.onPick = onPick
@@ -70,10 +70,8 @@ public final class MenuBar: NSObject {
         case .openSettings(let permission):
             PermissionProbe.request(permission)
             PrivacySettings.open(permission)
-        case .reload, .leaveSafeMode, .enable:
+        case .reload, .leaveSafeMode, .enable, .quit:
             onPick(fix)
-        case .quit:
-            NSApplication.shared.terminate(nil)
         }
     }
 

@@ -48,6 +48,15 @@ struct KeyMapping: Equatable, Sendable {
         return #"{"\#(Self.property)":[\#(items.joined(separator: ","))]}"#
     }
 
+    /// Whether one of `swaps`, set per keyboard in System Settings, turns `key` into another key. macOS
+    /// applies those before Malum's mapping, so on that keyboard `key` never types as Malum's.
+    static func isSwapped(_ key: Key, in swaps: [[String: UInt64]]) -> Bool {
+        swaps.contains { swap in
+            guard let source = swap[sourceName], let destination = swap[destinationName] else { return false }
+            return key.hidUsages.contains(source) && source != destination
+        }
+    }
+
     /// The entries of `remap`: every usage the pressed key is sent as, typing as the first usage of
     /// the other.
     private static func entries(_ remap: KeyRemap) -> [Entry] {

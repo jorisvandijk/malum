@@ -9,6 +9,7 @@ struct KeyboardModuleTests {
     private let files = FakeFileSystem()
     private let runner = FakeRunner()
     private let catcher = FakeKeyCatcher()
+    private let keyboardState = FakeKeyboardState()
     private let dots = "/dots"
     private var marker: String { "\(paths.stateDirectory)/\(KeyRemapper.markerName)" }
 
@@ -20,8 +21,11 @@ struct KeyboardModuleTests {
         }
         let state = StateFolder(files: files, locks: FakeFileLocks(), paths: paths)
         return KeyboardModule(
-            files: files, paths: paths, remapper: KeyRemapper(runner: runner ?? self.runner, state: state),
-            keyCatcher: catcher, log: Log(writer: RecordingLogWriter()))
+            files: files, paths: paths,
+            system: KeyboardSystem(
+                remapper: KeyRemapper(runner: runner ?? self.runner, state: state), keyCatcher: catcher,
+                state: keyboardState),
+            log: Log(writer: RecordingLogWriter()))
     }
 
     /// The mapping `text` asks for.
@@ -111,5 +115,57 @@ struct KeyboardModuleTests {
         try files.write("{}", to: marker)
         try await keyboard.cleanUp()
         #expect(runner.commands == [Hidutil.set(.none)])
+    }
+
+    @Test func secureInputShowsWithTheAppThatHoldsIt() async throws {
+        let keyboard = try module("hyper_key = \"caps_lock\"\n")
+        try keyboard.apply([:])
+        try await keyboard.start()
+        keyboardState.secureInput = .on(app: "Terminal")
+        keyboard.check()
+        #expect(keyboard.status == .degraded(reason: MessageText.secureInput(in: "Terminal").description))
+        keyboardState.secureInput = .off
+        keyboard.check()
+        #expect(keyboard.status == .running)
+    }
+
+    @Test func modifierKeysSwapOfTheHyperKeyWarns() async throws {
+        let keyboard = try module("hyper_key = \"caps_lock\"\n")
+        let caps = try #require(Key.named("caps_lock"))
+        let escape = try #require(Key.named("escape"))
+        keyboardState.modifierSwaps = [
+            [
+                "HIDKeyboardModifierMappingSrc": try #require(caps.hidUsages.first),
+                "HIDKeyboardModifierMappingDst": try #require(escape.hidUsages.first),
+            ]
+        ]
+        try keyboard.apply([:])
+        try await keyboard.start()
+        #expect(keyboard.status == .degraded(reason: MessageText.hyperKeySwapped(caps).description))
+    }
+
+    @Test func checkLeavesAStoppedModuleOff() async throws {
+        let keyboard = try module(nil)
+        keyboardState.secureInput = .on(app: nil)
+        keyboard.check()
+        #expect(keyboard.status == .off)
+    }
+
+    @Test func resumeStartsTheTapAndSetsTheRemapsAgain() async throws {
+        let text = "hyper_key = \"caps_lock\"\n"
+        let keyboard = try module(text)
+        try keyboard.apply([:])
+        try await keyboard.start()
+        await keyboard.resume()
+        #expect(catcher.starts == 2)
+        #expect(runner.commands == [Hidutil.set(try mapping(text)), Hidutil.set(try mapping(text))])
+        #expect(keyboard.status == .running)
+    }
+
+    @Test func resumeLeavesAStoppedModuleAlone() async throws {
+        let keyboard = try module("hyper_key = \"caps_lock\"\n")
+        await keyboard.resume()
+        #expect(catcher.starts == 0)
+        #expect(runner.commands.isEmpty)
     }
 }
