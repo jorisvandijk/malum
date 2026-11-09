@@ -44,7 +44,7 @@ extension Message {
         Message(.info, "unmounted \(private: path), its share is no longer in \(sambaFile)")
     }
 
-    /// `umount` couldn't take the share off `path`, for `reason`.
+    /// `diskutil` couldn't take the share off `path`, for `reason`.
     static func couldntUnmount(_ path: String, _ reason: String) -> Message {
         couldnt("unmount \(private: path)", MessageText(reason))
     }

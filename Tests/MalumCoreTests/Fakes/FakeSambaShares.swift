@@ -30,7 +30,7 @@ final class FakeSambaShares: SambaShares {
         mounted.withLock { list in mount.map { list.append($0) } }
     }
 
-    /// Takes the mount at `path` away, as `umount` does.
+    /// Takes the mount at `path` away, as `diskutil` does.
     func remove(_ path: String) {
         mounted.withLock { $0.removeAll { $0.path == path } }
     }

@@ -128,7 +128,7 @@ final class SambaModule: Module {
         for (server, share) in gone {
             states[Self.key(share, on: server)] = nil
             guard let mount = mounts.first(where: { $0.isShare(share, on: server) }) else { continue }
-            let result = await system.runner.run(Umount.force(mount.path))
+            let result = await system.runner.run(Diskutil.forceUnmount(mount.path))
             log.report(result.succeeded ? .unmountedDropped(mount.path) : .couldntUnmount(mount.path, result.reason))
         }
     }
@@ -154,7 +154,7 @@ final class SambaModule: Module {
     {
         if let mounted {
             guard !reachable else { return .mounted(path: mounted.path) }
-            let result = await system.runner.run(Umount.force(mounted.path))
+            let result = await system.runner.run(Diskutil.forceUnmount(mounted.path))
             guard result.succeeded else { return .stuck(path: mounted.path, reason: result.reason) }
             return .unmounted(path: mounted.path)
         }

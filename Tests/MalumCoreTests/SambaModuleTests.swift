@@ -18,7 +18,7 @@ struct SambaModuleTests {
         "shares": .array([.string("media"), .string("backup")]),
     ])
 
-    /// A runner whose `umount` takes the mount away.
+    /// A runner whose `diskutil` takes the mount away.
     private var runner: FakeRunner {
         FakeRunner { [shares] command in
             command.arguments.last.map(shares.remove)
@@ -86,7 +86,7 @@ struct SambaModuleTests {
         shares.reachable.withLock { $0 = [] }
         network.change()
         await module.work?.value
-        #expect(runner.commands == [Umount.force("/Volumes/media"), Umount.force("/Volumes/backup")])
+        #expect(runner.commands == [Diskutil.forceUnmount("/Volumes/media"), Diskutil.forceUnmount("/Volumes/backup")])
         #expect(logged.last == "nas/backup: unmounted /Volumes/backup, nas.local stopped answering")
         #expect(shares.mounts().isEmpty)
     }
@@ -112,7 +112,7 @@ struct SambaModuleTests {
         ])
         module.apply(["server": .array([mediaOnly])])
         await module.work?.value
-        #expect(runner.commands == [Umount.force("/Volumes/backup")])
+        #expect(runner.commands == [Diskutil.forceUnmount("/Volumes/backup")])
         #expect(logged.contains("unmounted /Volumes/backup, its share is no longer in samba.toml"))
         #expect(shares.mounts().map(\.share) == ["media"])
     }

@@ -5,7 +5,7 @@ public struct SambaSystem {
     let shares: any SambaShares
     /// Says when the network changes.
     let network: any NetworkWatch
-    /// Runs `umount`.
+    /// Runs `diskutil`, to unmount.
     let runner: any CommandRunner
     /// The disk, to see whether a share's folder in `/Volumes` is taken.
     let files: any FileSystem

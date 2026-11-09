@@ -14,7 +14,7 @@ enum ShareState: Equatable, Sendable {
     case unreadablePassword(TokenStoreError)
     /// macOS didn't mount it.
     case failed(SambaMountError)
-    /// Its server stopped answering, and `umount` couldn't take it off `path`.
+    /// Its server stopped answering, and `diskutil` couldn't take it off `path`.
     case stuck(path: String, reason: String)
 
     /// Whether it needs the user, which the menu bar shows.
