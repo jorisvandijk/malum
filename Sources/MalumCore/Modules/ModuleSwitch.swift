@@ -6,6 +6,8 @@ public final class ModuleSwitch {
     private let modules: [any Module]
     /// Tells which permissions Malum has.
     private let permissions: any PermissionCheck
+    /// Where shortcuts go, told which modules are switched on.
+    private let routes: ModuleRoutes
     /// The modules that started and haven't been stopped since.
     public private(set) var started: Set<String> = []
     /// The modules the last update switched on, so a module that failed to start is tried again
@@ -18,10 +20,13 @@ public final class ModuleSwitch {
     /// The update still running, so the next one waits for it.
     private var current: Task<[Message], Never>?
 
-    /// Creates a switch for `modules`, with every module off, that checks their permissions with `permissions`.
-    public init(modules: [any Module], permissions: any PermissionCheck) {
+    /// Creates a switch for `modules`, with every module off, that checks their permissions with
+    /// `permissions` and keeps `routes` up to date.
+    public init(modules: [any Module], permissions: any PermissionCheck, routes: ModuleRoutes) {
         self.modules = modules
         self.permissions = permissions
+        self.routes = routes
+        routes.add(modules)
     }
 
     /// Has every module undo what an earlier run may have left behind, and says what failed. Runs in
@@ -110,6 +115,12 @@ public final class ModuleSwitch {
     private func run(enabled: Set<String>, settings: [String: ModuleSettings], changed: Set<String>) async -> [Message]
     {
         lastSettings = settings
+        if routes.switchOn(enabled) {
+            // A module being switched off now is stopped below, so only the ones that stay on hear it.
+            for module in modules where started.contains(module.id) && enabled.contains(module.id) {
+                module.modulesSwitched()
+            }
+        }
         var messages: [Message] = []
         for module in modules {
             let given = settings[module.id] ?? ModuleSettings()

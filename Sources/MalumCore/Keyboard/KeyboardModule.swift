@@ -29,10 +29,14 @@ final class KeyboardModule: Module {
     @ObservationIgnored private let keyCatcher: any KeyCatcher
     /// Tells what keeps keys from reaching the tap, such as secure input.
     @ObservationIgnored private let state: any KeyboardState
+    /// The other modules' offers, and where caught shortcuts go.
+    @ObservationIgnored private let routes: ModuleRoutes
     /// The module's own log.
     @ObservationIgnored private let log: Log
     /// The settings last read without errors.
     @ObservationIgnored private var config = KeyboardConfig()
+    /// The lines of `keyboard.toml` that `config` was read from, for the registry's problems.
+    @ObservationIgnored private var lines = TOMLLines("")
     /// Where the shortcuts of `config` go.
     @ObservationIgnored private var registry = HotkeyRegistry(
         bindings: [], offers: [:], switchedOn: [], lines: TOMLLines(""))
@@ -40,9 +44,13 @@ final class KeyboardModule: Module {
     @ObservationIgnored private var isStarted = false
     /// The last restart asked for. Each one waits for the one before it, so `stop` waits for them all.
     @ObservationIgnored private var restart: Task<Void, Never>?
+    /// Hands the shortcuts the running tap catches to `routes`.
+    @ObservationIgnored private var listener: Task<Void, Never>?
 
-    /// Creates the module, off, working through `system` and logging to `log`.
-    init(system: KeyboardSystem, log: Log) {
+    /// Creates the module, off, working through `system`, sending shortcuts through `routes` and
+    /// logging to `log`.
+    init(system: KeyboardSystem, routes: ModuleRoutes, log: Log) {
+        self.routes = routes
         remapper = system.remapper
         keyCatcher = system.keyCatcher
         state = system.state
@@ -59,15 +67,14 @@ final class KeyboardModule: Module {
     func apply(_ settings: ModuleSettings) {
         let text = settings.file ?? ""
         // The config only hands over text that reads without errors, so this never falls back.
-        let config = KeyboardConfig.read(text).config ?? KeyboardConfig()
-        self.config = config
-        // TODO: every module's offer and which are on, once a module offers actions (the window manager).
-        registry = HotkeyRegistry(bindings: config.bindings, offers: [:], switchedOn: [], lines: TOMLLines(text))
-        for problem in registry.problems {
-            log.report(problem.message)
-        }
-        guard isStarted else { return }
-        queueRestart()
+        config = KeyboardConfig.read(text).config ?? KeyboardConfig()
+        lines = TOMLLines(text)
+        register()
+    }
+
+    /// Sends the shortcuts to the modules that are switched on now.
+    func modulesSwitched() {
+        register()
     }
 
     /// Catches keys, then sets the hyper key and the remaps.
@@ -92,6 +99,8 @@ final class KeyboardModule: Module {
         }
         isStarted = false
         keyCatcher.stop()
+        listener?.cancel()
+        listener = nil
         await clearRemaps()
         status = .off
     }
@@ -119,10 +128,11 @@ final class KeyboardModule: Module {
     /// Starts the tap with the current settings, then sets the remaps. The tap goes first, so a
     /// refused tap never leaves the hyper key typing as a key nothing catches.
     private func catchKeys() async throws {
-        // TODO: run the shortcuts that come out on the session's actions, once a module offers actions.
-        guard keyCatcher.start(TapSession(registry: registry, hyperKey: config.hyperKey)) else {
+        let session = TapSession(registry: registry, hyperKey: config.hyperKey)
+        guard keyCatcher.start(session) else {
             throw KeyboardError.tapRefused
         }
+        listen(to: session)
         do {
             try await remapper.apply(KeyMapping(config))
         } catch {
@@ -150,6 +160,28 @@ final class KeyboardModule: Module {
             return nil
         }
         return .hyperKeySwapped(hyperKey)
+    }
+
+    /// Builds the registry from the settings and the other modules' offers, logs its problems, and
+    /// puts it to work when the module runs.
+    private func register() {
+        registry = HotkeyRegistry(
+            bindings: config.bindings, offers: routes.offers, switchedOn: routes.switchedOn, lines: lines)
+        for problem in registry.problems {
+            log.report(problem.message)
+        }
+        guard isStarted else { return }
+        queueRestart()
+    }
+
+    /// Hands every shortcut `session` catches to the module that handles it, until the session ends.
+    private func listen(to session: TapSession) {
+        listener?.cancel()
+        listener = Task { [weak self] in
+            for await target in session.actions {
+                self?.routes.run(target)
+            }
+        }
     }
 
     /// Restarts the tap once the restart before it has finished.

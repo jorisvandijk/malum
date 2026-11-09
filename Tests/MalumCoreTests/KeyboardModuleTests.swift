@@ -10,6 +10,10 @@ struct KeyboardModuleTests {
     private let runner = FakeRunner()
     private let catcher = FakeKeyCatcher()
     private let keyboardState = FakeKeyboardState()
+    private let routes = ModuleRoutes()
+    private let launcher = RecordingModule(id: "launcher")
+    /// caps lock as the hyper key, and the launcher on hyper+space.
+    private let launcherKey = "hyper_key = \"caps_lock\"\n\n[hyper]\nspace = \"launcher\"\n"
     private var marker: String { "\(paths.stateDirectory)/\(KeyRemapper.markerName)" }
 
     /// The module, off, running its commands through `runner`.
@@ -19,7 +23,7 @@ struct KeyboardModuleTests {
             system: KeyboardSystem(
                 remapper: KeyRemapper(runner: runner ?? self.runner, state: state), keyCatcher: catcher,
                 state: keyboardState),
-            log: Log(writer: RecordingLogWriter()))
+            routes: routes, log: Log(writer: RecordingLogWriter()))
     }
 
     /// Settings with `text` as the checked `keyboard.toml`, or no file when it's nil.
@@ -226,5 +230,44 @@ struct KeyboardModuleTests {
         await keyboard.resume()
         #expect(catcher.starts == 0)
         #expect(runner.commands.isEmpty)
+    }
+
+    /// Lets the launcher offer its action to the routes, switched on when `on` is set.
+    private func offerLauncher(on: Bool) {
+        launcher.hotkeys = HotkeyOffer(actions: ["launcher"])
+        routes.add([launcher])
+        _ = routes.switchOn(on ? ["launcher"] : [])
+    }
+
+    @Test func caughtShortcutRunsOnTheModuleThatOffersIt() async throws {
+        offerLauncher(on: true)
+        try await launcher.start()
+        let keyboard = module()
+        keyboard.apply(settings(launcherKey))
+        try await keyboard.start()
+        let session = try #require(catcher.session)
+        let space = try #require(Key.named("space"))
+        _ = session.decide(
+            .key(KeyPress(keyCode: KeyMapping.hyperTarget.keyCode, isDown: true, isRepeat: false, modifiers: [])))
+        _ = session.decide(.key(KeyPress(keyCode: space.keyCode, isDown: true, isRepeat: false, modifiers: [])))
+        while launcher.calls.count < 2 {
+            await Task.yield()
+        }
+        #expect(launcher.calls == ["start", "perform module(\"launcher\")"])
+        #expect(keyboard.status == .running)
+    }
+
+    @Test func moduleSwitchedOnGetsItsShortcuts() async throws {
+        offerLauncher(on: false)
+        let keyboard = module()
+        keyboard.apply(settings(launcherKey))
+        try await keyboard.start()
+        let problem = ConfigProblem(
+            .warn, file: Paths.moduleTOMLName(KeyboardConfig.module), line: 4, .moduleOff("launcher"))
+        #expect(keyboard.status == .degraded(reason: problem.message.text.description))
+        _ = routes.switchOn(["launcher"])
+        keyboard.modulesSwitched()
+        await keyboard.resume()
+        #expect(keyboard.status == .running)
     }
 }

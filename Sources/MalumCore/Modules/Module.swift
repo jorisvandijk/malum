@@ -34,6 +34,10 @@ public protocol Module: AnyObject, Observable {
     /// Sets up again what macOS may have dropped while the module ran: after the Mac wakes, the user
     /// switches back to this login, or a keyboard is plugged in.
     func resume() async
+    /// Does one of the actions in `hotkeys`, or opens an app, for a shortcut that was pressed.
+    func perform(_ action: KeyAction)
+    /// Learns that `malum.toml` switched other modules on or off, for a module that routes to them.
+    func modulesSwitched()
 }
 
 extension Module {
@@ -45,4 +49,10 @@ extension Module {
 
     /// Nothing to set up again, for a module that sets nothing macOS can drop.
     public func resume() async {}
+
+    /// Nothing to do, for a module that offers no actions.
+    public func perform(_: KeyAction) {}
+
+    /// Nothing to update, for a module that routes to no other module.
+    public func modulesSwitched() {}
 }
