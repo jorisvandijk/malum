@@ -8,6 +8,8 @@ final class FakeSignals: Signals {
     let failing: Set<Int32>
     /// Every process sent `SIGHUP`, in order.
     private let hangUps = Mutex<[Int32]>([])
+    /// Every process sent `SIGUSR1`, in order.
+    private let askings = Mutex<[Int32]>([])
 
     init(failing: Set<Int32> = []) {
         self.failing = failing
@@ -15,10 +17,19 @@ final class FakeSignals: Signals {
 
     var sent: [Int32] { hangUps.withLock { $0 } }
 
+    var asked: [Int32] { askings.withLock { $0 } }
+
     func hangUp(_ processID: Int32) throws(InstanceError) {
         guard !failing.contains(processID) else {
             throw .unsignalable(processID: processID, reason: "no such process")
         }
         hangUps.withLock { $0.append(processID) }
+    }
+
+    func askForActions(_ processID: Int32) throws(InstanceError) {
+        guard !failing.contains(processID) else {
+            throw .unsignalable(processID: processID, reason: "no such process")
+        }
+        askings.withLock { $0.append(processID) }
     }
 }

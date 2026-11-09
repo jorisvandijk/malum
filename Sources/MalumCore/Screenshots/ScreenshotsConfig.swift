@@ -5,8 +5,10 @@ struct ScreenshotsConfig: Equatable, Sendable {
     /// key's full dotted name.
     typealias Report = ([String], (String) -> MessageText) -> Void
 
-    /// The module's id, which names its table, its file and its action.
+    /// The module's id, which names its table and its file.
     static let module = "screenshots"
+    /// The action that takes a screenshot, for `keyboard.toml` and `malum screenshot`.
+    static let action = "screenshot"
     /// The key of the folder shots are saved in.
     private static let folderKey = "folder"
     /// The key of the quick colors.

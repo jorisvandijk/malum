@@ -33,14 +33,27 @@ func runApp() -> Never {
     Task { await startWhenSigned(config: config, menu: menu) }
     let hangup = SignalWatcher(SIGHUP) { config.reload(force: true) }
     let terminate = SignalWatcher(SIGTERM) { stopAndQuit(config) }
+    let actions = SignalWatcher(SIGUSR1) { runRequestedActions(routes) }
     let keyboards = KeyboardChangeWatcher { config.resume() }
     let quit = NotificationCenter.default.addObserver(
         forName: NSApplication.willTerminateNotification, object: nil, queue: .main
     ) { _ in MainActor.assumeIsolated { forget(launches) } }
     let app = NSApplication.shared
     app.setActivationPolicy(.accessory)
-    withExtendedLifetime((menu, config, hangup, terminate, keyboards, quit)) { app.run() }
+    withExtendedLifetime((menu, config, hangup, terminate, actions, keyboards, quit)) { app.run() }
     exit(EXIT_SUCCESS)
+}
+
+/// Runs the actions commands such as `malum screenshot` left for the app.
+@MainActor
+private func runRequestedActions(_ routes: ModuleRoutes) {
+    do {
+        for action in try ActionRequests(state: state).take() where !routes.run(actionNamed: action) {
+            announce(.noModuleFor(action))
+        }
+    } catch {
+        announce(.failed(error))
+    }
 }
 
 /// Builds every module with its macOS parts, routing shortcuts through `routes`.

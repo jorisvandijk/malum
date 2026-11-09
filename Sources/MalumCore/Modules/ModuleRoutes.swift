@@ -47,6 +47,15 @@ public final class ModuleRoutes {
         return true
     }
 
+    /// Runs the action called `action` on the running module that offers it, as a shortcut bound
+    /// to it would. Says whether one ran it.
+    public func run(actionNamed action: String) -> Bool {
+        let offering = entries.values.compactMap(\.module).first { $0.hotkeys.actions.contains(action) }
+        guard let module = offering, module.status.isActive else { return false }
+        module.perform(.module(action))
+        return true
+    }
+
     /// Runs `target` on its module, only while that module runs. A shortcut for a module that is
     /// starting, waiting or failed does nothing.
     func run(_ target: HotkeyTarget) {

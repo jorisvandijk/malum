@@ -5,6 +5,16 @@ extension Message {
         Message(.info, "asked \(Project.name) to reload")
     }
 
+    /// The running app was asked to run `action`.
+    static func askedFor(_ action: String) -> Message {
+        Message(.info, "asked \(Project.name) for \(action)")
+    }
+
+    /// No switched-on module offers `action`, which a command asked for.
+    public static func noModuleFor(_ action: String) -> Message {
+        Message(.warn, "nothing runs \(action): switch its module on in \(Paths.configTOMLName)")
+    }
+
     /// The app isn't running, so an override waits for its next start.
     static var takesEffectAtStart: Message {
         Message(.info, "\(Project.name) isn't running, so this takes effect when it starts")

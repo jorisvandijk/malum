@@ -24,6 +24,8 @@ public enum Invocation: Equatable, Sendable {
     case token(remove: Bool)
     /// Ask for the password of the Samba server called `server` and keep it in the keychain.
     case sambaPassword(server: String)
+    /// Ask the running app to run a module's action, by the action's name.
+    case action(String)
     /// A command that's missing an argument, with what it needs.
     case incomplete(command: String, needs: String)
     /// An argument Malum doesn't know.
@@ -63,6 +65,7 @@ public enum Invocation: Equatable, Sendable {
     /// The commands that take no arguments, by name.
     private static let plain: [String: Self] = [
         "reload": .reload, "safe": .safe, "permissions": .permissions, "status": .status, "rollback": .rollback,
+        ScreenshotsConfig.action: .action(ScreenshotsConfig.action),
     ]
 
     /// Reads the arguments of `disable`: exactly one module.
