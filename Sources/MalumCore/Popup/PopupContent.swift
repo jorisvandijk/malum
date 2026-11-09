@@ -10,4 +10,7 @@ public struct PopupContent: Equatable, Sendable {
     public let selection: Int?
     /// Whether rows can be deleted, and the whole list cleared.
     public let canDelete: Bool
+
+    /// Nothing to show, before the popup first opens.
+    public static let empty = PopupContent(placeholder: "", label: "", rows: [], selection: nil, canDelete: false)
 }
