@@ -23,13 +23,7 @@ func runApp() -> Never {
     let launches = LaunchRecord(state: state)
     checkCrashLoop(launches, overrides: OverrideStore(state: state))
     let routes = ModuleRoutes()
-    let modules = Modules.all(
-        keyboard: KeyboardSystem(
-            remapper: KeyRemapper(runner: runner, state: state), keyCatcher: EventTap(), state: SystemKeyboardState()),
-        windows: WindowManagerSystem(
-            apps: WorkspaceApps(), windows: AccessibilityWindows(), watcher: WorkspaceAppWatcher(),
-            screens: MainScreen()),
-        routes: routes, log: systemLog)
+    let modules = makeModules(routes: routes)
     let config = LiveConfig(
         reloader: ConfigReloader(files: files, paths: paths, schemas: ConfigSchemas.all),
         modules: ModuleSwitch(modules: modules, permissions: PermissionProbe(home: paths.home), routes: routes),
@@ -47,6 +41,21 @@ func runApp() -> Never {
     app.setActivationPolicy(.accessory)
     withExtendedLifetime((menu, config, hangup, terminate, keyboards, quit)) { app.run() }
     exit(EXIT_SUCCESS)
+}
+
+/// Builds every module with its macOS parts, routing shortcuts through `routes`.
+@MainActor
+func makeModules(routes: ModuleRoutes) -> [any Module] {
+    let apps = WorkspaceApps()
+    return Modules.all(
+        keyboard: KeyboardSystem(
+            remapper: KeyRemapper(runner: runner, state: state), keyCatcher: EventTap(), state: SystemKeyboardState()),
+        windows: WindowManagerSystem(
+            apps: apps, windows: AccessibilityWindows(), watcher: WorkspaceAppWatcher(), screens: MainScreen()),
+        launcher: LauncherSystem(
+            files: files, paths: paths, state: state, apps: apps, folders: FolderWatcher(),
+            popup: PopupCenter(popup: PopupPanel())),
+        routes: routes, log: systemLog)
 }
 
 /// Stops every module, so what they changed system-wide is undone, then quits. The modules stop

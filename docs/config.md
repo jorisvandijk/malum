@@ -17,6 +17,17 @@ Switches the module on. The module stays off until this is set to true.
 - Value: true or false
 - Default: `false`
 
+## `launcher`
+
+A popup with every app, to search and start one. See [launcher](launcher.md).
+
+### `launcher.enabled`
+
+Switches the module on. The module stays off until this is set to true.
+
+- Value: true or false
+- Default: `false`
+
 ## `system_config`
 
 Makes the Mac match dots when you run `malum run`, installing what `packages.toml` lists, writing the app config files and preferences in `apps/` and setting the macOS settings in `macos.toml`. At the end of the run, Malum updates itself. Nothing happens in the background: the app only reads the switch, and `malum run` does the work.
