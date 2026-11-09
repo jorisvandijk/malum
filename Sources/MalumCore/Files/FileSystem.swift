@@ -17,6 +17,8 @@ public protocol FileSystem: Sendable {
     func createDirectory(_ path: String) throws(FileSystemError)
     /// Creates the folder at `path`, and any missing above it, that only the user can open.
     func createPrivateDirectory(_ path: String) throws(FileSystemError)
+    /// Replaces the file at `path` with `data` in one step, such as an image.
+    func write(_ data: Data, to path: String) throws(FileSystemError)
     /// Replaces the file at `path` with `data` in one step, readable only by the user.
     func writePrivate(_ data: Data, to path: String) throws(FileSystemError)
     /// Makes `path` a symbolic link to `destination`, replacing a link that's already there.
