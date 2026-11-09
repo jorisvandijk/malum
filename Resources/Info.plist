@@ -12,5 +12,8 @@
     <!-- No Dock icon and no app menu: Malum lives in the menu bar. -->
     <key>LSUIElement</key>
     <true/>
+    <!-- Shown when macOS asks whether Malum may reach the Samba servers on the local network. -->
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Malum mounts the Samba shares listed in samba.toml.</string>
 </dict>
 </plist>

@@ -12,6 +12,7 @@ extension Invocation {
                \(Project.command) rollback
                \(Project.command) status
                \(Project.command) token [--remove]
+               \(Project.command) samba password <server>
 
           init         record where dots is checked out and link ~/\(Paths.binRoot)/\(Project.command)
           reload       ask the running app to reload
@@ -24,6 +25,7 @@ extension Invocation {
           status       show what \(Project.name) manages and what doesn't match dots
           token        ask for the GitHub token and keep it in the login keychain
                        (--remove deletes it)
+          samba        password <server> asks for a Samba server's password and keeps it in the login keychain
           --version    show the version
           --help       show this help
         """
@@ -34,4 +36,8 @@ extension Invocation {
     static let needsModule = "a module"
     /// What `init` needs when it's given nothing.
     static let needsDots = "the path to dots"
+    /// What `samba` needs when it's given nothing.
+    static let needsSambaCommand = "password and a server"
+    /// What `samba password` needs when it's given no server.
+    static let needsServer = "a server from \(Paths.moduleTOMLName(SambaConfig.module))"
 }

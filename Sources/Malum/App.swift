@@ -47,15 +47,19 @@ func runApp() -> Never {
 @MainActor
 func makeModules(routes: ModuleRoutes) -> [any Module] {
     let apps = WorkspaceApps()
-    return Modules.all(
+    let popup = PopupCenter(popup: PopupPanel())
+    let systems = ModuleSystems(
         keyboard: KeyboardSystem(
             remapper: KeyRemapper(runner: runner, state: state), keyCatcher: EventTap(), state: SystemKeyboardState()),
         windows: WindowManagerSystem(
             apps: apps, windows: AccessibilityWindows(), watcher: WorkspaceAppWatcher(), screens: MainScreen()),
         launcher: LauncherSystem(
-            files: files, paths: paths, state: state, apps: apps, folders: FolderWatcher(),
-            popup: PopupCenter(popup: PopupPanel())),
-        routes: routes, log: systemLog)
+            files: files, paths: paths, state: state, apps: apps, folders: FolderWatcher(), popup: popup),
+        clipboard: ClipboardSystem(files: files, state: state, clipboard: PasteboardClipboard(), popup: popup),
+        samba: SambaSystem(shares: SambaVolumes(), network: NetworkWatcher(), runner: runner, files: files) {
+            KeychainTokenStore(service: Project.sambaService, account: $0.account)
+        })
+    return Modules.all(systems, routes: routes, log: systemLog)
 }
 
 /// Stops every module, so what they changed system-wide is undone, then quits. The modules stop

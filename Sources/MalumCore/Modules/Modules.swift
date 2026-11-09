@@ -5,18 +5,19 @@ public enum Modules {
     /// Every module's schema, by the module's id, without building the modules.
     public static let schemas: [String: ConfigSchema] = [
         KeyboardConfig.module: KeyboardModule.configSchema, WindowManagerConfig.module: WindowManagerConfig.schema,
-        LauncherModule.module: LauncherModule.configSchema,
+        LauncherModule.module: LauncherModule.configSchema, ClipboardConfig.module: ClipboardConfig.schema,
+        SambaConfig.module: SambaConfig.schema,
     ]
 
-    /// Builds every module, in the order they're started, with what they need from the app and the
+    /// Builds every module, in the order they're started, with their macOS parts from the app and the
     /// `routes` their shortcuts go through. Building one starts nothing.
-    public static func all(
-        keyboard: KeyboardSystem, windows: WindowManagerSystem, launcher: LauncherSystem, routes: ModuleRoutes,
-        log: Log
-    ) -> [any Module] {
+    public static func all(_ systems: ModuleSystems, routes: ModuleRoutes, log: Log) -> [any Module] {
         [
-            KeyboardModule(system: keyboard, routes: routes, log: log), WindowManagerModule(system: windows, log: log),
-            LauncherModule(system: launcher, routes: routes, log: log),
+            KeyboardModule(system: systems.keyboard, routes: routes, log: log),
+            WindowManagerModule(system: systems.windows, log: log),
+            LauncherModule(system: systems.launcher, routes: routes, log: log),
+            ClipboardModule(system: systems.clipboard, log: log),
+            SambaModule(system: systems.samba, log: log),
         ]
     }
 }
