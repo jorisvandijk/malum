@@ -4,14 +4,19 @@
 public enum SettingsCheck: Equatable, Sendable {
     /// The window manager's frame and float rules, read by `WindowManagerConfig`.
     case windowManager
+    /// The Samba servers, read by `SambaConfig`.
+    case samba
 
     /// Adds what's wrong with `table`, found at `path`, to `reader`.
     func check(_ table: ConfigTable, at path: [String], in reader: inout TableReader) {
+        let report: ([String], (String) -> MessageText) -> Void = { key, text in
+            reader.add(.error, at: path + key, text(TableReader.dotted(path + key)))
+        }
         switch self {
         case .windowManager:
-            _ = WindowManagerConfig.read(table) { key, text in
-                reader.add(.error, at: path + key, text(TableReader.dotted(path + key)))
-            }
+            _ = WindowManagerConfig.read(table, report: report)
+        case .samba:
+            _ = SambaConfig.read(table, report: report)
         }
     }
 }

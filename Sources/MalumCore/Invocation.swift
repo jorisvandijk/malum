@@ -22,6 +22,8 @@ public enum Invocation: Equatable, Sendable {
     case status
     /// Ask for the GitHub token and keep it in the keychain, or remove it when `remove` is set.
     case token(remove: Bool)
+    /// Ask for the password of the Samba server called `server` and keep it in the keychain.
+    case sambaPassword(server: String)
     /// A command that's missing an argument, with what it needs.
     case incomplete(command: String, needs: String)
     /// An argument Malum doesn't know.
@@ -47,6 +49,8 @@ public enum Invocation: Equatable, Sendable {
             self = Self.token(rest)
         case "run":
             self = Self.run(rest)
+        case "samba":
+            self = Self.samba(rest)
         default:
             guard let plain = Self.plain[first] else {
                 self = .unknown(first)
@@ -74,6 +78,16 @@ public enum Invocation: Equatable, Sendable {
         guard let first = arguments.first else { return .token(remove: false) }
         guard first == "--remove" else { return .unknown(first) }
         return arguments.dropFirst().first.map(Self.unknown) ?? .token(remove: true)
+    }
+
+    /// Reads the arguments of `samba`: `password` and one server. The password itself is never an
+    /// argument.
+    private static func samba(_ arguments: [String]) -> Self {
+        guard let first = arguments.first else { return .incomplete(command: "samba", needs: needsSambaCommand) }
+        guard first == "password" else { return .unknown(first) }
+        let rest = arguments.dropFirst()
+        guard let server = rest.first else { return .incomplete(command: "samba password", needs: needsServer) }
+        return rest.dropFirst().first.map(Self.unknown) ?? .sambaPassword(server: server)
     }
 
     /// Reads the arguments of `run`: nothing, or `--force`.

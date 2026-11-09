@@ -6,6 +6,7 @@ public enum Modules {
     public static let schemas: [String: ConfigSchema] = [
         KeyboardConfig.module: KeyboardModule.configSchema, WindowManagerConfig.module: WindowManagerConfig.schema,
         LauncherModule.module: LauncherModule.configSchema, ClipboardConfig.module: ClipboardConfig.schema,
+        SambaConfig.module: SambaConfig.schema,
     ]
 
     /// Builds every module, in the order they're started, with their macOS parts from the app and the
