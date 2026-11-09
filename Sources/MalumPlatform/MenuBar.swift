@@ -4,7 +4,11 @@ import MalumCore
 /// Malum's icon in the menu bar, and its menu.
 @MainActor
 public final class MenuBar: NSObject {
-    /// The SF Symbol shown while everything is fine.
+    /// The Malum logo in the app bundle's resources, shown while everything is fine.
+    private static let logoName = "MenuBarIcon"
+    /// The logo's file type.
+    private static let logoType = "pdf"
+    /// The SF Symbol shown instead of the logo when Malum runs outside its app bundle.
     private static let calmSymbol = "leaf"
     /// The SF Symbol shown while something needs attention.
     private static let alertSymbol = "exclamationmark.triangle"
@@ -15,11 +19,14 @@ public final class MenuBar: NSObject {
     private let onPick: @MainActor (MenuFix) -> Void
     /// What each item that can be picked does, by the item's tag.
     private var fixes: [MenuFix] = []
+    /// The logo, drawn in the menu bar's own colours, or nil outside the app bundle.
+    private let logo: NSImage?
 
     /// Puts the icon in the menu bar. `onPick` runs when the user picks an item the app handles:
     /// reload, leave safe mode, enable a module, or quit.
     public init(onPick: @escaping @MainActor (MenuFix) -> Void) {
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        logo = Self.loadLogo()
         self.onPick = onPick
         super.init()
     }
@@ -27,8 +34,11 @@ public final class MenuBar: NSObject {
     /// Shows `menu`: the icon changes when something needs attention, and the menu is rebuilt.
     public func show(_ menu: StatusMenu) {
         let label = menu.label
-        let symbol = menu.needsAttention ? Self.alertSymbol : Self.calmSymbol
-        item.button?.image = NSImage(systemSymbolName: symbol, accessibilityDescription: label)
+        if menu.needsAttention {
+            item.button?.image = NSImage(systemSymbolName: Self.alertSymbol, accessibilityDescription: label)
+        } else {
+            item.button?.image = calmImage(label)
+        }
         item.button?.toolTip = label
         fixes = []
         let built = NSMenu()
@@ -37,6 +47,24 @@ public final class MenuBar: NSObject {
             built.addItem(menuItem(for: line))
         }
         item.menu = built
+    }
+
+    /// The logo with `label` read out for it, or the leaf when there's no logo.
+    private func calmImage(_ label: String) -> NSImage? {
+        guard let logo else {
+            return NSImage(systemSymbolName: Self.calmSymbol, accessibilityDescription: label)
+        }
+        logo.accessibilityDescription = label
+        return logo
+    }
+
+    /// Reads the logo from the app bundle as a template image, or nil when Malum runs outside it.
+    private static func loadLogo() -> NSImage? {
+        guard let url = Bundle.main.url(forResource: logoName, withExtension: logoType),
+            let image = NSImage(contentsOf: url)
+        else { return nil }
+        image.isTemplate = true
+        return image
     }
 
     /// The AppKit item for one line.

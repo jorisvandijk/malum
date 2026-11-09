@@ -7,6 +7,9 @@
     <string>APPL</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
+    <!-- Resources/Bundle/AppIcon.icns, drawn from Resources/Logo/app-icon.svg. -->
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>LSMinimumSystemVersion</key>
     <string>26.0</string>
     <!-- No Dock icon and no app menu: Malum lives in the menu bar. -->

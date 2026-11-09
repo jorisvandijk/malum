@@ -1,6 +1,6 @@
 # Menu bar
 
-While the app runs, Malum's icon sits in the menu bar. It's a leaf while everything is fine, and a warning triangle while something needs attention: Malum isn't signed with its own certificate, safe mode, a problem in `malum.toml`, a module that failed or runs with problems, or a module that's missing a permission.
+While the app runs, Malum's icon sits in the menu bar. It's the Malum apple while everything is fine, and a warning triangle while something needs attention: Malum isn't signed with its own certificate, safe mode, a problem in `malum.toml`, a module that failed or runs with problems, or a module that's missing a permission.
 
 Click the icon to open the menu. From top to bottom it shows:
 
