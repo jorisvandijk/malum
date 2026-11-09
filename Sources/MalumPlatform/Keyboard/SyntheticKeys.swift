@@ -1,8 +1,8 @@
 import CoreGraphics
 import MalumCore
 
-/// The key events the event tap posts itself: left cmd held down, and the tab that opens the app
-/// switcher with it.
+/// The key events Malum posts itself: left cmd held down and the tab that opens the app switcher
+/// with it, and cmd+V for the clipboard history.
 ///
 /// Each one carries `marker`, so the tap lets its own events through untouched.
 enum SyntheticKeys {
@@ -25,6 +25,18 @@ enum SyntheticKeys {
             }
             tab.flags = Modifier.flags(tab.flags, holding: modifiers)
             post(tab)
+        }
+    }
+
+    /// Presses and lets go of cmd+V, which pastes in the front app.
+    static func paste() {
+        guard let paste = Key.paste else { return }
+        for down in [true, false] {
+            guard let key = CGEvent(keyboardEventSource: nil, virtualKey: paste.keyCode, keyDown: down) else {
+                continue
+            }
+            key.flags = Modifier.flags(key.flags, holding: [.cmd])
+            post(key)
         }
     }
 
