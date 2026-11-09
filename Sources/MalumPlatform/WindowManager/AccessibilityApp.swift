@@ -4,23 +4,10 @@ import MalumCore
 /// An app whose windows are watched through an `AXObserver` on the main run loop.
 @MainActor
 final class AccessibilityApp {
-    /// What the app tells about its windows, written out because the framework's constants aren't
-    /// safe to read under strict concurrency.
-    private enum Notification {
-        static let windowCreated = "AXWindowCreated"
-        static let focusedWindowChanged = "AXFocusedWindowChanged"
-        static let destroyed = "AXUIElementDestroyed"
-        static let moved = "AXWindowMoved"
-        static let resized = "AXWindowResized"
-        static let minimized = "AXWindowMiniaturized"
-        static let restored = "AXWindowDeminiaturized"
-    }
-
-    /// The app's attribute that lists its windows.
-    private static let windowsAttribute = "AXWindows"
     /// What each window is watched for.
     private static let windowNotifications = [
-        Notification.destroyed, Notification.moved, Notification.resized, Notification.minimized, Notification.restored,
+        AccessibilityName.destroyed, AccessibilityName.moved, AccessibilityName.resized,
+        AccessibilityName.minimizedNotification, AccessibilityName.restored,
     ]
 
     /// The app.
@@ -37,8 +24,8 @@ final class AccessibilityApp {
         app = AXUIElementCreateApplication(pid)
         observer = created
         self.onChange = onChange
-        guard watch(app, for: Notification.windowCreated) else { return nil }
-        watch(app, for: Notification.focusedWindowChanged)
+        guard watch(app, for: AccessibilityName.windowCreated) else { return nil }
+        watch(app, for: AccessibilityName.focusedWindowChanged)
         CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .defaultMode)
     }
 
@@ -59,7 +46,7 @@ final class AccessibilityApp {
 
     /// Tells `onChange` what `notification` means.
     private func handle(_ notification: String) {
-        let moved = [Notification.moved, Notification.resized].contains(notification)
+        let moved = [AccessibilityName.moved, AccessibilityName.resized].contains(notification)
         onChange(moved ? .moved : .changed)
     }
 
@@ -77,7 +64,7 @@ final class AccessibilityApp {
 extension AccessibilityApp: WatchedApp {
     /// The app's windows, front to back, each watched from now on.
     func windows() -> [any AppWindow]? {
-        guard let elements = AccessibilityElement(element: app).elements(Self.windowsAttribute) else { return nil }
+        guard let elements = AccessibilityElement(element: app).elements(AccessibilityName.windows) else { return nil }
         for element in elements {
             for notification in Self.windowNotifications {
                 watch(element, for: notification)
