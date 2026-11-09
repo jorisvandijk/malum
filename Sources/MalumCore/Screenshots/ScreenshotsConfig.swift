@@ -7,7 +7,7 @@ struct ScreenshotsConfig: Equatable, Sendable {
 
     /// The module's id, which names its table and its file.
     static let module = "screenshots"
-    /// The action that takes a screenshot, for `keyboard.toml` and `malum screenshot`.
+    /// The action that takes a screenshot, for `keyboard.toml`.
     static let action = "screenshot"
     /// The key of the folder shots are saved in.
     private static let folderKey = "folder"
