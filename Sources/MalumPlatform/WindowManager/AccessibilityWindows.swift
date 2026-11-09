@@ -29,4 +29,12 @@ extension AccessibilityWindows: WindowAccess {
     public var isPointerDown: Bool {
         NSEvent.pressedMouseButtons & Self.mainButton != 0
     }
+
+    /// Where the pointer is, flipped from AppKit's coordinates by the height of the screen with the
+    /// menu bar, where both start.
+    public var pointerLocation: CGPoint {
+        let location = NSEvent.mouseLocation
+        let height = NSScreen.screens.first?.frame.height ?? location.y
+        return CGPoint(x: location.x, y: height - location.y)
+    }
 }

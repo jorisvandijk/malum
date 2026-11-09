@@ -51,6 +51,22 @@ struct WindowManagerModuleTests {
         #expect(module().permissions == [.accessibility])
     }
 
+    @Test func swallowsHideAndMinimiseKeys() throws {
+        let keys = module().hotkeys.fixedKeys
+        let hide = Hotkey(modifiers: [.cmd], key: try #require(Key.named("h")))
+        let minimiseAll = Hotkey(modifiers: [.cmd, .option], key: try #require(Key.named("m")))
+        #expect(keys.count == 3)
+        #expect(keys[hide] != nil)
+        #expect(keys[minimiseAll] != nil)
+    }
+
+    @Test func blockHideMinimizeOffSwallowsNothing() {
+        let module = module()
+        module.apply(["block_hide_minimize": .boolean(false)])
+        #expect(module.hotkeys.fixedKeys.isEmpty)
+        #expect(module.hotkeys.opensApps)
+    }
+
     @Test func startFillsTheScreenWithRunningAppsWindows() async throws {
         let window = window(of: kitty.pid)
         watcher.apps = [kitty]

@@ -161,7 +161,8 @@ final class AppTracker {
         }
     }
 
-    /// Waits until the pointer's button is let go, then puts the windows back in place.
+    /// Waits until the pointer's button is let go, then puts the windows back in place, swapping two
+    /// when one was dropped on the other's slot.
     private func followDrag() {
         guard !isFollowingDrag else { return }
         isFollowingDrag = true
@@ -175,6 +176,27 @@ final class AppTracker {
             return
         }
         isFollowingDrag = false
+        swapDropped()
         reconcile()
+    }
+
+    /// Swaps the window that was dragged with the one whose slot it was dropped on. The dragged one
+    /// is the managed window that's no longer where it was put.
+    private func swapDropped() {
+        guard let area else { return }
+        let managed = windows.filter { $0.kind == .managed && !$0.window.isMinimized }
+        let slots = WindowLayout.slots(count: managed.count, in: area)
+        guard let from = managed.firstIndex(where: Self.wasMoved),
+            let to = WindowLayout.dropTarget(at: access.pointerLocation, slots: slots, from: from),
+            let first = windows.firstIndex(where: { $0 === managed[from] }),
+            let second = windows.firstIndex(where: { $0 === managed[to] })
+        else { return }
+        windows.swapAt(first, second)
+    }
+
+    /// Whether `tracked` is no longer where it was put.
+    private static func wasMoved(_ tracked: TrackedWindow) -> Bool {
+        guard let settled = tracked.settled, let frame = tracked.window.frame else { return false }
+        return !WindowLayout.isSame(frame, settled)
     }
 }

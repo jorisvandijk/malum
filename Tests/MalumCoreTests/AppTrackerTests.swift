@@ -104,6 +104,36 @@ struct AppTrackerTests {
         #expect(window.frame == area)
     }
 
+    /// Two windows side by side, with the left one dragged and let go at `point`.
+    private func dropLeftWindow(at point: CGPoint) -> (left: FakeAppWindow, right: FakeAppWindow) {
+        let left = FakeAppWindow()
+        let right = FakeAppWindow()
+        watched.current = [left, right]
+        let tracker = tracker()
+        tracker.reconcile()
+        left.frame = CGRect(origin: point, size: CGSize(width: 300, height: 200))
+        access.isPointerDown = true
+        tracker.handle(.moved)
+        access.isPointerDown = false
+        access.pointerLocation = point
+        scheduler.runPending()
+        return (left, right)
+    }
+
+    @Test func windowDroppedOnAnothersSlotSwapsWithIt() {
+        let slots = WindowLayout.slots(count: 2, in: area)
+        let (left, right) = dropLeftWindow(at: CGPoint(x: 1200, y: 500))
+        #expect(left.frame == slots.last)
+        #expect(right.frame == slots.first)
+    }
+
+    @Test func windowDroppedOnItsOwnSlotGoesBack() {
+        let slots = WindowLayout.slots(count: 2, in: area)
+        let (left, right) = dropLeftWindow(at: CGPoint(x: 200, y: 500))
+        #expect(left.frame == slots.first)
+        #expect(right.frame == slots.last)
+    }
+
     @Test func appThatKeepsResizingIsLeftAlone() {
         let window = FakeAppWindow()
         watched.current = [window]

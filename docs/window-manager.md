@@ -41,9 +41,13 @@ Each app's windows fill the screen:
 - Two windows split it into a left and a right half.
 - With more, the oldest window keeps the left half and the others stack on the right.
 
-A window that's moved or resized snaps back to its place. A window that's dragged follows the pointer and drops back into place when you let go. A window that can't grow to its place is centred in it, and one that can't shrink is pinned to its top left. An app that keeps resizing its own window is left where it settles.
+A window that's moved or resized snaps back to its place. A window that's dragged follows the pointer. Let go of it over another window's place and the two swap; let go anywhere else and it drops back into its own place. A window that can't grow to its place is centred in it, and one that can't shrink is pinned to its top left. An app that keeps resizing its own window is left where it settles.
 
 Malum fills the screen with the menu bar. Other screens are left alone.
+
+## Hiding and minimising
+
+A hidden app or a minimised window would leave a gap, so the window manager swallows cmd+H (hide), cmd+M (minimise) and cmd+option+M (minimise all) while `block_hide_minimize` is on, which it is by default. The keys are caught by the [keyboard](keyboard.md) module, so they only work this way while it's on too. A shortcut in `keyboard.toml` on one of these keys is a config error, since the window manager has them.
 
 ## Floating windows
 

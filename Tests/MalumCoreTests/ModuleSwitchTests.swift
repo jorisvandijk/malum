@@ -193,6 +193,25 @@ struct ModuleSwitchTests {
         #expect(launcher.calls == ["apply ", "start", "stop"])
     }
 
+    @Test func settingsThatChangeAnOfferTellTheRunningModules() async {
+        let modules = moduleSwitch()
+        _ = await modules.update(enabled: ["launcher", "screenshots"], settings: [:], changed: [])
+        screenshots.hotkeysOnApply = HotkeyOffer(actions: ["shoot"])
+        _ = await modules.update(
+            enabled: ["launcher", "screenshots"], settings: ["screenshots": ["size": .integer(1)]],
+            changed: ["screenshots"])
+        #expect(launcher.calls == ["apply ", "start", "modules switched"])
+    }
+
+    @Test func settingsThatKeepTheOffersTellNobody() async {
+        let modules = moduleSwitch()
+        _ = await modules.update(enabled: ["launcher", "screenshots"], settings: [:], changed: [])
+        _ = await modules.update(
+            enabled: ["launcher", "screenshots"], settings: ["screenshots": ["size": .integer(1)]],
+            changed: ["screenshots"])
+        #expect(launcher.calls == ["apply ", "start"])
+    }
+
     @Test func sameModulesSwitchedOnTellsNobody() async {
         let modules = moduleSwitch()
         _ = await modules.update(enabled: ["launcher"], settings: [:], changed: [])
