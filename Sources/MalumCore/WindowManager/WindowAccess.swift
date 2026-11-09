@@ -13,6 +13,8 @@ public protocol WindowAccess: AnyObject {
     /// Starts watching the app with process ID `pid`, calling `onChange` when one of its windows
     /// opens, closes, moves, resizes, is minimised or comes back. Nil when the app doesn't answer yet.
     func watch(_ pid: Int32, onChange: @escaping @MainActor (WindowEvent) -> Void) -> (any WatchedApp)?
+    /// Whether the pointer's main button is held, as it is while a window is dragged.
+    var isPointerDown: Bool { get }
 }
 
 /// What happened to a watched app's windows.
@@ -29,6 +31,8 @@ public protocol WatchedApp: AnyObject {
     /// The app's windows, front to back, each also watched from now on, or nil when the app
     /// doesn't answer.
     func windows() -> [any AppWindow]?
+    /// Whether the app is hidden.
+    var isHidden: Bool { get }
     /// Stops watching the app.
     func stop()
 }
