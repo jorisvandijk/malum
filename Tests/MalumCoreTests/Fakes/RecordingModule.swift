@@ -24,6 +24,8 @@ final class RecordingModule: Module {
     var failsToApply = false
     /// Whether `cleanUp` throws.
     var failsToCleanUp = false
+    /// What it offers the hotkey registry.
+    var hotkeys = HotkeyOffer()
 
     init(id: String, permissions: Set<Permission> = []) {
         self.id = id
@@ -61,5 +63,13 @@ final class RecordingModule: Module {
     func resume() async {
         await Task.yield()
         calls.append("resume")
+    }
+
+    func perform(_ action: KeyAction) {
+        calls.append("perform \(action)")
+    }
+
+    func modulesSwitched() {
+        calls.append("modules switched")
     }
 }

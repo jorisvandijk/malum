@@ -7,12 +7,15 @@ final class FakeKeyCatcher: KeyCatcher {
     var refuses = false
     /// How many times a session was started.
     private(set) var starts = 0
+    /// The session started last.
+    private(set) var session: TapSession?
     /// Whether a session runs now, which a test sets to false to play macOS switching the tap off.
     var isRunning = false
 
     func start(_ session: TapSession) -> Bool {
         guard !refuses else { return false }
         starts += 1
+        self.session = session
         isRunning = true
         return true
     }

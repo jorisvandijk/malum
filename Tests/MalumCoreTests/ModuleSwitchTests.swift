@@ -8,9 +8,10 @@ struct ModuleSwitchTests {
     private let launcher = RecordingModule(id: "launcher")
     private let screenshots = RecordingModule(id: "screenshots")
     private let keyboard = RecordingModule(id: "keyboard", permissions: [.accessibility, .inputMonitoring])
+    private let routes = ModuleRoutes()
 
     private func moduleSwitch(_ permissions: FakePermissions = FakePermissions()) -> ModuleSwitch {
-        ModuleSwitch(modules: [launcher, screenshots, keyboard], permissions: permissions)
+        ModuleSwitch(modules: [launcher, screenshots, keyboard], permissions: permissions, routes: routes)
     }
 
     @Test func switchedOnModuleGetsItsSettingsThenStarts() async {
@@ -175,5 +176,27 @@ struct ModuleSwitchTests {
         #expect(await modules.resume() == [Message(.info, "set up launcher again")])
         #expect(launcher.calls == ["apply ", "start", "resume"])
         #expect(screenshots.calls.isEmpty)
+    }
+
+    @Test func switchingAnotherModuleOnTellsTheRunningOnes() async {
+        let modules = moduleSwitch()
+        _ = await modules.update(enabled: ["launcher"], settings: [:], changed: [])
+        _ = await modules.update(enabled: ["launcher", "screenshots"], settings: [:], changed: [])
+        #expect(launcher.calls == ["apply ", "start", "modules switched"])
+        #expect(routes.switchedOn == ["launcher", "screenshots"])
+    }
+
+    @Test func moduleBeingSwitchedOffIsNotTold() async {
+        let modules = moduleSwitch()
+        _ = await modules.update(enabled: ["launcher"], settings: [:], changed: [])
+        _ = await modules.update(enabled: [], settings: [:], changed: [])
+        #expect(launcher.calls == ["apply ", "start", "stop"])
+    }
+
+    @Test func sameModulesSwitchedOnTellsNobody() async {
+        let modules = moduleSwitch()
+        _ = await modules.update(enabled: ["launcher"], settings: [:], changed: [])
+        _ = await modules.update(enabled: ["launcher"], settings: [:], changed: [])
+        #expect(launcher.calls == ["apply ", "start"])
     }
 }

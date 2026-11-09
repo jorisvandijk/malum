@@ -1,6 +1,6 @@
 /// What a shortcut in `keyboard.toml` does: open an app through the module that handles apps, or
 /// run an action a module offers.
-enum KeyAction: Equatable, Sendable {
+public enum KeyAction: Equatable, Sendable {
     /// The app with this bundle ID, such as `com.apple.finder`.
     case app(String)
     /// The action a module offers by this name, such as `launcher`.
