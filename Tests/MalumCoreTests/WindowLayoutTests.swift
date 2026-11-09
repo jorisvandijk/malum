@@ -3,6 +3,11 @@ import Testing
 
 @testable import MalumCore
 
+// Linux's Foundation has the geometry types; on macOS they come from CoreGraphics.
+#if canImport(CoreGraphics)
+    import CoreGraphics
+#endif
+
 @Suite(.timeLimit(.minutes(1)))
 struct WindowLayoutTests {
     /// A 1512x982 screen below a 25 point menu bar.

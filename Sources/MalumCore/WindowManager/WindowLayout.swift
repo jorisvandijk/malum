@@ -1,5 +1,10 @@
 import Foundation
 
+// Linux's Foundation has the geometry types; on macOS they come from CoreGraphics.
+#if canImport(CoreGraphics)
+    import CoreGraphics
+#endif
+
 /// The decisions behind filling the screen, apart from Accessibility so they're tested on Linux.
 enum WindowLayout {
     /// The role of a window.

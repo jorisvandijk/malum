@@ -1,5 +1,10 @@
 import Foundation
 
+// Linux's Foundation has the geometry types; on macOS they come from CoreGraphics.
+#if canImport(CoreGraphics)
+    import CoreGraphics
+#endif
+
 /// Reaches running apps' windows through Accessibility, for the window manager. Creating the real
 /// one, `AccessibilityWindows` in MalumPlatform, also keeps a hung app from stalling Malum: every
 /// Accessibility call gives up after a short wait instead of macOS's six seconds.
