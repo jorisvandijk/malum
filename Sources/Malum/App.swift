@@ -71,7 +71,10 @@ func makeModules(routes: ModuleRoutes) -> [any Module] {
         clipboard: ClipboardSystem(files: files, state: state, clipboard: PasteboardClipboard(), popup: popup),
         samba: SambaSystem(shares: SambaVolumes(), network: NetworkWatcher(), runner: runner, files: files) {
             KeychainTokenStore(service: Project.sambaService, account: $0.account)
-        })
+        },
+        screenshots: ScreenshotsSystem(
+            files: files, paths: paths, capture: ScreenFreezer(), overlay: FullScreenOverlay(),
+            clipboard: PasteboardClipboard()))
     return Modules.all(systems, routes: routes, log: systemLog)
 }
 

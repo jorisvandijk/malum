@@ -11,16 +11,19 @@ public struct ModuleSystems {
     let clipboard: ClipboardSystem
     /// The Samba module's.
     let samba: SambaSystem
+    /// The screenshots module's.
+    let screenshots: ScreenshotsSystem
 
     /// Gathers them.
     public init(
         keyboard: KeyboardSystem, windows: WindowManagerSystem, launcher: LauncherSystem, clipboard: ClipboardSystem,
-        samba: SambaSystem
+        samba: SambaSystem, screenshots: ScreenshotsSystem
     ) {
         self.keyboard = keyboard
         self.windows = windows
         self.launcher = launcher
         self.clipboard = clipboard
         self.samba = samba
+        self.screenshots = screenshots
     }
 }

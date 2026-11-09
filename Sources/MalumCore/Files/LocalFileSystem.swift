@@ -43,12 +43,7 @@ public struct LocalFileSystem: FileSystem {
 
     /// Writes to a temporary file first, then moves it over `path`.
     public func write(_ text: String, to path: String) throws(FileSystemError) {
-        try refuseTOML(path)
-        do {
-            try Data(text.utf8).write(to: URL(fileURLWithPath: path), options: .atomic)
-        } catch {
-            throw .unwritable(path: path, reason: error.localizedDescription)
-        }
+        try write(Data(text.utf8), to: path)
     }
 
     /// Creates the folder at `path` and any missing folders above it.
@@ -74,10 +69,19 @@ public struct LocalFileSystem: FileSystem {
 
     /// Writes to a temporary file first, then moves it over `path` and sets `rw-------`.
     public func writePrivate(_ data: Data, to path: String) throws(FileSystemError) {
+        try write(data, to: path)
+        do {
+            try FileManager.default.setAttributes([.posixPermissions: Self.privateFileMode], ofItemAtPath: path)
+        } catch {
+            throw .unwritable(path: path, reason: error.localizedDescription)
+        }
+    }
+
+    /// Replaces the file at `path` with `data` in one step.
+    public func write(_ data: Data, to path: String) throws(FileSystemError) {
         try refuseTOML(path)
         do {
             try data.write(to: URL(fileURLWithPath: path), options: .atomic)
-            try FileManager.default.setAttributes([.posixPermissions: Self.privateFileMode], ofItemAtPath: path)
         } catch {
             throw .unwritable(path: path, reason: error.localizedDescription)
         }
