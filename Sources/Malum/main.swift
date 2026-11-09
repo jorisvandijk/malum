@@ -40,6 +40,18 @@ func linkOnFirstStart() {
     }
 }
 
+/// Asks the running app to reload or to run an action.
+@MainActor
+private func askApp(_ invocation: Invocation) {
+    let instance = AppInstance(state: state, locks: locks)
+    guard case .action(let action) = invocation else {
+        finish([ReloadCommand(instance: instance, signals: LocalSignals()).run()])
+        return
+    }
+    let requests = ActionRequests(state: state)
+    finish([ActionCommand(instance: instance, requests: requests, signals: LocalSignals()).run(action)])
+}
+
 /// Runs what the command line asked for.
 @MainActor
 func runCommand(_ invocation: Invocation) {
@@ -50,8 +62,8 @@ func runCommand(_ invocation: Invocation) {
         finish(
             InitCommand(files: files, paths: paths)
                 .run(dots: dots, workingDirectory: FileManager.default.currentDirectoryPath, executable: executable))
-    case .reload:
-        finish([ReloadCommand(instance: AppInstance(state: state, locks: locks), signals: LocalSignals()).run()])
+    case .reload, .action:
+        askApp(invocation)
     case .safe, .disable:
         finish(applyOverride(invocation))
     case .permissions:
@@ -178,7 +190,7 @@ func reject(_ invocation: Invocation) -> Never {
     case .unknown(let argument):
         terminal.report(.unknownArgument(argument))
     case .version, .help, .initialize, .reload, .safe, .disable, .permissions, .run, .rollback, .status, .token,
-        .sambaPassword:
+        .sambaPassword, .action:
         break  // These make sense; runCommand runs them.
     }
     terminal.write(Invocation.usage)

@@ -42,6 +42,22 @@ struct ModuleRoutesTests {
         #expect(routes.offers.isEmpty)
     }
 
+    @Test func actionByNameRunsOnTheRunningModuleThatOffersIt() async throws {
+        launcher.hotkeys = HotkeyOffer(actions: ["launcher"])
+        routes.add([launcher])
+        try await launcher.start()
+        #expect(routes.run(actionNamed: "launcher"))
+        #expect(!routes.run(actionNamed: "screenshot"))
+        #expect(launcher.calls == ["start", "perform module(\"launcher\")"])
+    }
+
+    @Test func actionByNameOfAModuleThatDoesNotRunDoesNothing() {
+        launcher.hotkeys = HotkeyOffer(actions: ["launcher"])
+        routes.add([launcher])
+        #expect(!routes.run(actionNamed: "launcher"))
+        #expect(launcher.calls.isEmpty)
+    }
+
     @Test func switchOnSaysWhetherAnythingChanged() {
         #expect(routes.switchOn(["launcher"]))
         #expect(!routes.switchOn(["launcher"]))

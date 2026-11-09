@@ -59,6 +59,11 @@ struct InvocationTests {
         #expect(Invocation(arguments: ["init", "~/git/dots", "extra"]) == .unknown("extra"))
     }
 
+    @Test func screenshotAsksTheAppForItsAction() {
+        #expect(Invocation(arguments: ["screenshot"]) == .action("screenshot"))
+        #expect(Invocation(arguments: ["screenshot", "--area"]) == .unknown("--area"))
+    }
+
     @Test func reloadAsksTheApp() {
         #expect(Invocation(arguments: ["reload"]) == .reload)
     }
