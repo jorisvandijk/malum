@@ -11,8 +11,9 @@ public final class TapSession: Sendable {
     public let actions: AsyncStream<HotkeyTarget>
     /// Hands shortcuts to `actions`.
     private let continuation: AsyncStream<HotkeyTarget>.Continuation
-    /// What is held down, shared by the tap's thread and whoever ends the session.
-    private let keyTap: Mutex<KeyTap>
+    /// What is held down, shared by the tap's thread and whoever ends the session. Nil once the
+    /// session has ended.
+    private let keyTap: Mutex<KeyTap?>
 
     /// Starts with nothing held, sending shortcuts to `registry`, with `hyperKey` from `keyboard.toml`.
     init(registry: HotkeyRegistry, hyperKey: Key?) {
@@ -20,9 +21,11 @@ public final class TapSession: Sendable {
         (actions, continuation) = AsyncStream.makeStream()
     }
 
-    /// What to do with `event`. A shortcut to run also goes out on `actions`.
+    /// What to do with `event`. A shortcut to run also goes out on `actions`. Once the session has
+    /// ended, every event passes, so a callback that was already running holds nothing down that
+    /// no one lets go of.
     public func decide(_ event: TapEvent) -> TapDecision {
-        let decision = keyTap.withLock { $0.decide(event) }
+        let decision = keyTap.withLock { $0?.decide(event) ?? .pass }
         if case .run(let target) = decision {
             continuation.yield(target)
         }
@@ -32,7 +35,10 @@ public final class TapSession: Sendable {
     /// Lets go of whatever the tap held and finishes `actions`. The decision says whether the app
     /// switcher still has to be closed.
     public func end() -> TapDecision {
-        let decision = decide(.switchedOff)
+        let decision = keyTap.withLock { keyTap in
+            defer { keyTap = nil }
+            return keyTap?.decide(.switchedOff) ?? .pass
+        }
         continuation.finish()
         return decision
     }

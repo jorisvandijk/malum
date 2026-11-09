@@ -109,6 +109,19 @@ struct ConfigModuleFileTests {
         #expect(report.kept == ["keyboard"])
     }
 
+    @Test func switchInAFileTheModuleChecksIsReportedOnce() {
+        var config = Config(schemas: ["keyboard": ConfigSchema(about: "Keys.", settings: [:], fileCheck: .keyboard)])
+        let file = "/dots/keyboard.toml"
+        let report = config.load("", from: path, moduleFiles: ["keyboard": .text(path: file, "enabled = true\n")])
+        #expect(
+            report.problems == [
+                ConfigProblem(
+                    .error, file: "keyboard.toml", line: 1,
+                    "enabled goes in the [keyboard] table of malum.toml, not here")
+            ])
+        #expect(report.kept == ["keyboard"])
+    }
+
     @Test func moduleThatChecksItsOwnFileTakesItWhole() {
         var config = Config(schemas: ["keyboard": ConfigSchema(about: "Keys.", settings: [:], fileCheck: .keyboard)])
         let keyboard = "hyper_key = \"caps_lock\"\n\n[hyper]\nf = \"com.apple.finder\"\n"

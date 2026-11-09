@@ -5,6 +5,8 @@ extension KeyboardError: ReportableError {
         switch self {
         case .tapRefused:
             .couldnt("catch keys", "macOS refused the event tap")
+        case .tapSwitchedOff:
+            .couldnt("keep catching keys", "macOS switched the event tap off, starting it again")
         }
     }
 }

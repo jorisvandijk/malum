@@ -64,15 +64,17 @@ jobs:
               pr="$(gh api "$PR_API")"
               title="$(printf '%s' "$pr" | jq -r '.title')"
               body="$(printf '%s' "$pr" | jq -r '.body // ""')"
-              text_problem=""
-              printf '%s\n%s\n' "$title" "$body" | has_word && text_problem="the pull request title or description names an AI tool"
-              printf '%s\n' "$body" | has_generated && text_problem="the pull request description says \"Generated with\""
-              [ -n "$text_problem" ] && [ "$try" -lt "$PR_TRIES" ] || break
+              word_problem=""
+              generated_problem=""
+              printf '%s\n%s\n' "$title" "$body" | has_word && word_problem="the pull request title or description names an AI tool"
+              printf '%s\n' "$body" | has_generated && generated_problem="the pull request description says \"Generated with\""
+              [ -n "$word_problem$generated_problem" ] && [ "$try" -lt "$PR_TRIES" ] || break
               echo "[info] pull request text not clean yet, checking again in ${PR_WAIT}s ($try/$PR_TRIES)"
               try=$((try + 1))
               sleep "$PR_WAIT"
             done
-            [ -z "$text_problem" ] || fail "$text_problem"
+            [ -z "$word_problem" ] || fail "$word_problem"
+            [ -z "$generated_problem" ] || fail "$generated_problem"
           else
             branch="$PUSH_BRANCH"
             head="$PUSH_AFTER"

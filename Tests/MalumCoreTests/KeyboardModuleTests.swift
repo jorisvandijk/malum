@@ -162,6 +162,78 @@ struct KeyboardModuleTests {
         #expect(keyboard.status == .running)
     }
 
+    @Test func tapSwitchedOffIsStartedAgain() async throws {
+        let text = "hyper_key = \"caps_lock\"\n"
+        let keyboard = try module(text)
+        try keyboard.apply([:])
+        try await keyboard.start()
+        catcher.isRunning = false
+        keyboard.check()
+        await keyboard.resume()
+        #expect(catcher.starts == 3)
+        #expect(catcher.isRunning)
+        #expect(keyboard.status == .running)
+    }
+
+    @Test func switchedOffTapThatIsRefusedUndoesTheRemapsAndFails() async throws {
+        let text = "hyper_key = \"caps_lock\"\n"
+        let keyboard = try module(text)
+        try keyboard.apply([:])
+        try await keyboard.start()
+        catcher.isRunning = false
+        catcher.refuses = true
+        keyboard.check()
+        await keyboard.resume()
+        #expect(runner.commands == [Hidutil.set(try mapping(text)), Hidutil.set(.none)])
+        #expect(files.text(at: marker) == "")
+        #expect(keyboard.status == .failed(reason: KeyboardError.tapRefused.text.description))
+    }
+
+    @Test func refusedResumeUndoesTheRemapsAndFails() async throws {
+        let text = "hyper_key = \"caps_lock\"\n"
+        let keyboard = try module(text)
+        try keyboard.apply([:])
+        try await keyboard.start()
+        catcher.refuses = true
+        await keyboard.resume()
+        #expect(runner.commands == [Hidutil.set(try mapping(text)), Hidutil.set(.none)])
+        #expect(files.text(at: marker) == "")
+        #expect(keyboard.status == .failed(reason: KeyboardError.tapRefused.text.description))
+    }
+
+    @Test func failedRemapWhileRunningUndoesTheRemapsAndStopsTheTap() async throws {
+        let first = "hyper_key = \"caps_lock\"\n"
+        let second = "hyper_key = \"caps_lock\"\n\n[remap]\nescape = \"grave\"\n"
+        let refused = Hidutil.set(try mapping(second))
+        let failing = FakeRunner { command in
+            guard command == refused else { return CommandResult(status: 0) }
+            return CommandResult(status: 1, errors: "denied")
+        }
+        let keyboard = try module(first, runner: failing)
+        try keyboard.apply([:])
+        try await keyboard.start()
+        try files.write(second, to: paths.moduleTOML(KeyboardConfig.module, in: dots))
+        try keyboard.apply([:])
+        await keyboard.resume()
+        #expect(failing.commands.contains(refused))
+        #expect(failing.commands.last == Hidutil.set(.none))
+        #expect(files.text(at: marker) == "")
+        #expect(!catcher.isRunning)
+        #expect(keyboard.status == .failed(reason: KeyRemapError.unset(reason: "denied").text.description))
+    }
+
+    @Test func stopWaitsForEveryRestart() async throws {
+        let keyboard = try module("")
+        try keyboard.apply([:])
+        try await keyboard.start()
+        try keyboard.apply([:])
+        try keyboard.apply([:])
+        await keyboard.stop()
+        #expect(catcher.starts == 3)
+        #expect(!catcher.isRunning)
+        #expect(keyboard.status == .off)
+    }
+
     @Test func resumeLeavesAStoppedModuleAlone() async throws {
         let keyboard = try module("hyper_key = \"caps_lock\"\n")
         await keyboard.resume()

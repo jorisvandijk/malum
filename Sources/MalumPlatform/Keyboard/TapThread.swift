@@ -38,6 +38,8 @@ final class TapThread: @unchecked Sendable {  // SAFETY: port, runLoop and stopp
     /// Accessibility is missing.
     func start() -> Bool {
         let mask = Self.events.reduce(CGEventMask()) { $0 | Self.typeBit << CGEventMask($1.rawValue) }
+        // The callback gets `self` unretained. It stays alive while callbacks arrive: they only come
+        // inside the run loop, and `run()` holds a strong reference until that loop stops.
         let context = Unmanaged.passUnretained(self).toOpaque()
         guard
             let port = CGEvent.tapCreate(

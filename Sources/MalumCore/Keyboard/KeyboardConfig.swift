@@ -36,7 +36,8 @@ struct KeyboardConfig: Equatable, Sendable {
         let hyperKey = Self.hyperKey(document[hyperKeyKey], reader: &reader)
         let remaps = Self.remaps(reader.table(document, remapTable, at: []), hyperKey: hyperKey, reader: &reader)
         var bindings: [KeyBinding] = []
-        let tables = document.filter { ![hyperKeyKey, remapTable].contains($0.key) }
+        // `enabled` is reported by the config, which says it belongs in `malum.toml`.
+        let tables = document.filter { ![hyperKeyKey, remapTable, ConfigSchema.switchKey].contains($0.key) }
         for (name, value) in tables.sorted(by: { $0.key < $1.key }) {
             bindings += Self.bindings(inTable: name, value, reader: &reader)
         }

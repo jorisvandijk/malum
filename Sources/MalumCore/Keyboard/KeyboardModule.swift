@@ -10,7 +10,8 @@ import Observation
 final class KeyboardModule: Module {
     /// Its settings: none in `malum.toml` besides the switch, and `keyboard.toml` checked as a whole.
     static let configSchema = ConfigSchema(
-        about: "The hyper key, key remaps and shortcuts, set in `keyboard.toml`. See [keyboard](keyboard.md).",
+        about: "The hyper key, key remaps and shortcuts, set in `\(Paths.moduleTOMLName(KeyboardConfig.module))`. "
+            + "See [keyboard](keyboard.md).",
         settings: [:], fileCheck: .keyboard)
 
     /// The module's id, which names `keyboard.toml`.
@@ -41,7 +42,7 @@ final class KeyboardModule: Module {
         bindings: [], offers: [:], switchedOn: [], lines: TOMLLines(""))
     /// Whether the module runs, so new settings are put to work straight away.
     @ObservationIgnored private var isStarted = false
-    /// New settings being put to work, which `stop` waits for.
+    /// The last restart asked for. Each one waits for the one before it, so `stop` waits for them all.
     @ObservationIgnored private var restart: Task<Void, Never>?
 
     /// Creates the module, off, reading `keyboard.toml` through `files`, working through `system` and
@@ -74,7 +75,7 @@ final class KeyboardModule: Module {
             log.report(problem.message)
         }
         guard isStarted else { return }
-        restart = Task { [weak self] in await self?.restartTap() }
+        queueRestart()
     }
 
     /// Catches keys, then sets the hyper key and the remaps.
@@ -83,7 +84,7 @@ final class KeyboardModule: Module {
         do {
             try await catchKeys()
         } catch {
-            status = .failed(reason: MessageText(error: error).description)
+            fail(error)
             throw error
         }
         isStarted = true
@@ -91,29 +92,36 @@ final class KeyboardModule: Module {
 
     /// Stops catching keys and undoes the remaps.
     func stop() async {
-        await restart?.value
-        restart = nil
+        while let pending = restart {
+            await pending.value
+            if restart == pending {
+                restart = nil
+            }
+        }
         isStarted = false
         keyCatcher.stop()
-        do {
-            try await remapper.clear()
-        } catch {
-            log.report(.warning(error))
-        }
+        await clearRemaps()
         status = .off
     }
 
-    /// Shows in the status what keeps keys from working now, such as secure input.
+    /// Shows in the status what keeps keys from working now, such as secure input. Starts the tap
+    /// again when macOS switched it off, which happens when Accessibility is taken away and given back
+    /// between two checks.
     func check() {
         guard isStarted, status.isActive else { return }
+        guard keyCatcher.isRunning else {
+            log.report(.warning(KeyboardError.tapSwitchedOff))
+            queueRestart()
+            return
+        }
         showStatus()
     }
 
     /// Starts the tap again and sets the remaps again, which a keyboard plugged in doesn't have yet.
     func resume() async {
-        await restart?.value
         guard isStarted else { return }
-        await restartTap()
+        queueRestart()
+        await restart?.value
     }
 
     /// Starts the tap with the current settings, then sets the remaps. The tap goes first, so a
@@ -152,13 +160,39 @@ final class KeyboardModule: Module {
         return .hyperKeySwapped(hyperKey)
     }
 
-    /// Puts new settings to work while the module runs.
+    /// Restarts the tap once the restart before it has finished.
+    private func queueRestart() {
+        let previous = restart
+        restart = Task { [weak self] in
+            await previous?.value
+            await self?.restartTap()
+        }
+    }
+
+    /// Puts new settings to work while the module runs. When that fails, the remaps are undone too,
+    /// so the hyper key never types as a key that nothing catches.
     private func restartTap() async {
+        guard isStarted else { return }
         do {
             try await catchKeys()
         } catch {
-            status = .failed(reason: MessageText(error: error).description)
+            await clearRemaps()
+            fail(error)
         }
+    }
+
+    /// Undoes the remaps, logging when that fails.
+    private func clearRemaps() async {
+        do {
+            try await remapper.clear()
+        } catch {
+            log.report(.warning(error))
+        }
+    }
+
+    /// Shows that the module failed because of `error`.
+    private func fail(_ error: any Error) {
+        status = .failed(reason: MessageText(error: error).description)
     }
 
     /// The text of `keyboard.toml`, empty when dots isn't known or the file isn't there.

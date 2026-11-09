@@ -62,4 +62,12 @@ struct TapSessionTests {
         #expect(session.decide(press(.tab)) == .openSwitcher([.cmd]))
         #expect(session.end() == .closeSwitcher)
     }
+
+    @Test func endedSessionPassesEveryEvent() throws {
+        let session = try session()
+        #expect(session.decide(press(KeyMapping.hyperTarget)) == .swallow)
+        #expect(session.end() == .pass)
+        #expect(session.decide(press(.tab)) == .pass)
+        #expect(session.end() == .pass)
+    }
 }

@@ -24,6 +24,8 @@ final class LiveConfig {
     private(set) var report: ConfigReport?
     /// Whether modules may run, which they may only once Malum is signed with its own certificate.
     private var modulesAllowed = false
+    /// Whether Malum is quitting, which keeps the modules off for good.
+    private var quitting = false
     /// Checks the modules again and again, while any module runs or waits.
     private var recheck: Task<Void, Never>?
     /// Runs after each load, and again once the modules have been switched.
@@ -48,6 +50,7 @@ final class LiveConfig {
     /// Lets the modules run from now on. Before the first load, that load switches them on; after it,
     /// loading again does, since the modules have cleaned up by then.
     func allowModules() {
+        guard !quitting else { return }
         modulesAllowed = true
         guard report != nil else { return }
         reload(force: true)
@@ -73,10 +76,12 @@ final class LiveConfig {
         readOverrides()
         follow(reloader.path, with: reloader.watchedFiles)
         onUpdate()
-        let enabled = modulesAllowed ? overrides.allowed(reloader.enabled) : []
+        let switchedOn = overrides.allowed(reloader.enabled)
         let settings = reloader.settings
         Task { [weak self] in
             guard let self else { return }
+            // Read when the update is queued, so an update can't start modules after quitting stopped them.
+            let enabled = self.modulesAllowed ? switchedOn : []
             let messages = await self.modules.update(enabled: enabled, settings: settings, changed: report.changed)
             messages.forEach(announce)
             self.onUpdate()
@@ -94,6 +99,7 @@ final class LiveConfig {
 
     /// Stops every module and keeps them off from now on, for quitting.
     func stopModules() async {
+        quitting = true
         modulesAllowed = false
         recheck?.cancel()
         let messages = await modules.update(enabled: [], settings: reloader.settings, changed: [])
