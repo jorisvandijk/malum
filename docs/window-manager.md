@@ -49,6 +49,10 @@ Malum fills the screen with the menu bar. Other screens are left alone. When a d
 
 A hidden app or a minimised window would leave a gap, so the window manager swallows cmd+H (hide), cmd+M (minimise) and cmd+option+M (minimise all) while `block_hide_minimize` is on, which it is by default. The keys are caught by the [keyboard](keyboard.md) module, so they only work this way while it's on too. A shortcut in `keyboard.toml` on one of these keys is a config error, since the window manager has them.
 
+## Hiding and minimising
+
+A hidden app or a minimised window would leave a gap, so the window manager swallows cmd+H (hide), cmd+M (minimise) and cmd+option+M (minimise all) while `block_hide_minimize` is on, which it is by default. The keys are caught by the [keyboard](keyboard.md) module, so they only work this way while it's on too. A shortcut in `keyboard.toml` on one of these keys is a config error, since the window manager has them.
+
 ## Floating windows
 
 A floating window is left where it is. Dialogs, panels, sheets, modal windows, windows of a fixed size and native fullscreen windows always float. Float rules add more:
