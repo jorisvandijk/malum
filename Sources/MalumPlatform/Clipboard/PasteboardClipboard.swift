@@ -29,8 +29,11 @@ public final class PasteboardClipboard: Clipboard {
     /// Creates the clipboard, not watching yet.
     public init() {}
 
-    /// Whether Paste from Other Apps is set to deny.
-    public var isDenied: Bool { pasteboard.accessBehavior == .alwaysDeny }
+    /// Whether Paste from Other Apps is set to deny. Before macOS 15.4 there's no such setting.
+    public var isDenied: Bool {
+        guard #available(macOS 15.4, *) else { return false }
+        return pasteboard.accessBehavior == .alwaysDeny
+    }
 
     /// Starts looking at the change count twice a second.
     public func watch(_ onCopy: @escaping @MainActor (CopySeen) -> Void) {
