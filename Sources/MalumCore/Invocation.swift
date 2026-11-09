@@ -65,7 +65,6 @@ public enum Invocation: Equatable, Sendable {
     /// The commands that take no arguments, by name.
     private static let plain: [String: Self] = [
         "reload": .reload, "safe": .safe, "permissions": .permissions, "status": .status, "rollback": .rollback,
-        ScreenshotsConfig.action: .action(ScreenshotsConfig.action),
     ]
 
     /// Reads the arguments of `disable`: exactly one module.
