@@ -175,6 +175,14 @@ extension MessageText {
     /// What a Samba server's shares have to be.
     static var shareList: MessageText { "a list of one or more share names" }
 
+    /// What the screenshots folder has to be.
+    static var screenshotFolder: MessageText { "a folder, such as \"\(ScreenshotsConfig.defaultFolder)\"" }
+
+    /// What the screenshots' quick colors have to be.
+    static var screenshotColors: MessageText {
+        "a list of 1 to \(ScreenshotsConfig.maxColors) colors as \"#rrggbb\", such as \"#ff3b30\""
+    }
+
     /// What a list of VSCodium extensions has to be.
     static var extensionList: MessageText { "a list of extensions as \"publisher.name\"" }
 }
