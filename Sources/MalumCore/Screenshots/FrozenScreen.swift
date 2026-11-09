@@ -19,6 +19,8 @@ public protocol FrozenScreen: AnyObject {
     #if canImport(CoreGraphics)
         /// The frozen screen's pixels, for the overlay to show.
         var image: CGImage { get }
+        /// Where the screen is, in AppKit's coordinates, for the overlay to cover.
+        var frame: CGRect { get }
     #endif
 }
 

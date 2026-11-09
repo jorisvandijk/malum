@@ -56,6 +56,15 @@ public enum AnnotationDrawing {
 }
 
 extension ScreenshotColor {
+    /// The color `color` is in sRGB, or nil when it has no such form, such as a pattern.
+    init?(_ color: NSColor) {
+        guard let rgb = color.usingColorSpace(.sRGB) else { return nil }
+        func channel(_ value: CGFloat) -> UInt8 {
+            UInt8((min(max(value, 0), 1) * Double(UInt8.max)).rounded())
+        }
+        self.init(red: channel(rgb.redComponent), green: channel(rgb.greenComponent), blue: channel(rgb.blueComponent))
+    }
+
     /// The color as Core Graphics draws it.
     var cgColor: CGColor {
         CGColor(

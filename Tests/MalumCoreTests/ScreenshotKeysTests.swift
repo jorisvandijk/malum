@@ -44,4 +44,14 @@ struct ScreenshotKeysTests {
             #expect(hotkey.flatMap { ScreenshotKeys.command(keyCode: $0.key.keyCode, modifiers: $0.modifiers) } == each)
         }
     }
+
+    @Test func onlySaveCancelUndoAndRedoWorkWhileTyping() {
+        #expect(ScreenshotKeys.worksWhileTyping(.save) && ScreenshotKeys.worksWhileTyping(.redo))
+        #expect(!ScreenshotKeys.worksWhileTyping(.tool(.line)) && !ScreenshotKeys.worksWhileTyping(nil))
+    }
+
+    @Test func deleteKeyDeletesBackward() {
+        #expect(ScreenshotKeys.deletesBackward(keyCode: Key.named("delete")?.keyCode ?? 0))
+        #expect(!ScreenshotKeys.deletesBackward(keyCode: Key.named("a")?.keyCode ?? 0))
+    }
 }

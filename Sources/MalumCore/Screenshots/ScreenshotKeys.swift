@@ -23,6 +23,21 @@ public enum ScreenshotKeys {
         return commands[Hotkey(modifiers: modifiers, key: key)]
     }
 
+    /// The commands whose keys still work while text is typed; every other key types.
+    private static let whileTyping: Set<ScreenshotCommand> = [.save, .cancel, .undo, .redo]
+    /// The key that deletes the character before the caret.
+    private static let deleteKey = Key.named("delete")
+
+    /// Whether `command`, from a key pressed while text is typed, runs instead of typing.
+    public static func worksWhileTyping(_ command: ScreenshotCommand?) -> Bool {
+        command.map(whileTyping.contains) ?? false
+    }
+
+    /// Whether the key with virtual key code `keyCode` deletes the character before the caret.
+    public static func deletesBackward(keyCode: UInt16) -> Bool {
+        deleteKey?.keyCode == keyCode
+    }
+
     /// The key that does `command`, for its toolbar button, or nil when no key does.
     static func hotkey(for command: ScreenshotCommand) -> Hotkey? {
         table.first { $0.command == command }?.hotkey
