@@ -26,12 +26,33 @@ final class OverlayView: NSView {
     var onOutcome: (ScreenshotSession.Outcome) -> Void = { _ in }
     /// The frozen screen's pixels.
     private let image: NSImage
+    /// The toolbar, built once the view exists so its clicks can reach it.
+    private var toolbar: OverlayToolbar?
 
     /// Creates the view of `session` over `frozen`.
     init(frozen: any FrozenScreen, session: ScreenshotSession) {
         self.session = session
         image = NSImage(cgImage: frozen.image, size: frozen.screen.size)
         super.init(frame: CGRect(origin: .zero, size: frozen.frame.size))
+        let toolbar = OverlayToolbar(quickColors: session.toolbar.quickColors) { [weak self] command in
+            self?.perform(command)
+        }
+        addSubview(toolbar)
+        self.toolbar = toolbar
+        toolbar.show(session.toolbar, in: bounds)
+    }
+
+    /// Runs `command` from a toolbar button as its key would.
+    private func perform(_ command: ScreenshotCommand) {
+        if session.isTyping {
+            _ = session.perform(.cancel)
+        }
+        handle(session.perform(command))
+    }
+
+    /// Takes `color` from the color picker for what's drawn next.
+    func pick(_ color: ScreenshotColor) {
+        handle(session.pick(color))
     }
 
     /// Not used: the view is only built in code.
@@ -142,6 +163,7 @@ final class OverlayView: NSView {
             return
         case .redraw:
             needsDisplay = true
+            toolbar?.show(session.toolbar, in: bounds)
         case .openColorPicker, .save, .cancel:
             onOutcome(outcome)
         }
