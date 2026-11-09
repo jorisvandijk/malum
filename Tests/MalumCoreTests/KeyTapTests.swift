@@ -35,8 +35,12 @@ struct KeyTapTests {
     }
 
     /// What `tap` decides for each of `events`, checking they took no longer than the budget on average.
+    /// A copy decides them first, so the key tables are built before the clock runs, as they are long
+    /// before a real tap sees its first key.
     private func decisions(_ events: [TapEvent], from tap: KeyTap? = nil) throws -> [TapDecision] {
         var tap = try tap ?? self.tap()
+        var warmUp = tap
+        _ = events.map { warmUp.decide($0) }
         var decisions: [TapDecision] = []
         let elapsed = ContinuousClock().measure {
             decisions = events.map { tap.decide($0) }
