@@ -112,4 +112,9 @@ struct CommandFilesTests {
     @Test func appVersionAsksTheExecutable() {
         #expect(AppVersion.ask("/a/Malum") == Command("/a/Malum", ["--version"]))
     }
+
+    @Test func hidutilSetsTheWholeMapping() {
+        #expect(
+            Hidutil.set(.none) == Command("/usr/bin/hidutil", ["property", "--set", #"{"UserKeyMapping":[]}"#]))
+    }
 }

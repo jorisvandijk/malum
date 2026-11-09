@@ -48,6 +48,9 @@ struct Key: Hashable, Sendable {
     /// fn on the two Apple vendor pages Apple keyboards send it on, depending on the model.
     private static let fnUsages: [UInt64] = [0xFF_0000_0003, 0xFF01_0000_0003]
 
+    /// F18, which the hyper key types as, so the event tap can tell it from every other key.
+    static let f18 = Key("f18", keyCode: 0x4F, usage: 0x6D, canBeHyper: true)
+
     /// Every key Malum knows, in the order the docs list them.
     static let all: [Key] = [
         Key("a", keyCode: 0x00, usage: 0x04), Key("b", keyCode: 0x0B, usage: 0x05),
@@ -79,7 +82,7 @@ struct Key: Hashable, Sendable {
         Key("f15", keyCode: 0x71, usage: 0x6A, canBeHyper: true),
         Key("f16", keyCode: 0x6A, usage: 0x6B, canBeHyper: true),
         Key("f17", keyCode: 0x40, usage: 0x6C, canBeHyper: true),
-        Key("f18", keyCode: 0x4F, usage: 0x6D, canBeHyper: true),
+        f18,
         Key("f19", keyCode: 0x50, usage: 0x6E, canBeHyper: true),
         Key("f20", keyCode: 0x5A, usage: 0x6F, canBeHyper: true),
         Key("return", keyCode: 0x24, usage: 0x28), Key("tab", keyCode: 0x30, usage: 0x2B),
