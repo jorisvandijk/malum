@@ -26,6 +26,9 @@ func runApp() -> Never {
     let modules = Modules.all(
         keyboard: KeyboardSystem(
             remapper: KeyRemapper(runner: runner, state: state), keyCatcher: EventTap(), state: SystemKeyboardState()),
+        windows: WindowManagerSystem(
+            apps: WorkspaceApps(), windows: AccessibilityWindows(), watcher: WorkspaceAppWatcher(),
+            screens: MainScreen()),
         routes: routes, log: systemLog)
     let config = LiveConfig(
         reloader: ConfigReloader(files: files, paths: paths, schemas: ConfigSchemas.all),

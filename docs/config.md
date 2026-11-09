@@ -41,3 +41,41 @@ The folder programs from GitHub releases are installed in.
 
 - Value: text in quotes
 - Default: `"~/.local/bin"`
+
+## `window_manager`
+
+Run or raise apps, windows filling the screen, and floating windows. See [window manager](window-manager.md).
+
+### `window_manager.block_hide_minimize`
+
+Swallows cmd+H, cmd+M and cmd+option+M, which would hide an app or minimise a window.
+
+- Value: true or false
+- Default: `true`
+
+### `window_manager.enabled`
+
+Switches the module on. The module stays off until this is set to true.
+
+- Value: true or false
+- Default: `false`
+
+### `window_manager.float`
+
+Apps whose windows are left alone, each with `app` (a bundle ID) and an optional `title`, a pattern that only matching windows float by.
+
+- Value: a list of tables
+
+### `window_manager.frame`
+
+The part of the screen windows fill: "visible" (below the menu bar and outside the Dock) or "full" (the whole screen).
+
+- Value: text in quotes
+- Default: `"visible"`
+
+### `window_manager.hide_others`
+
+Hides every other app when an app is run or raised.
+
+- Value: true or false
+- Default: `true`

@@ -19,7 +19,7 @@ public final class WorkspaceApps {
     }
 
     /// What run or raise needs to know about `app`.
-    private static func describe(_ app: NSRunningApplication) -> RunningApp {
+    nonisolated static func describe(_ app: NSRunningApplication) -> RunningApp {
         RunningApp(
             pid: app.processIdentifier, bundleID: app.bundleIdentifier,
             name: app.localizedName ?? app.bundleIdentifier ?? String(app.processIdentifier),
