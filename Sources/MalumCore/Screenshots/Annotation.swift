@@ -48,7 +48,7 @@ public struct Annotation: Equatable, Sendable {
 
 extension CGRect {
     /// The rectangle with `corner` and `other` at opposite corners, whichever way they lie.
-    init(corner: CGPoint, corner other: CGPoint) {
+    public init(corner: CGPoint, corner other: CGPoint) {
         self.init(
             x: min(corner.x, other.x), y: min(corner.y, other.y),
             width: abs(other.x - corner.x), height: abs(other.y - corner.y))
