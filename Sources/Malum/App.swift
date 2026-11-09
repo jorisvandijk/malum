@@ -22,10 +22,11 @@ func runApp() -> Never {
     updateLoginAgent()
     let launches = LaunchRecord(state: state)
     checkCrashLoop(launches, overrides: OverrideStore(state: state))
-    let modules = Modules.all()
-    let schemas = ConfigSchemas.all(modules: modules)
+    let modules = Modules.all(
+        files: files, paths: paths, remapper: KeyRemapper(runner: runner, state: state), keyCatcher: EventTap(),
+        log: systemLog)
     let config = LiveConfig(
-        reloader: ConfigReloader(files: files, paths: paths, schemas: schemas),
+        reloader: ConfigReloader(files: files, paths: paths, schemas: ConfigSchemas.all),
         modules: ModuleSwitch(modules: modules, permissions: PermissionProbe(home: paths.home)),
         overrides: OverrideStore(state: state))
     let menu = MenuFeed(modules: modules, config: config)

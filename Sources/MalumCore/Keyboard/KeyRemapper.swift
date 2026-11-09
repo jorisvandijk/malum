@@ -3,7 +3,7 @@
 /// Remaps last until they're undone, even when Malum is gone. A marker in the state folder says
 /// Malum has some set, so the cleanup at the next launch undoes a remap left by a crash, and Malum
 /// never clears a mapping it didn't set.
-struct KeyRemapper: Sendable {
+public struct KeyRemapper: Sendable {
     /// The marker, which holds the mapping last set. Empty or missing means none is.
     static let markerName = "key-remap"
 
@@ -13,7 +13,7 @@ struct KeyRemapper: Sendable {
     private let state: StateFolder
 
     /// Creates the remapper, running `hidutil` through `runner` and marking in `state`.
-    init(runner: any CommandRunner, state: StateFolder) {
+    public init(runner: any CommandRunner, state: StateFolder) {
         self.runner = runner
         self.state = state
     }

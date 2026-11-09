@@ -36,3 +36,7 @@ public final class EventTap {
         thread = nil
     }
 }
+
+// MARK: - KeyCatcher
+
+extension EventTap: KeyCatcher {}
