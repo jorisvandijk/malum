@@ -41,7 +41,7 @@ Password for joris@nas.local:
 [info] saved the password for joris@nas.local in the login keychain
 ```
 
-Running it again replaces the password. It's kept as a generic password called `com.jorisvandijk.malum.samba` with the account `joris@nas.local`, so **Keychain Access** shows it too.
+Running it again replaces the password. Malum uses the new one the next time it looks at the shares: on the next network change, the next change to `samba.toml`, or within five minutes. It's kept as a generic password called `com.jorisvandijk.malum.samba` with the account `joris@nas.local`, so **Keychain Access** shows it too.
 
 ## Mounting
 
