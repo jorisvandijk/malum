@@ -103,11 +103,15 @@ struct WindowManagerConfig: Equatable, Sendable {
             return nil
         }
         guard let value = rule[titleKey] else { return FloatRule(app: app, title: nil) }
-        guard case .string(let title) = value, (try? Regex(title)) != nil else {
-            // A pattern that doesn't compile is the expected answer here, reported as a problem.
+        guard case .string(let title) = value, compiles(title) else {
             report(path + [titleKey]) { .shouldBe($0, MessageText.titlePattern) }
             return nil
         }
         return FloatRule(app: app, title: title)
+    }
+
+    /// Whether `pattern` is one `Regex` takes.
+    private static func compiles(_ pattern: String) -> Bool {
+        (try? Regex(pattern)) != nil  // Not compiling is the answer this gives.
     }
 }
