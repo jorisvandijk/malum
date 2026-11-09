@@ -75,6 +75,11 @@ extension AccessibilityApp: WatchedApp {
         return elements.map { AccessibilityWindow($0, of: app) }
     }
 
+    /// Whether the app is hidden, through Accessibility.
+    var isHidden: Bool {
+        AccessibilityElement(element: app).bool(AccessibilityName.hidden) ?? false
+    }
+
     /// Takes the observer off the main run loop, so no more notifications arrive.
     func stop() {
         CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .defaultMode)
