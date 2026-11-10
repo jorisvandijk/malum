@@ -66,6 +66,11 @@ extension MessageText {
         "\(path): a host name holds only letters, digits and dashes, up to 63, and doesn't start or end with a dash"
     }
 
+    /// The screen size at `path`, written dotted, isn't written as width and height in points.
+    static func notResolution(_ path: String) -> MessageText {
+        "\(path): a resolution is the width and height in points, such as \"1710x1112\""
+    }
+
     /// The bundle ID at `path`, written dotted, is empty or holds spaces.
     static func notBundleID(_ path: String) -> MessageText {
         "\(path): a bundle ID can't be empty or hold spaces"

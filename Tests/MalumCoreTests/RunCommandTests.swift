@@ -23,7 +23,8 @@ struct RunCommandTests {
         let succeeded = await RunCommand(
             files: files, paths: paths, runner: runner, github: FakeGitHub([:], files: files),
             state: StateFolder(files: files, locks: FakeFileLocks(), paths: paths),
-            canAsk: true, handlers: FakeAppHandlers(), desktop: FakeDesktop()
+            canAsk: true, handlers: FakeAppHandlers(), desktop: FakeDesktop(),
+            display: FakeDisplay()
         ).run {
             messages.append($0)
         }
