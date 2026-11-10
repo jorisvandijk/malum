@@ -90,7 +90,8 @@ func applySystemConfig(force: Bool) -> Never {
         let github = gitHub()
         let command = RunCommand(
             files: files, paths: paths, runner: runner, github: github, state: state,
-            canAsk: isatty(STDIN_FILENO) == 1, handlers: WorkspaceAppHandlers())
+            canAsk: isatty(STDIN_FILENO) == 1, handlers: WorkspaceAppHandlers(),
+            desktop: WorkspaceDesktop())
         let applied = await command.run { issues.add($0) }
         let updated = await selfUpdate(github: github).run(force: force) { issues.add($0) }
         issues.finish()

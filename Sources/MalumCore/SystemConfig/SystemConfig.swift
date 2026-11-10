@@ -19,5 +19,11 @@ public enum SystemConfig {
             ReleaseFolders.programsKey: Setting(
                 .string, "The folder programs from GitHub releases are installed in.",
                 default: .string(ReleaseFolders.defaultPrograms)),
+            Wallpaper.key: Setting(
+                .string,
+                """
+                The picture every screen shows, by its file name in the `\(Paths.wallpapersFolderName)` folder \
+                in dots, with or without its extension. Left out, the wallpaper stays as it is.
+                """),
         ])
 }

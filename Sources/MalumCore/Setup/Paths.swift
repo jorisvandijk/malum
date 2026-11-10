@@ -91,6 +91,12 @@ public struct Paths: Equatable, Sendable {
     /// The `apps` folder at the top of the dots folder `dots`.
     public func appsFolder(in dots: String) -> String { "\(dots)/\(Self.appsFolderName)" }
 
+    /// The name of the folder in dots that holds the wallpapers.
+    public static let wallpapersFolderName = "wallpapers"
+
+    /// The folder of wallpapers in the dots folder `dots`.
+    public func wallpapersFolder(in dots: String) -> String { "\(dots)/\(Self.wallpapersFolderName)" }
+
     /// `malum.toml` at the top of the dots folder `dots`.
     public func configTOML(in dots: String) -> String { "\(dots)/\(Self.configTOMLName)" }
 

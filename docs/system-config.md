@@ -19,6 +19,22 @@ enabled = true
 
 When the table is missing, sets `enabled = false`, or has a problem, `malum run` changes nothing, says why, and exits with an error.
 
+## Wallpaper
+
+Put your pictures in a `wallpapers` folder in dots, and pick one in `malum.toml` by its file name, with or without the extension:
+
+```toml
+[system_config]
+enabled = true
+wallpaper = "dunes"
+```
+
+`malum run` shows it on every screen, and sets it back when it was changed by hand. Leaving `wallpaper` out leaves the wallpaper as it is. A name with no picture in the folder is an error, and the wallpaper stays.
+
+```
+[info] set the wallpaper to dunes.jpg from wallpapers in dots
+```
+
 ## packages.toml
 
 What gets installed is listed in `packages.toml`, at the top of your dots folder, next to `malum.toml`. Each way of installing has its own table: `[homebrew]`, `[app_store]` and `[release.<name>]`.

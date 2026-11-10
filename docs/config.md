@@ -95,6 +95,12 @@ The folder programs from GitHub releases are installed in.
 - Value: text in quotes
 - Default: `"~/.local/bin"`
 
+### `system_config.wallpaper`
+
+The picture every screen shows, by its file name in the `wallpapers` folder in dots, with or without its extension. Left out, the wallpaper stays as it is.
+
+- Value: text in quotes
+
 ## `window_manager`
 
 Run or raise apps, windows filling the screen, and floating windows. See [window manager](window-manager.md).
