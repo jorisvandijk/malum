@@ -570,6 +570,21 @@ Setting them needs root, so they use the run's one password prompt, and only ask
 [info] turned the boot sound off from macos.toml
 ```
 
+### Screen resolution
+
+`resolution` in `[display]` sets the size the Mac's own screen shows things at, as width and height in points. These are the sizes System Settings offers under Displays, from "Larger Text" to "More Space"; hold the pointer over one there to see its size.
+
+```toml
+[display]
+resolution = "1710x1112"
+```
+
+It changes nothing when the screen already shows that size, and is skipped while the screen is off, such as with the lid closed. A size the screen can't show is an error that lists the ones it can. Taking the key out leaves the screen as it is.
+
+```
+[info] set the screen's resolution to 1710x1112 from macos.toml (it was 1470x956)
+```
+
 ## Status
 
 `malum status` shows what Malum manages and what doesn't match dots right now. It changes nothing and never asks for your password. It works whether `system_config` is on or off.

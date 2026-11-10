@@ -1,8 +1,8 @@
 /// The macOS settings part of system config: sets the preferences `macos.toml` in dots lists, by
 /// domain and the names macOS stores them under, then restarts what has to show them. It also
 /// writes the files only root can change (`/etc/hosts` and Touch ID for sudo), sets the power
-/// settings, removes the Apple apps it lists, sets the default apps and this Mac's name and boot
-/// sound.
+/// settings, removes the Apple apps it lists, sets the default apps, this Mac's name and boot
+/// sound, and the size its own screen shows things at.
 @MainActor
 struct MacOSSettings {
     /// The table of preferences, one table inside it for each domain.
@@ -30,6 +30,8 @@ struct MacOSSettings {
         var defaultApps: DefaultApps.Wanted = [:]
         /// This Mac's name and boot sound.
         var computer = ComputerSettings.Wanted()
+        /// The size the Mac's own screen shows things at, or nil to leave it.
+        var resolution: DisplayResolution?
     }
 
     /// The process that shows the settings of a domain, which is restarted after a change to it.
@@ -55,13 +57,15 @@ struct MacOSSettings {
     private let paths: Paths
     /// Says which app opens what, and changes it.
     private let handlers: any AppHandlers
+    /// The Mac's own screen.
+    private let display: any Display
 
     /// Creates the part, which reads `macos.toml` on `files`, sets the settings with `runner`, as
-    /// root through `sudo` where needed, keeps its record in `state` and sets the default apps
-    /// through `handlers`.
+    /// root through `sudo` where needed, keeps its record in `state`, sets the default apps
+    /// through `handlers` and the screen's size through `display`.
     init(
         files: any FileSystem, runner: any CommandRunner, sudo: SudoSession, state: StateFolder, paths: Paths,
-        handlers: any AppHandlers
+        handlers: any AppHandlers, display: any Display
     ) {
         self.files = files
         self.runner = runner
@@ -69,6 +73,7 @@ struct MacOSSettings {
         self.state = state
         self.paths = paths
         self.handlers = handlers
+        self.display = display
     }
 
     /// Sets the settings in `macos.toml` in the dots folder `dots`, and removes the ones Malum set
@@ -105,7 +110,8 @@ struct MacOSSettings {
             wanted.appleApps, report: report)
         let defaults = await DefaultApps(handlers: handlers).set(wanted.defaultApps, report: report)
         let computer = await ComputerSettings(runner: runner, sudo: sudo).write(wanted.computer, report: report)
-        return wrote && set && power && removed && defaults && computer
+        let resolution = DisplaySettings(display: display).set(wanted.resolution, report: report)
+        return wrote && set && power && removed && defaults && computer && resolution
     }
 
     /// Reads `text`, the contents of `macos.toml`: what it sets, or nil when an error stops it, and
@@ -121,7 +127,7 @@ struct MacOSSettings {
             reader.document, at: [],
             known: [
                 preferencesTable, currentHostTable, hostsTable, sudoTable, PowerSettings.table, AppleApps.table,
-                DefaultApps.table, ComputerSettings.table,
+                DefaultApps.table, ComputerSettings.table, DisplaySettings.table,
             ])
         var wanted = Wanted()
         wanted.preferences =
@@ -137,6 +143,7 @@ struct MacOSSettings {
         wanted.appleApps = AppleApps.read(&reader)
         wanted.defaultApps = DefaultApps.read(&reader)
         wanted.computer = ComputerSettings.read(&reader)
+        wanted.resolution = DisplaySettings.read(&reader)
         let problems = reader.problemsByLine
         return (reader.hasErrors ? nil : wanted, problems)
     }

@@ -17,12 +17,15 @@ public struct RunCommand {
     private let handlers: any AppHandlers
     /// Shows the wallpaper.
     private let desktop: any Desktop
+    /// The Mac's own screen.
+    private let display: any Display
 
     /// Creates the command, which asks for the password only when `canAsk` is set, sets the
-    /// default apps through `handlers` and the wallpaper through `desktop`.
+    /// default apps through `handlers`, the wallpaper through `desktop` and the screen's size
+    /// through `display`.
     public init(
         files: any FileSystem, paths: Paths, runner: any CommandRunner, github: any GitHub, state: StateFolder,
-        canAsk: Bool, handlers: any AppHandlers, desktop: any Desktop
+        canAsk: Bool, handlers: any AppHandlers, desktop: any Desktop, display: any Display
     ) {
         self.files = files
         self.paths = paths
@@ -32,6 +35,7 @@ public struct RunCommand {
         self.canAsk = canAsk
         self.handlers = handlers
         self.desktop = desktop
+        self.display = display
     }
 
     /// Loads `malum.toml` and runs each part of system config in order, reporting as it goes. Says
@@ -60,7 +64,8 @@ public struct RunCommand {
             let apps = await AppConfigFiles(files: files, runner: runner, sudo: sudo, state: state, paths: paths).run(
                 dots: dots, report: report)
             let macOS = await MacOSSettings(
-                files: files, runner: runner, sudo: sudo, state: state, paths: paths, handlers: handlers
+                files: files, runner: runner, sudo: sudo, state: state, paths: paths, handlers: handlers,
+                display: display
             ).run(dots: dots, report: report)
             let wallpaper = Wallpaper(files: files, paths: paths, desktop: desktop).set(
                 settings, dots: dots, report: report)

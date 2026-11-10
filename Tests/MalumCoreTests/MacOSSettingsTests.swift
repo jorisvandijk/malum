@@ -19,7 +19,8 @@ struct MacOSSettingsTests {
         let state = StateFolder(files: files, locks: FakeFileLocks(), paths: paths)
         let sudo = SudoSession(runner: runner, canAsk: true)
         let succeeded = await MacOSSettings(
-            files: files, runner: runner, sudo: sudo, state: state, paths: paths, handlers: FakeAppHandlers()
+            files: files, runner: runner, sudo: sudo, state: state, paths: paths, handlers: FakeAppHandlers(),
+            display: FakeDisplay()
         ).run(dots: "/Users/test/dots") { messages.append($0) }
         return (succeeded, messages)
     }
