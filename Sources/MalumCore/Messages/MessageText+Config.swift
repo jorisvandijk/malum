@@ -61,6 +61,11 @@ extension MessageText {
         "\(path): a host name and its address can't be empty or hold spaces"
     }
 
+    /// The name at `path`, written dotted, isn't one the local network takes.
+    static func notHostname(_ path: String) -> MessageText {
+        "\(path): a host name holds only letters, digits and dashes, up to 63, and doesn't start or end with a dash"
+    }
+
     /// The bundle ID at `path`, written dotted, is empty or holds spaces.
     static func notBundleID(_ path: String) -> MessageText {
         "\(path): a bundle ID can't be empty or hold spaces"

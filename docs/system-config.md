@@ -512,6 +512,26 @@ video = "io.mpv"
 [info] made net.librewolf.librewolf the default app for http links from macos.toml
 ```
 
+### Name and boot sound
+
+`[computer]` in `macos.toml` names this Mac and switches the sound it makes when it starts up on or off.
+
+```toml
+[computer]
+hostname = "macbook"
+boot_sound = false
+```
+
+`hostname` sets all three of the Mac's names: the one people see (`ComputerName`), the one the shell and network tools use (`HostName`) and the one on the local network (`LocalHostName`, as `macbook.local`). It holds only letters, digits and dashes, so the local network takes it too. `scutil --get HostName` shows a name now. `boot_sound = false` mutes the startup sound, `true` lets it play.
+
+Setting them needs root, so they use the run's one password prompt, and only ask when something has to change. One changed by hand is set back on the next run. Taking a key out leaves the setting as it is.
+
+```
+[info] asking for your password to change this Mac's name or boot sound
+[info] set HostName to macbook from macos.toml
+[info] turned the boot sound off from macos.toml
+```
+
 ## Status
 
 `malum status` shows what Malum manages and what doesn't match dots right now. It changes nothing and never asks for your password. It works whether `system_config` is on or off.

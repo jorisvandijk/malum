@@ -140,3 +140,29 @@ extension Message {
         }
     }
 }
+
+/// The words for `[computer]` in `macos.toml`.
+extension MessageText {
+    /// Changing this Mac's name or startup sound.
+    static let changeComputer: MessageText = "change this Mac's name or boot sound"
+    /// The sound the Mac makes when it starts up.
+    static let bootSound: MessageText = "the boot sound"
+}
+
+extension Message {
+    /// The Mac's name `name` was set to `value` from `macos.toml`.
+    static func hostnameSet(_ name: String, to value: String) -> Message {
+        Message(.info, "set \(name) to \(value) from \(Paths.macOSTOMLName)")
+    }
+
+    /// The boot sound was turned on, when `on` is set, or off from `macos.toml`.
+    static func bootSoundSet(_ on: Bool) -> Message {
+        let state: MessageText = on ? "on" : "off"
+        return Message(.info, "turned \(MessageText.bootSound) \(state) from \(Paths.macOSTOMLName)")
+    }
+
+    /// `setting` in `[computer]` couldn't be changed.
+    static func computerNotSet(_ setting: MessageText, reason: String) -> Message {
+        couldnt("set \(setting)", "\(reason)")
+    }
+}
