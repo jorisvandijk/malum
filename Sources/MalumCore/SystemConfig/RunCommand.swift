@@ -15,12 +15,14 @@ public struct RunCommand {
     private let canAsk: Bool
     /// Says which app opens what, and changes it.
     private let handlers: any AppHandlers
+    /// Shows the wallpaper.
+    private let desktop: any Desktop
 
-    /// Creates the command, which asks for the password only when `canAsk` is set and sets the
-    /// default apps through `handlers`.
+    /// Creates the command, which asks for the password only when `canAsk` is set, sets the
+    /// default apps through `handlers` and the wallpaper through `desktop`.
     public init(
         files: any FileSystem, paths: Paths, runner: any CommandRunner, github: any GitHub, state: StateFolder,
-        canAsk: Bool, handlers: any AppHandlers
+        canAsk: Bool, handlers: any AppHandlers, desktop: any Desktop
     ) {
         self.files = files
         self.paths = paths
@@ -29,6 +31,7 @@ public struct RunCommand {
         self.state = state
         self.canAsk = canAsk
         self.handlers = handlers
+        self.desktop = desktop
     }
 
     /// Loads `malum.toml` and runs each part of system config in order, reporting as it goes. Says
@@ -46,7 +49,8 @@ public struct RunCommand {
             report(.systemConfigOff(in: loaded))
             return false
         }
-        let folders = ReleaseFolders(reloader.settings[SystemConfig.id] ?? [:], paths: paths)
+        let settings = reloader.settings[SystemConfig.id] ?? [:]
+        let folders = ReleaseFolders(settings, paths: paths)
         let succeeded: Bool
         do {
             guard let dots = try DotsPointer(files: files, paths: paths).read() else { return false }
@@ -58,7 +62,9 @@ public struct RunCommand {
             let macOS = await MacOSSettings(
                 files: files, runner: runner, sudo: sudo, state: state, paths: paths, handlers: handlers
             ).run(dots: dots, report: report)
-            succeeded = packages && apps && macOS
+            let wallpaper = Wallpaper(files: files, paths: paths, desktop: desktop).set(
+                settings, dots: dots, report: report)
+            succeeded = packages && apps && macOS && wallpaper
         } catch {
             report(.failed(error))
             return false
