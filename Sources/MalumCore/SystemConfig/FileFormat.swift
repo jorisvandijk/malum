@@ -7,6 +7,9 @@ enum FileFormat: Sendable {
     case lines([LineBlock])
     /// git's config style: a section for each table inside `table`.
     case ini(table: String)
+    /// A section for each table inside `table`, headed by `keyword` and the table's name, with its
+    /// `name value` lines indented, such as ssh's `Host` sections.
+    case sections(table: String, keyword: String)
     /// One line for each text in the list `key` of `table`.
     case list(table: String, key: String)
     /// A feed list in newsboat's urls style, one line per feed in `table`.
@@ -21,8 +24,8 @@ enum FileFormat: Sendable {
     /// The tables at the top of the TOML the format reads.
     var tables: [String] {
         switch self {
-        case .json(let table), .ini(let table), .list(let table, _), .feeds(let table), .calls(let table, _),
-            .css(let table):
+        case .json(let table), .ini(let table), .sections(let table, _), .list(let table, _), .feeds(let table),
+            .calls(let table, _), .css(let table):
             [table]
         case .lines(let blocks):
             blocks.compactMap(\.table)
@@ -37,7 +40,7 @@ enum FileFormat: Sendable {
         switch self {
         case .json, .fixed:
             nil
-        case .lines, .ini, .list, .feeds:
+        case .lines, .ini, .sections, .list, .feeds:
             ("#", "")
         case .calls:
             ("//", "")
@@ -51,7 +54,7 @@ enum FileFormat: Sendable {
         switch self {
         case .json:
             "{}\n"
-        case .lines, .ini, .list, .feeds, .calls, .css, .fixed:
+        case .lines, .ini, .sections, .list, .feeds, .calls, .css, .fixed:
             ""
         }
     }
@@ -74,6 +77,9 @@ enum FileFormat: Sendable {
         case .ini(let name):
             let fields = reader.table(table, name, at: path)
             return IniText.text(fields, at: path + [name], reader: &reader)
+        case .sections(let name, let keyword):
+            let fields = reader.table(table, name, at: path)
+            return SectionText.text(fields, at: path + [name], keyword: keyword, reader: &reader)
         case .list(let name, let key):
             let fields = reader.table(table, name, at: path)
             reader.unknownKeys(fields, at: path + [name], known: [key])

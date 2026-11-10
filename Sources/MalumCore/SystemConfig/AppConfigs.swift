@@ -87,6 +87,7 @@ enum AppConfigs {
                 AppConfigFile(".config/newsboat/urls", .feeds(table: "feeds")),
             ]),
         AppConfig(name: "oversight", domain: "com.objective-see.oversight"),
+        AppConfig(name: "ssh", files: [AppConfigFile(".ssh/config", .sections(table: "hosts", keyword: "Host"))]),
         AppConfig(
             name: "vscodium",
             files: [

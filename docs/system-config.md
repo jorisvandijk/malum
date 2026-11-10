@@ -312,6 +312,28 @@ Lobsters = { url = "https://lobste.rs/rss", tags = ["tech"] }
 - `[ignore_articles]`: articles to hide, as `feed = "filter"`, or a list of filters. Each filter becomes an `ignore-article feed "filter"` line. The feed is its address, or `"*"` for every feed, and the filter is in [newsboat's filter language](https://newsboat.org/releases/2.42/docs/newsboat.html#_filter_language).
 - `[feeds]`: the feeds, as `title = "address"`. The title is shown in newsboat's feed list instead of the feed's own. Use `{ url = "...", tags = [...] }` to give a feed tags. The feeds are written in alphabetical order of title, and `urls` is only written when there's at least one.
 
+### ssh
+
+`apps/ssh.toml` writes ssh's per-user config, `~/.ssh/config`, with one table inside `[hosts]` for each `Host` section. Each setting goes by the name ssh gives it, and `true` and `false` are written as `yes` and `no`. Your keys stay out of dots: only the settings that point at them go here.
+
+```toml
+[hosts."github.com"]
+IdentityFile = "~/.ssh/id_ed25519"
+AddKeysToAgent = true
+UseKeychain = true
+```
+
+writes
+
+```
+Host github.com
+  AddKeysToAgent yes
+  IdentityFile ~/.ssh/id_ed25519
+  UseKeychain yes
+```
+
+ssh takes the first value it finds, so hosts with a plain name come first and patterns, such as `"*"`, last; each group is in alphabetical order, and so are the settings inside a host.
+
 ### VSCodium
 
 `apps/vscodium.toml` writes VSCodium's settings to `~/Library/Application Support/VSCodium/User/settings.json` and its startup options to `~/.vscode-oss/argv.json`, and installs the extensions it lists. Install VSCodium itself with the `vscodium` cask in `packages.toml`, which also gives Malum the `codium` command it installs extensions with.
