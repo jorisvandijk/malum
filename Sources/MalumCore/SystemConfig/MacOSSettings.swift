@@ -1,7 +1,8 @@
 /// The macOS settings part of system config: sets the preferences `macos.toml` in dots lists, by
 /// domain and the names macOS stores them under, then restarts what has to show them. It also
 /// writes the files only root can change (`/etc/hosts` and Touch ID for sudo), sets the power
-/// settings, removes the Apple apps it lists and sets the default apps.
+/// settings, removes the Apple apps it lists, sets the default apps and this Mac's name and boot
+/// sound.
 @MainActor
 struct MacOSSettings {
     /// The table of preferences, one table inside it for each domain.
@@ -27,6 +28,8 @@ struct MacOSSettings {
         var appleApps: [String] = []
         /// The default apps, by key in `[default_apps]`.
         var defaultApps: DefaultApps.Wanted = [:]
+        /// This Mac's name and boot sound.
+        var computer = ComputerSettings.Wanted()
     }
 
     /// The process that shows the settings of a domain, which is restarted after a change to it.
@@ -101,7 +104,8 @@ struct MacOSSettings {
         let removed = await AppleApps(runner: runner, files: files, sudo: sudo).remove(
             wanted.appleApps, report: report)
         let defaults = await DefaultApps(handlers: handlers).set(wanted.defaultApps, report: report)
-        return wrote && set && power && removed && defaults
+        let computer = await ComputerSettings(runner: runner, sudo: sudo).write(wanted.computer, report: report)
+        return wrote && set && power && removed && defaults && computer
     }
 
     /// Reads `text`, the contents of `macos.toml`: what it sets, or nil when an error stops it, and
@@ -117,7 +121,7 @@ struct MacOSSettings {
             reader.document, at: [],
             known: [
                 preferencesTable, currentHostTable, hostsTable, sudoTable, PowerSettings.table, AppleApps.table,
-                DefaultApps.table,
+                DefaultApps.table, ComputerSettings.table,
             ])
         var wanted = Wanted()
         wanted.preferences =
@@ -132,6 +136,7 @@ struct MacOSSettings {
         wanted.power = PowerSettings.read(&reader)
         wanted.appleApps = AppleApps.read(&reader)
         wanted.defaultApps = DefaultApps.read(&reader)
+        wanted.computer = ComputerSettings.read(&reader)
         let problems = reader.problemsByLine
         return (reader.hasErrors ? nil : wanted, problems)
     }
