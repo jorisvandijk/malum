@@ -64,7 +64,7 @@ final class WindowManagerModule: Module {
     init(system: WindowManagerSystem, log: Log) {
         self.system = system
         self.log = log.module(WindowManagerConfig.module)
-        runRaise = RunRaise(apps: system.apps, log: self.log)
+        runRaise = RunRaise(apps: system.apps, scheduler: system.scheduler, log: self.log)
     }
 
     /// Nothing to undo: the window manager changes nothing that outlives Malum.
