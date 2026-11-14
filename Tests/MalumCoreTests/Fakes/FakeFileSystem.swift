@@ -72,9 +72,13 @@ final class FakeFileSystem: FileSystem {
     }
 
     func writePrivate(_ data: Data, to path: String) throws(FileSystemError) {
+        try write(data, to: path)
+        privates.withLock { _ = $0.insert(path) }
+    }
+
+    func write(_ data: Data, to path: String) throws(FileSystemError) {
         try write(String(bytes: data, encoding: .utf8) ?? "", to: path)
         blobs.withLock { $0[path] = data }
-        privates.withLock { _ = $0.insert(path) }
     }
 
     func write(_ text: String, to path: String) throws(FileSystemError) {
