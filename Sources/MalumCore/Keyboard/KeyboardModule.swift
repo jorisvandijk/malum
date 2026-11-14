@@ -118,10 +118,11 @@ final class KeyboardModule: Module {
         showStatus()
     }
 
-    /// Starts the tap again and sets the remaps again, which a keyboard plugged in doesn't have yet.
+    /// Sets the remaps again, which a keyboard plugged in doesn't have yet. The tap keeps running, so
+    /// a hyper key held right now stays held; only a tap that isn't running is started again.
     func resume() async {
         guard isStarted else { return }
-        queueRestart()
+        queue { await $0.setRemapsAgain() }
         await restart?.value
     }
 
@@ -186,11 +187,38 @@ final class KeyboardModule: Module {
 
     /// Restarts the tap once the restart before it has finished.
     private func queueRestart() {
+        queue { await $0.restartTap() }
+    }
+
+    /// Runs `work` once the restart before it has finished, so `stop` waits for it too.
+    private func queue(_ work: @escaping @Sendable @MainActor (KeyboardModule) async -> Void) {
         let previous = restart
         restart = Task { [weak self] in
             await previous?.value
-            await self?.restartTap()
+            guard let self else { return }
+            await work(self)
         }
+    }
+
+    /// Sets the remaps again while the tap runs. A tap that isn't running is started again instead,
+    /// which sets the remaps too. When setting them fails, the tap stops and the remaps are undone, as
+    /// in `restartTap`.
+    private func setRemapsAgain() async {
+        guard isStarted else { return }
+        guard keyCatcher.isRunning else {
+            await restartTap()
+            return
+        }
+        do {
+            try await remapper.apply(KeyMapping(config))
+        } catch {
+            keyCatcher.stop()
+            await clearRemaps()
+            fail(error)
+            return
+        }
+        log.report(.remapsSetAgain)
+        showStatus()
     }
 
     /// Puts new settings to work while the module runs. When that fails, the remaps are undone too,
@@ -202,7 +230,9 @@ final class KeyboardModule: Module {
         } catch {
             await clearRemaps()
             fail(error)
+            return
         }
+        log.report(.tapRestarted)
     }
 
     /// Undoes the remaps, logging when that fails.

@@ -14,6 +14,8 @@ public final class KeyboardChangeWatcher {
 
     /// Gathers a burst of changes into one call back.
     private let debouncer: Debouncer
+    /// What to run for each change, as it comes in.
+    private let onEach: @MainActor @Sendable (KeyboardChange) -> Void
     /// What to run once things settle.
     private let onChange: @MainActor @Sendable () -> Void
     /// The wake and login switch observers.
@@ -23,14 +25,22 @@ public final class KeyboardChangeWatcher {
     /// The keyboards plugged in since it was last read.
     private var added: io_iterator_t = 0
 
-    /// Starts watching. `onChange` runs on the main actor once a burst of changes has settled.
-    public init(onChange: @escaping @MainActor @Sendable () -> Void) {
+    /// Starts watching. `onEach` runs on the main actor for every change as it comes in, and
+    /// `onChange` once a burst of changes has settled.
+    public init(
+        onEach: @escaping @MainActor @Sendable (KeyboardChange) -> Void,
+        onChange: @escaping @MainActor @Sendable () -> Void
+    ) {
+        self.onEach = onEach
         self.onChange = onChange
         debouncer = Debouncer(delay: Self.settle)
         let center = NSWorkspace.shared.notificationCenter
-        observers = [NSWorkspace.didWakeNotification, NSWorkspace.sessionDidBecomeActiveNotification].map { name in
+        let changes: [Notification.Name: KeyboardChange] = [
+            NSWorkspace.didWakeNotification: .woke, NSWorkspace.sessionDidBecomeActiveNotification: .sessionActive,
+        ]
+        observers = changes.map { name, change in
             center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated { self?.changed() }
+                MainActor.assumeIsolated { self?.changed(change) }
             }
         }
         watchKeyboards()
@@ -56,11 +66,12 @@ public final class KeyboardChangeWatcher {
     /// Reads the keyboards plugged in since the last time, and calls back when there was one.
     fileprivate func keyboardsAdded() {
         guard Self.drain(added) else { return }
-        changed()
+        changed(.keyboardAdded)
     }
 
-    /// Calls back once things settle.
-    private func changed() {
+    /// Calls back for `change` straight away, and again once things settle.
+    private func changed(_ change: KeyboardChange) {
+        onEach(change)
         debouncer.schedule { [onChange] in onChange() }
     }
 

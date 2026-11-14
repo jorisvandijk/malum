@@ -54,7 +54,7 @@ The value is what the key does:
 
 ## Staying on
 
-Malum sets the hyper key and the remaps again, and starts catching keys again, when the Mac wakes from sleep, when you switch back to your login from another user, and when a keyboard is plugged in or reconnects. The log says `set up keyboard again` each time.
+Malum sets the hyper key and the remaps again when the Mac wakes from sleep, when you switch back to your login from another user, and when a keyboard is plugged in or reconnects. It keeps catching keys while it does, so a hyper key you hold down stays held. The log says which of these happened, then `set the key remaps again`. When Malum has to start catching keys again, such as after new settings, the log says `started the event tap again`.
 
 The module's line in the [menu bar](menu-bar.md) warns, as `degraded`, about what keeps your keys from working:
 
