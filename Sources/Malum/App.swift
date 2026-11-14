@@ -34,7 +34,7 @@ func runApp() -> Never {
     let hangup = SignalWatcher(SIGHUP) { config.reload(force: true) }
     let terminate = SignalWatcher(SIGTERM) { stopAndQuit(config) }
     let actions = SignalWatcher(SIGUSR1) { runRequestedActions(routes) }
-    let keyboards = KeyboardChangeWatcher { config.resume() }
+    let keyboards = KeyboardChangeWatcher(onEach: { announce(.keyboardChanged($0)) }, onChange: { config.resume() })
     let quit = NotificationCenter.default.addObserver(
         forName: NSApplication.willTerminateNotification, object: nil, queue: .main
     ) { _ in MainActor.assumeIsolated { forget(launches) } }

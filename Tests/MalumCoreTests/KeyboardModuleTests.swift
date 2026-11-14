@@ -143,13 +143,19 @@ struct KeyboardModuleTests {
         #expect(keyboard.status == .off)
     }
 
-    @Test func resumeStartsTheTapAndSetsTheRemapsAgain() async throws {
+    @Test func resumeKeepsTheTapAndSetsTheRemapsAgain() async throws {
         let text = "hyper_key = \"caps_lock\"\n"
         let keyboard = module()
         keyboard.apply(settings(text))
         try await keyboard.start()
+        let session = try #require(catcher.session)
+        _ = session.decide(
+            .key(KeyPress(keyCode: KeyMapping.hyperTarget.keyCode, isDown: true, isRepeat: false, modifiers: [])))
         await keyboard.resume()
-        #expect(catcher.starts == 2)
+        #expect(catcher.starts == 1)
+        #expect(catcher.session === session)
+        let tab = KeyPress(keyCode: Key.tab.keyCode, isDown: true, isRepeat: false, modifiers: [])
+        #expect(session.decide(.key(tab)) == .openSwitcher([.cmd]))
         #expect(runner.commands == [Hidutil.set(try mapping(text)), Hidutil.set(try mapping(text))])
         #expect(keyboard.status == .running)
     }
@@ -162,7 +168,7 @@ struct KeyboardModuleTests {
         catcher.isRunning = false
         keyboard.check()
         await keyboard.resume()
-        #expect(catcher.starts == 3)
+        #expect(catcher.starts == 2)
         #expect(catcher.isRunning)
         #expect(keyboard.status == .running)
     }
@@ -186,6 +192,7 @@ struct KeyboardModuleTests {
         let keyboard = module()
         keyboard.apply(settings(text))
         try await keyboard.start()
+        catcher.isRunning = false
         catcher.refuses = true
         await keyboard.resume()
         #expect(runner.commands == [Hidutil.set(try mapping(text)), Hidutil.set(.none)])
