@@ -23,10 +23,7 @@ struct ScreenLockSettings {
     /// The seconds in `[screen_lock]`, or nil when it sets none, adding a problem to `reader` when
     /// it's wrong.
     static func read(_ reader: inout TableReader) -> Int? {
-        guard reader.document[table] != nil else { return nil }
-        let lock = reader.table(reader.document, table, at: [])
-        reader.unknownKeys(lock, at: [table], known: [delayKey])
-        guard let value = lock[delayKey] else { return nil }
+        guard let value = reader.onlyKey(delayKey, of: table) else { return nil }
         guard case .integer(let seconds) = value, seconds >= 0 else {
             reader.expect([table, delayKey], MessageText.lockDelay)
             return nil

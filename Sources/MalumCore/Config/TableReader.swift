@@ -60,6 +60,14 @@ struct TableReader {
         return self.table(value, at: path + [key]) ?? [:]
     }
 
+    /// The value of `key` in the file's table `table`, or nil when either is missing, with a warning
+    /// for each other key in that table. For tables that hold one setting.
+    mutating func onlyKey(_ key: String, of table: String) -> ConfigValue? {
+        let fields = self.table(document, table, at: [])
+        unknownKeys(fields, at: [table], known: [key])
+        return fields[key]
+    }
+
     /// The entries of `table`, found at `path`, in alphabetical order, each value written by
     /// `write`. A value `write` turns down, by giving nil, is an error that says it should be
     /// `expected`, such as `SettingKind.string`.

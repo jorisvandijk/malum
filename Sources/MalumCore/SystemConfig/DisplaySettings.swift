@@ -18,10 +18,7 @@ struct DisplaySettings {
 
     /// The size in `[display]`, or nil when it sets none, adding a problem to `reader` when it's wrong.
     static func read(_ reader: inout TableReader) -> DisplayResolution? {
-        guard reader.document[table] != nil else { return nil }
-        let display = reader.table(reader.document, table, at: [])
-        reader.unknownKeys(display, at: [table], known: [resolutionKey])
-        guard let value = display[resolutionKey] else { return nil }
+        guard let value = reader.onlyKey(resolutionKey, of: table) else { return nil }
         let path = [table, resolutionKey]
         guard case .string(let text) = value else {
             reader.expect(path, SettingKind.string)
