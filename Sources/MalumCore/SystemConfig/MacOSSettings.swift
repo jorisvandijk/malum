@@ -171,10 +171,7 @@ struct MacOSSettings {
 
     /// Whether `[sudo]` lets sudo take Touch ID.
     private static func touchID(_ reader: inout TableReader) -> Bool {
-        guard reader.document[sudoTable] != nil else { return false }
-        let table = reader.table(reader.document, sudoTable, at: [])
-        reader.unknownKeys(table, at: [sudoTable], known: [touchIDKey])
-        guard let value = table[touchIDKey] else { return false }
+        guard let value = reader.onlyKey(touchIDKey, of: sudoTable) else { return false }
         guard case .boolean(let on) = value else {
             reader.expect([sudoTable, touchIDKey], SettingKind.boolean)
             return false

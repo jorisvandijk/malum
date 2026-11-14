@@ -31,9 +31,7 @@ struct AppleApps {
 
     /// The names of the apps in `[apple_apps] remove`, adding a problem to `reader` when it's wrong.
     static func read(_ reader: inout TableReader) -> [String] {
-        let apps = reader.table(reader.document, table, at: [])
-        reader.unknownKeys(apps, at: [table], known: [removeKey])
-        guard let value = apps[removeKey] else { return [] }
+        guard let value = reader.onlyKey(removeKey, of: table) else { return [] }
         let path = [table, removeKey]
         guard let names = TableReader.texts(value) else {
             reader.expect(path, SettingKind.strings)
