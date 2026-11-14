@@ -134,6 +134,12 @@ final class KeyboardModule: Module {
             throw KeyboardError.tapRefused
         }
         listen(to: session)
+        try await setRemaps()
+    }
+
+    /// Sets the remaps for the current settings. When that fails, the tap stops too, so no key is
+    /// caught for a hyper key that doesn't exist.
+    private func setRemaps() async throws {
         do {
             try await remapper.apply(KeyMapping(config))
         } catch {
@@ -209,30 +215,28 @@ final class KeyboardModule: Module {
             await restartTap()
             return
         }
-        do {
-            try await remapper.apply(KeyMapping(config))
-        } catch {
-            keyCatcher.stop()
-            await clearRemaps()
-            fail(error)
-            return
-        }
+        guard await undoingRemapsOnFailure(setRemaps) else { return }
         log.report(.remapsSetAgain)
-        showStatus()
     }
 
     /// Puts new settings to work while the module runs. When that fails, the remaps are undone too,
     /// so the hyper key never types as a key that nothing catches.
     private func restartTap() async {
-        guard isStarted else { return }
+        guard isStarted, await undoingRemapsOnFailure(catchKeys) else { return }
+        log.report(.tapRestarted)
+    }
+
+    /// Runs `work`. When it fails, the remaps are undone and the module shows the failure. Says
+    /// whether it worked.
+    private func undoingRemapsOnFailure(_ work: () async throws -> Void) async -> Bool {
         do {
-            try await catchKeys()
+            try await work()
         } catch {
             await clearRemaps()
             fail(error)
-            return
+            return false
         }
-        log.report(.tapRestarted)
+        return true
     }
 
     /// Undoes the remaps, logging when that fails.
