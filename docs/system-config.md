@@ -585,6 +585,22 @@ It changes nothing when the screen already shows that size, and is skipped while
 [info] set the screen's resolution to 1710x1112 from macos.toml (it was 1470x956)
 ```
 
+### Screen lock
+
+`delay` in `[screen_lock]` sets how soon the Mac asks for your password once the screen goes black, such as when it dims, sleeps or shows the screensaver. It's in seconds, and `0` asks right away. macOS ignores `askForPassword` in `com.apple.screensaver` for this, so Malum sets it with `sysadminctl -screenLock`.
+
+```toml
+[screen_lock]
+delay = 0
+```
+
+It changes nothing when the Mac already asks after that delay. Changing it takes your own password, which `sysadminctl` asks for on the terminal, so it needs `malum run` in a terminal. Taking the key out leaves the setting as it is.
+
+```
+[info] asking for your password to change when the screen asks for your password
+[info] the screen asks for your password as soon as it goes black now, from macos.toml
+```
+
 ## Status
 
 `malum status` shows what Malum manages and what doesn't match dots right now. It changes nothing and never asks for your password. It works whether `system_config` is on or off.
