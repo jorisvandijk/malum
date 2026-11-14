@@ -2,7 +2,7 @@
 /// domain and the names macOS stores them under, then restarts what has to show them. It also
 /// writes the files only root can change (`/etc/hosts` and Touch ID for sudo), sets the power
 /// settings, removes the Apple apps it lists, sets the default apps, this Mac's name and boot
-/// sound, and the size its own screen shows things at.
+/// sound, the size its own screen shows things at, and how soon a black screen asks for the password.
 @MainActor
 struct MacOSSettings {
     /// The table of preferences, one table inside it for each domain.
@@ -32,6 +32,8 @@ struct MacOSSettings {
         var computer = ComputerSettings.Wanted()
         /// The size the Mac's own screen shows things at, or nil to leave it.
         var resolution: DisplayResolution?
+        /// The seconds after the screen goes black before it asks for the password, or nil to leave it.
+        var screenLock: Int?
     }
 
     /// The process that shows the settings of a domain, which is restarted after a change to it.
@@ -111,7 +113,8 @@ struct MacOSSettings {
         let defaults = await DefaultApps(handlers: handlers).set(wanted.defaultApps, report: report)
         let computer = await ComputerSettings(runner: runner, sudo: sudo).write(wanted.computer, report: report)
         let resolution = DisplaySettings(display: display).set(wanted.resolution, report: report)
-        return wrote && set && power && removed && defaults && computer && resolution
+        let lock = await ScreenLockSettings(runner: runner, sudo: sudo).set(wanted.screenLock, report: report)
+        return wrote && set && power && removed && defaults && computer && resolution && lock
     }
 
     /// Reads `text`, the contents of `macos.toml`: what it sets, or nil when an error stops it, and
@@ -127,7 +130,7 @@ struct MacOSSettings {
             reader.document, at: [],
             known: [
                 preferencesTable, currentHostTable, hostsTable, sudoTable, PowerSettings.table, AppleApps.table,
-                DefaultApps.table, ComputerSettings.table, DisplaySettings.table,
+                DefaultApps.table, ComputerSettings.table, DisplaySettings.table, ScreenLockSettings.table,
             ])
         var wanted = Wanted()
         wanted.preferences =
@@ -144,6 +147,7 @@ struct MacOSSettings {
         wanted.defaultApps = DefaultApps.read(&reader)
         wanted.computer = ComputerSettings.read(&reader)
         wanted.resolution = DisplaySettings.read(&reader)
+        wanted.screenLock = ScreenLockSettings.read(&reader)
         let problems = reader.problemsByLine
         return (reader.hasErrors ? nil : wanted, problems)
     }

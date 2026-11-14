@@ -7,8 +7,8 @@ public final class SudoSession {
 
     /// Runs `sudo`.
     private let runner: any CommandRunner
-    /// Whether Malum runs in a terminal, where sudo can ask.
-    private let canAsk: Bool
+    /// Whether Malum runs in a terminal, where sudo and other tools can ask for the password.
+    let canAsk: Bool
     /// Whether root was granted, or nil until something asked.
     private var granted: Bool?
     /// Keeps the password remembered while the run goes on.
