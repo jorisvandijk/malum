@@ -199,13 +199,14 @@ struct MacOSSettings {
     }
 
     /// Tells running apps that the settings in the domains `changed` changed, and restarts what
-    /// shows them.
+    /// shows them. A process that isn't running picks the settings up when it starts.
     private func show(_ changed: Set<String>, report: (Message) -> Void) async {
         guard !changed.isEmpty else { return }
         let activated = await runner.run(ActivateSettings.user)
         if !activated.succeeded { report(.notActivated(reason: activated.reason)) }
         for process in Set(changed.compactMap { Self.restarts[$0] }).sorted() {
             let result = await runner.run(Killall.restart(process))
+            guard !Killall.foundNothing(result) else { continue }
             report(result.succeeded ? .restarted(process) : .notRestarted(process, reason: result.reason))
         }
         if changed.contains(where: { Self.restarts[$0] == nil }) {

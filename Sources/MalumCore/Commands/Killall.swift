@@ -9,6 +9,14 @@ public enum Killall {
         Command(path, [process])
     }
 
+    /// Whether `result` says no process had the name, so there was nothing to quit.
+    public static func foundNothing(_ result: CommandResult) -> Bool {
+        result.status == 1 && result.errors.contains(noMatch)
+    }
+
+    /// What `killall` writes when no process has the name.
+    private static let noMatch = "No matching processes"
+
     /// Tells every process called `process` to read its settings again, such as `mDNSResponder`
     /// after a change to `/etc/hosts`.
     public static func hangUp(_ process: String) -> Command {
