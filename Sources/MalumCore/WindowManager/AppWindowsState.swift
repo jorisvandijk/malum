@@ -8,4 +8,16 @@ public enum AppWindowsState: Equatable, Sendable {
     case onlyMinimized
     /// At least one window is in view.
     case some
+
+    /// The state of an app whose Accessibility windows have these roles and minimised flags. Only real
+    /// windows count, so Finder's desktop, which Accessibility lists as a scroll area among its windows,
+    /// doesn't keep Finder from opening one. A window that doesn't say its role yet counts.
+    public init(windows: [(role: String?, isMinimized: Bool)]) {
+        let real = windows.filter { ($0.role ?? WindowLayout.windowRole) == WindowLayout.windowRole }
+        guard !real.isEmpty else {
+            self = .noWindows
+            return
+        }
+        self = real.allSatisfy { $0.isMinimized } ? .onlyMinimized : .some
+    }
 }

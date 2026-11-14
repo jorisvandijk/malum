@@ -46,11 +46,10 @@ extension WorkspaceApps: AppControl {
     /// What `app`'s windows look like, or `.unknown` when it doesn't answer.
     public func windows(of app: RunningApp) -> AppWindowsState {
         guard let windows = element(app).elements(AccessibilityName.windows) else { return .unknown }
-        guard !windows.isEmpty else { return .noWindows }
-        let minimized = windows.allSatisfy {
-            AccessibilityElement(element: $0).bool(AccessibilityName.minimized) ?? false
-        }
-        return minimized ? .onlyMinimized : .some
+        return AppWindowsState(
+            windows: windows.map(AccessibilityElement.init).map {
+                (role: $0.string(AccessibilityName.role), isMinimized: $0.bool(AccessibilityName.minimized) ?? false)
+            })
     }
 
     /// Opens the app with `bundleID` and brings it to the front. A running app is asked for a new
