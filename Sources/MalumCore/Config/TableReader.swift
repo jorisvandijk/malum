@@ -68,6 +68,24 @@ struct TableReader {
         return fields[key]
     }
 
+    /// The list of text `key` in the file's table `table`, which holds one setting, or none when it's
+    /// left out or wrong. An item `check` turns down is an error worded by `problem` from the key's path.
+    mutating func onlyList(
+        _ key: String, of table: String, check: (String) -> Bool, problem: (String) -> MessageText
+    ) -> [String] {
+        guard let value = onlyKey(key, of: table) else { return [] }
+        let path = [table, key]
+        guard let items = Self.texts(value) else {
+            expect(path, SettingKind.strings)
+            return []
+        }
+        guard items.allSatisfy(check) else {
+            add(.error, at: path, problem(Self.dotted(path)))
+            return []
+        }
+        return items
+    }
+
     /// The entries of `table`, found at `path`, in alphabetical order, each value written by
     /// `write`. A value `write` turns down, by giving nil, is an error that says it should be
     /// `expected`, such as `SettingKind.string`.

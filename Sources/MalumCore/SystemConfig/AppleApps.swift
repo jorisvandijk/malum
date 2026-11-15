@@ -31,17 +31,7 @@ struct AppleApps {
 
     /// The names of the apps in `[apple_apps] remove`, adding a problem to `reader` when it's wrong.
     static func read(_ reader: inout TableReader) -> [String] {
-        guard let value = reader.onlyKey(removeKey, of: table) else { return [] }
-        let path = [table, removeKey]
-        guard let names = TableReader.texts(value) else {
-            reader.expect(path, SettingKind.strings)
-            return []
-        }
-        guard names.allSatisfy(Paths.isPlainName) else {
-            reader.add(.error, at: path, .notPlainName(TableReader.dotted(path)))
-            return []
-        }
-        return names
+        reader.onlyList(removeKey, of: table, check: Paths.isPlainName, problem: MessageText.notPlainName)
     }
 
     /// Removes each app in `names` that's in `/Applications`. Says whether everything worked.
