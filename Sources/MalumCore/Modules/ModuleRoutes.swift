@@ -42,7 +42,7 @@ public final class ModuleRoutes {
 
     /// Opens the app with `bundleID` through a running module that opens apps, such as the window
     /// manager, so it's raised as its shortcut would. Says whether one took it.
-    func openApp(_ bundleID: String) -> Bool {
+    public func openApp(_ bundleID: String) -> Bool {
         let opener = entries.values.compactMap(\.module).first { $0.hotkeys.opensApps && $0.status.isActive }
         guard let opener else { return false }
         opener.perform(.app(bundleID))

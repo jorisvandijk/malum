@@ -17,20 +17,23 @@ final class MenuFeed {
     private let config: LiveConfig
     /// Shows what Run and Show log write.
     private let output: OutputPopup
+    /// Where Inspect window goes, and how a terminal is raised: the window manager, while it runs.
+    private let routes: ModuleRoutes
     /// Why the modules stay off because Malum isn't signed, or nil when they don't.
     var signingProblem: String? {
         didSet { refresh() }
     }
 
     /// Puts the icon in the menu bar and shows the state of `modules` and `config` in it, with
-    /// what Run and Show log write in `output`.
-    init(modules: [any Module], config: LiveConfig, output: OutputPopup) {
+    /// what Run and Show log write in `output`, and Inspect window run through `routes`.
+    init(modules: [any Module], config: LiveConfig, output: OutputPopup, routes: ModuleRoutes) {
         self.modules = modules
         self.config = config
         self.output = output
-        menuBar = MenuBar { [weak config, weak output] fix in
-            guard let config, let output else { return }
-            Self.perform(fix, on: config, output: output)
+        self.routes = routes
+        menuBar = MenuBar { [weak config, weak output, weak routes] fix in
+            guard let config, let output, let routes else { return }
+            Self.perform(fix, on: config, output: output, routes: routes)
         }
         config.onUpdate = { [weak self] in self?.refresh() }
         config.onRestart = { messages, running in
@@ -62,18 +65,12 @@ final class MenuFeed {
     }
 
     /// Does what a picked item asks of the app.
-    private static func perform(_ fix: MenuFix, on config: LiveConfig, output: OutputPopup) {
+    private static func perform(_ fix: MenuFix, on config: LiveConfig, output: OutputPopup, routes: ModuleRoutes) {
         switch fix {
         case .run:
-            guard !openInTerminal(Invocation.runArguments, config: config) else { return }
-            Task { await output.run(OutputPopup.runLabel, work: runSystemConfig) }
+            run(config: config, output: output, routes: routes)
         case .showLog:
-            guard !openInTerminal(Invocation.logArguments(last: LogCommand.lastHour), config: config) else { return }
-            Task {
-                await output.run(OutputPopup.logLabel) { write in
-                    await LogCommand(runner: runner).lines(last: LogCommand.lastHour).forEach(write)
-                }
-            }
+            showLog(config: config, output: output, routes: routes)
         case .reload:
             config.restart()
         case .leaveSafeMode:
@@ -87,21 +84,62 @@ final class MenuFeed {
         }
     }
 
-    /// Opens Malum with `arguments` in a new window of the terminal that `[system_config]` names,
-    /// and says whether it does. Without a terminal, or outside the app bundle, the popup shows
-    /// the output instead.
-    private static func openInTerminal(_ arguments: [String], config: LiveConfig) -> Bool {
+    /// Runs system config in the terminal, or in the popup when there's none.
+    private static func run(config: LiveConfig, output: OutputPopup, routes: ModuleRoutes) {
+        guard !openInTerminal(Invocation.runArguments, config: config, routes: routes) else { return }
+        Task { await output.run(OutputPopup.runLabel, work: runSystemConfig) }
+    }
+
+    /// Shows the log of the last hour in the terminal, or in the popup when there's none.
+    private static func showLog(config: LiveConfig, output: OutputPopup, routes: ModuleRoutes) {
+        let arguments = Invocation.logArguments(last: LogCommand.lastHour)
+        guard !openInTerminal(arguments, config: config, routes: routes) else { return }
+        Task {
+            await output.run(OutputPopup.logLabel) { write in
+                await LogCommand(runner: runner).lines(last: LogCommand.lastHour).forEach(write)
+            }
+        }
+    }
+
+    /// Opens Malum with `arguments` in the terminal that `[system_config]` names, and says whether
+    /// one does. Without a terminal, or outside the app bundle, the popup shows the output instead.
+    private static func openInTerminal(_ arguments: [String], config: LiveConfig, routes: ModuleRoutes) -> Bool {
         guard let executable,
             let launch = TerminalLaunch(
                 settings: config.settings[SystemConfig.id], executable: executable, command: arguments,
                 shell: loginShell())
         else { return false }
         Task {
+            let tabbed = await openTab(launch, routes: routes)
+            guard !tabbed else { return }
             do {
                 try await WorkspaceApps.openNew(launch.bundleID, arguments: launch.arguments)
             } catch {
                 announce(.failed(error))
             }
+        }
+        return true
+    }
+
+    /// Opens `launch` as a new tab in the kitty that runs and listens on its socket, then raises
+    /// kitty as its key would. Says whether it did; otherwise a new window opens instead.
+    private static func openTab(_ launch: TerminalLaunch, routes: ModuleRoutes) async -> Bool {
+        guard launch.bundleID == Kitten.bundleID,
+            let kitty = WorkspaceApps().running(launch.bundleID),
+            let app = WorkspaceAppHandlers().app(launch.bundleID)
+        else { return false }
+        let socket = Kitten.socket(processID: kitty.pid)
+        guard files.item(at: socket) != nil else { return false }
+        let result = await runner.run(Kitten.newTab(app: app.path, socket: socket, program: launch.program))
+        guard result.succeeded else {
+            announce(.tabFailed(reason: result.reason))
+            return false
+        }
+        guard !routes.openApp(launch.bundleID) else { return true }
+        do {
+            try await WorkspaceApps().open(launch.bundleID)
+        } catch {
+            announce(.failed(error))
         }
         return true
     }

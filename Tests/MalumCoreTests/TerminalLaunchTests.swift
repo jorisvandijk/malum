@@ -12,6 +12,7 @@ struct TerminalLaunchTests {
             shell: "/bin/zsh")
         #expect(launch?.bundleID == "net.kovidgoyal.kitty")
         #expect(launch?.arguments == ["-e", "/bin/zsh", "-l", "-c", "\(malum) run; exec /bin/zsh -l"])
+        #expect(launch?.program == Array(launch?.arguments.dropFirst() ?? []))
     }
 
     @Test func pathWithSpacesIsQuoted() {
