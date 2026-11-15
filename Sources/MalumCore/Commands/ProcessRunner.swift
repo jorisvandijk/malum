@@ -30,6 +30,46 @@ public struct ProcessRunner: CommandRunner {
         return CommandResult(status: status, output: outputText, errors: errorText)
     }
 
+    /// Starts the tool, hands each line of its stdout to `each` as it's written, and stops it when it
+    /// runs past the timeout.
+    public func lines(of command: Command, each: @escaping @Sendable (String) -> Void) async -> CommandResult {
+        let process = RunningProcess(command, environment: environment)
+        async let lines: Void = Self.readLines(process.output, each: each)
+        async let errors = Self.readAll(process.errors)
+        let watchdog = Task {
+            try await Task.sleep(for: .seconds(command.timeoutSeconds))
+            process.stop()
+        }
+        let status = await process.start()
+        watchdog.cancel()
+        let (_, errorText) = await (lines, errors)
+        return CommandResult(status: status, errors: status == nil ? process.failure ?? errorText : errorText)
+    }
+
+    /// Reads `handle` as the tool writes it, handing over each whole line, until the tool closes it.
+    private static func readLines(_ handle: FileHandle, each: @escaping @Sendable (String) -> Void) async {
+        await withCheckedContinuation { continuation in
+            DispatchQueue.global().async {
+                var pending = Data()
+                var chunk = handle.availableData
+                while !chunk.isEmpty {
+                    pending.append(chunk)
+                    handOver(&pending, to: each)
+                    chunk = handle.availableData
+                }
+                continuation.resume()
+            }
+        }
+    }
+
+    /// Hands each whole line at the start of `pending` to `each`, leaving the unfinished rest.
+    private static func handOver(_ pending: inout Data, to each: (String) -> Void) {
+        while let end = pending.firstIndex(of: UInt8(ascii: "\n")) {
+            each(String(bytes: pending[pending.startIndex..<end], encoding: .utf8) ?? "")
+            pending.removeSubrange(pending.startIndex...end)
+        }
+    }
+
     /// Reads `handle` until the tool closes it. The read blocks, so it runs on its own queue and
     /// never ties up a thread of Swift's shared pool.
     private static func readAll(_ handle: FileHandle) async -> String {

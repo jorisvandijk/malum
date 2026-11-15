@@ -31,6 +31,17 @@ struct InvocationTests {
         #expect(Invocation(arguments: ["token", "ghp_secret"]) == .unknown("ghp_secret"))
     }
 
+    @Test func logTakesAStretchAfterLast() {
+        #expect(Invocation(arguments: ["log"]) == .log(last: nil))
+        #expect(Invocation(arguments: ["log", "--last", "2h"]) == .log(last: "2h"))
+        #expect(Invocation(arguments: ["log", "--last", "soon"]) == .unknown("soon"))
+        #expect(Invocation(arguments: ["log", "--last", "2h", "more"]) == .unknown("more"))
+        #expect(Invocation(arguments: ["log", "--follow"]) == .unknown("--follow"))
+        #expect(
+            Invocation(arguments: ["log", "--last"])
+                == .incomplete(command: "log --last", needs: Invocation.needsStretch))
+    }
+
     @Test func sambaPasswordTakesOneServer() {
         #expect(Invocation(arguments: ["samba", "password", "nas"]) == .sambaPassword(server: "nas"))
         #expect(Invocation(arguments: ["samba", "password", "nas", "secret"]) == .unknown("secret"))
