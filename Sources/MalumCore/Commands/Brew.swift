@@ -1,7 +1,11 @@
 /// Every way Malum runs Homebrew's `brew`.
 public enum Brew {
-    /// Where Homebrew puts its commands on Apple silicon.
-    static let binFolder = "/opt/homebrew/bin"
+    /// Where Homebrew lives on Apple silicon.
+    private static let prefix = "/opt/homebrew"
+    /// Where Homebrew puts its commands.
+    static let binFolder = "\(prefix)/bin"
+    /// Where Homebrew puts what packages share, such as zsh plugins.
+    static let shareFolder = "\(prefix)/share"
     /// Where Homebrew puts `brew`.
     public static let path = "\(binFolder)/brew"
     /// Seconds one install may take: a big cask downloads hundreds of megabytes.

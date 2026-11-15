@@ -20,6 +20,8 @@ enum FileFormat: Sendable {
     case css(table: String)
     /// `text` as it is, the same on every Mac, read from no table.
     case fixed(String)
+    /// One of zsh's startup files in Silo's layout.
+    case zsh(ZshText.File)
 
     /// The tables at the top of the TOML the format reads.
     var tables: [String] {
@@ -31,6 +33,8 @@ enum FileFormat: Sendable {
             blocks.compactMap(\.table)
         case .fixed:
             []
+        case .zsh(let file):
+            ZshText.tables(of: file)
         }
     }
 
@@ -40,7 +44,7 @@ enum FileFormat: Sendable {
         switch self {
         case .json, .fixed:
             nil
-        case .lines, .ini, .sections, .list, .feeds:
+        case .lines, .ini, .sections, .list, .feeds, .zsh:
             ("#", "")
         case .calls:
             ("//", "")
@@ -54,7 +58,7 @@ enum FileFormat: Sendable {
         switch self {
         case .json:
             "{}\n"
-        case .lines, .ini, .sections, .list, .feeds, .calls, .css, .fixed:
+        case .lines, .ini, .sections, .list, .feeds, .calls, .css, .fixed, .zsh:
             ""
         }
     }
@@ -67,13 +71,7 @@ enum FileFormat: Sendable {
             let fields = reader.table(table, name, at: path)
             return JSONText.text(fields, at: path + [name], reader: &reader)
         case .lines(let blocks):
-            var texts: [String] = []
-            for block in blocks {
-                let fields = block.table.map { reader.table(table, $0, at: path) } ?? table
-                let blockPath = path + (block.table.map { [$0] } ?? [])
-                texts += LineText.text(fields, at: blockPath, block: block, reader: &reader).map { [$0] } ?? []
-            }
-            return texts.isEmpty ? nil : texts.joined(separator: "\n")
+            return Self.text(of: blocks, from: table, at: path, reader: &reader)
         case .ini(let name):
             let fields = reader.table(table, name, at: path)
             return IniText.text(fields, at: path + [name], reader: &reader)
@@ -95,7 +93,25 @@ enum FileFormat: Sendable {
             return LineText.verbatim(fields, at: path + [name], reader: &reader)
         case .fixed(let text):
             return text
+        case .zsh(let file):
+            return ZshText.text(of: file, from: table, at: path, reader: &reader)
         }
+    }
+}
+
+extension FileFormat {
+    /// The text of `blocks`, each from its table in `table`, found at `path`, with an empty line
+    /// between them, or nil when none has any.
+    private static func text(
+        of blocks: [LineBlock], from table: ConfigTable, at path: [String], reader: inout TableReader
+    ) -> String? {
+        var texts: [String] = []
+        for block in blocks {
+            let fields = block.table.map { reader.table(table, $0, at: path) } ?? table
+            let blockPath = path + (block.table.map { [$0] } ?? [])
+            texts += LineText.text(fields, at: blockPath, block: block, reader: &reader).map { [$0] } ?? []
+        }
+        return texts.isEmpty ? nil : texts.joined(separator: "\n")
     }
 }
 

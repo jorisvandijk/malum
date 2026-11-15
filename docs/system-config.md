@@ -377,28 +377,47 @@ enable-crash-reporter = false
 
 ### zsh
 
-`apps/zsh.toml` writes zsh's startup files: `~/.zshenv`, `~/.zprofile`, `~/.zshrc` and zsh-abbr's `~/.config/zsh-abbr/user-abbreviations`. New shells pick up changes; open ones keep what they started with. Malum doesn't change your login shell, and installs no plugins: list them in `packages.toml` and load them in `[zshrc]`.
+`apps/zsh.toml` writes zsh's startup files: `~/.zshenv`, `~/.zprofile`, `~/.zshrc` and zsh-abbr's `~/.config/zsh-abbr/user-abbreviations`. New shells pick up changes; open ones keep what they started with. Malum doesn't change your login shell and installs no plugins: list them in `packages.toml` (`zsh-autosuggestions`, `zsh-syntax-highlighting`, `olets/tap/zsh-abbr`, `fzf`, `zoxide`).
 
 ```toml
+[homebrew]
+shellenv = true
+
+[path]
+prepend = ["$HOME/.local/bin", "$HOME/go/bin"]
+
+[plugins]
+autosuggestions = true
+syntax_highlighting = true
+fzf = true
+zoxide = true
+zoxide_options = ["--cmd", "cd"]
+kitty_integration = true
+
+[options]
+hist_verify = true
+prompt_subst = true
+
+[source]
+files = ["$HOME/git/scripts/j.zsh"]
+
+[prompt]
+text = '%~ %# '
+
+[functions]
+gc = 'git commit -m "$*"'
+
+[history]
+size = 200000
+save = 200000
+save_no_dups = true
+
 [environment]
 EDITOR = "micro"
-NOTES = "$HOME/notes"
-
-[profile]
-text = '''
-eval "$(/opt/homebrew/bin/brew shellenv)"
-'''
 
 [aliases]
 ".." = "cd .."
 gs = "git status"
-
-[zshrc]
-text = '''
-setopt share_history hist_ignore_space
-source /opt/homebrew/share/zsh-autosuggestions/zsh-autosuggestions.zsh
-PROMPT='%~ %# '
-'''
 
 [abbreviations]
 symlink = "ln -s"
@@ -407,13 +426,19 @@ symlink = "ln -s"
 pc = "| pbcopy"
 ```
 
+- `[homebrew]`: `shellenv = true` runs `brew shellenv` in `~/.zprofile`, which puts Homebrew on the `PATH`.
+- `[path]`: `prepend` lists folders put in front of the `PATH` in `~/.zprofile`, in this order. Variables such as `$HOME` expand.
+- `[plugins]`: `completion` (zsh's `compinit`, on unless set to `false`), `autosuggestions`, `syntax_highlighting` (loaded last, as it must be), `fzf` (its keys and completion), `zoxide` with its `zoxide_options` (`["--cmd", "cd"]` makes it take over `cd`), and `kitty_integration` (kitty's shell integration when the shell runs in kitty).
+- `[options]`: shell options, `name = true` for `setopt name` and `false` for `unsetopt name`.
+- `[source]`: `files` to `source` from `~/.zshrc`, in this order.
+- `[prompt]`: `text` (`PROMPT`) and `right` (`RPROMPT`). Turn on `prompt_subst` to run commands in it.
+- `[functions]`: functions, as `name = "body"`. Use a `'''` string for a longer body.
+- `[history]`: `size` (`HISTSIZE`, default 10000), `save` (`SAVEHIST`, default 10000), `file` (default `$HOME/.zsh_history`) and the switches `ignore_dups`, `ignore_space` and `share` (on unless set to `false`), `ignore_all_dups`, `save_no_dups`, `find_no_dups`, `expire_dups_first` and `extended` (off unless set to `true`).
 - `[environment]`: variables, as `NAME = "value"`, each written to `~/.zshenv` as `export NAME="value"`, so every zsh gets them, scripts included. The value is in double quotes, so `$HOME` and other variables expand.
-- `[profile]`: `text` is written to `~/.zprofile` as it is, for login shells.
-- `[aliases]`: aliases, as `name = "command"`, each written at the top of `~/.zshrc` as `alias name='command'`. The command is in single quotes, so a variable in it expands when the alias runs.
-- `[zshrc]`: `text` is written to `~/.zshrc` as it is, after the aliases: options, history, plugins, the prompt, functions.
-- `[abbreviations]` and `[global_abbreviations]`: [zsh-abbr](https://zsh-abbr.olets.dev) abbreviations, which expand as you type, as `name = "text"`. Global ones expand anywhere on the line, not only as the command. Adding one with `abbr add` changes the file, so the next run overwrites it with a warning: add them here instead.
+- `[aliases]`: aliases, as `name = "command"`, written as `alias name='command'` after the functions, so a function's own commands aren't aliased.
+- `[abbreviations]` and `[global_abbreviations]`: [zsh-abbr](https://zsh-abbr.olets.dev) abbreviations, which expand as you type, as `name = "text"`. Global ones expand anywhere on the line, not only as the command. zsh-abbr is loaded when there are any. Adding one with `abbr add` changes the file, so the next run overwrites it with a warning: add them here instead.
 
-`~/.zshrc` is always written; the other files only when their table has something in it. Use a TOML literal string, in `'''`, for `text`, so backslashes and quotes stay as they are.
+`~/.zshrc` is always written; the other files only when their tables have something in them. Use a TOML literal string, in `'''`, so backslashes and quotes stay as they are.
 
 ## App preferences
 
