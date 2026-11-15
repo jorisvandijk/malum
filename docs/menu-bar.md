@@ -5,6 +5,7 @@ While the app runs, Malum's icon sits in the menu bar. It's the Malum apple whil
 Click the icon to open the menu. When all is well, it holds only actions:
 
 - **Run** does what `malum run` does and shows what it reports in the popup, newest line at the top, as it goes. It doesn't ask for your password, so anything that needs sudo reports that it couldn't, and it doesn't update Malum. Run `malum run` in a terminal for those.
+- **Inspect window**, while the window manager runs, waits for a click on a window and shows what the [window inspector](window-manager.md) finds, as the `inspect_window` key does.
 - **Show log** shows Malum's [log](log.md) of the last hour in the popup, newest line at the top.
 
 With `terminal` set in `[system_config]` (see [config](config.md)), such as `terminal = "net.kovidgoyal.kitty"`, Run and Show log open in a new window of that terminal instead: Run as `malum run`, which can ask for your password and update Malum, and Show log as `malum log --last 1h`. The window keeps a shell open when the command is done.

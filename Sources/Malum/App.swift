@@ -29,7 +29,7 @@ func runApp() -> Never {
         reloader: ConfigReloader(files: files, paths: paths, schemas: ConfigSchemas.all),
         modules: ModuleSwitch(modules: modules, permissions: PermissionProbe(home: paths.home), routes: routes),
         overrides: OverrideStore(state: state))
-    let menu = MenuFeed(modules: modules, config: config, output: OutputPopup(center: popup))
+    let menu = MenuFeed(modules: modules, config: config, output: OutputPopup(center: popup), routes: routes)
     config.start()
     Task { await startWhenSigned(config: config, menu: menu) }
     let hangup = SignalWatcher(SIGHUP) { config.reload(force: true) }

@@ -17,20 +17,23 @@ final class MenuFeed {
     private let config: LiveConfig
     /// Shows what Run and Show log write.
     private let output: OutputPopup
+    /// Where Inspect window goes: the window manager, while it runs.
+    private let routes: ModuleRoutes
     /// Why the modules stay off because Malum isn't signed, or nil when they don't.
     var signingProblem: String? {
         didSet { refresh() }
     }
 
     /// Puts the icon in the menu bar and shows the state of `modules` and `config` in it, with
-    /// what Run and Show log write in `output`.
-    init(modules: [any Module], config: LiveConfig, output: OutputPopup) {
+    /// what Run and Show log write in `output`, and Inspect window run through `routes`.
+    init(modules: [any Module], config: LiveConfig, output: OutputPopup, routes: ModuleRoutes) {
         self.modules = modules
         self.config = config
         self.output = output
-        menuBar = MenuBar { [weak config, weak output] fix in
-            guard let config, let output else { return }
-            Self.perform(fix, on: config, output: output)
+        self.routes = routes
+        menuBar = MenuBar { [weak config, weak output, weak routes] fix in
+            guard let config, let output, let routes else { return }
+            Self.perform(fix, on: config, output: output, routes: routes)
         }
         config.onUpdate = { [weak self] in self?.refresh() }
         refresh()
@@ -53,11 +56,14 @@ final class MenuFeed {
     }
 
     /// Does what a picked item asks of the app.
-    private static func perform(_ fix: MenuFix, on config: LiveConfig, output: OutputPopup) {
+    private static func perform(_ fix: MenuFix, on config: LiveConfig, output: OutputPopup, routes: ModuleRoutes) {
         switch fix {
         case .run:
             guard !openInTerminal(Invocation.runArguments, config: config) else { return }
             Task { await output.run(OutputPopup.runLabel, work: runSystemConfig) }
+        case .inspectWindow:
+            guard !routes.run(actionNamed: WindowManagerModule.inspectAction) else { return }
+            announce(.noModuleFor(WindowManagerModule.inspectAction))
         case .showLog:
             guard !openInTerminal(Invocation.logArguments(last: LogCommand.lastHour), config: config) else { return }
             Task {

@@ -99,7 +99,7 @@ public final class MenuBar: NSObject {
             PrivacySettings.open(permission)
         case .about:
             about.present()
-        case .run, .showLog, .reload, .leaveSafeMode, .enable, .quit:
+        case .run, .inspectWindow, .showLog, .reload, .leaveSafeMode, .enable, .quit:
             onPick(fix)
         }
     }
