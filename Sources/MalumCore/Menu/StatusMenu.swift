@@ -1,5 +1,5 @@
-/// What the menu bar icon shows: each module's state, missing permissions and config problems,
-/// each with a way to fix it.
+/// What the menu bar icon shows: each problem at the top as a way to fix it, then Malum's actions.
+/// When all is well, the menu holds only the actions.
 public struct StatusMenu: Equatable, Sendable {
     /// The menu's lines, top to bottom.
     public let items: [MenuItem]
@@ -15,28 +15,33 @@ public struct StatusMenu: Equatable, Sendable {
         overrides: Overrides = Overrides(), signingProblem: String? = nil
     ) {
         let problems = report.map { $0.messages.filter { $0.level != .info } } ?? []
-        items =
-            [.text(Self.title), .separator]
-            + Self.signingItems(signingProblem)
-            + Self.safeModeItems(overrides.safeMode)
-            + Self.moduleItems(modules) + Self.disabledItems(overrides.disabled) + [.separator]
-            + Self.configItems(problems, path: configPath, exists: configExists) + [.separator]
-            + [.action(Self.reload, .reload), .action(Self.quit, .quit)]
-        needsAttention =
-            !problems.isEmpty || overrides.safeMode != nil || signingProblem != nil
-            || modules.contains { Self.needsAttention($0.status) }
+        let configFix = Self.configFix(path: configPath, exists: configExists)
+        let fixes =
+            Self.signingItems(signingProblem) + Self.safeModeItems(overrides.safeMode)
+            + Self.disabledItems(overrides.disabled) + modules.flatMap(Self.moduleItems)
+            + problems.map { .action($0.description, configFix) }
+        items = (fixes.isEmpty ? [] : fixes + [.separator]) + Self.actionItems(path: configPath, exists: configExists)
+        needsAttention = !fixes.isEmpty
     }
 
-    /// Why the modules stay off unsigned, or nothing when Malum is signed.
+    /// Malum's own actions: run system config, show the log, open `malum.toml` when it's there,
+    /// reload and quit.
+    private static func actionItems(path: String?, exists: Bool) -> [MenuItem] {
+        let open: [MenuItem] = path.flatMap { exists ? [.action(openConfig, .openFile($0))] : nil } ?? []
+        return [.action(run, .run), .action(showLog, .showLog)] + open
+            + [.action(reload, .reload), .separator, .action(quit, .quit)]
+    }
+
+    /// Why the modules stay off unsigned, which the log tells more about, or nothing when Malum is signed.
     private static func signingItems(_ problem: String?) -> [MenuItem] {
         guard let problem else { return [] }
-        return [.text(problem), .separator]
+        return [.action(problem, .showLog)]
     }
 
-    /// Why safe mode is on and the way out of it, or nothing while it's off.
+    /// The way out of safe mode, saying why it's on, or nothing while it's off.
     private static func safeModeItems(_ reason: SafeModeReason?) -> [MenuItem] {
         guard let reason else { return [] }
-        return [.text(safeMode(reason)), .action(leaveSafeMode, .leaveSafeMode), .separator]
+        return [.action(leaveSafeMode(reason), .leaveSafeMode)]
     }
 
     /// A way to enable each disabled module, in a steady order.
@@ -44,45 +49,31 @@ public struct StatusMenu: Equatable, Sendable {
         disabled.sorted().map { .action(enable($0), .enable($0)) }
     }
 
-    /// A line per module with its status, and a way to grant each permission it's missing.
-    private static func moduleItems(_ modules: [(id: String, status: ModuleStatus)]) -> [MenuItem] {
-        guard !modules.isEmpty else { return [.text(noModules)] }
-        return modules.flatMap { module in
-            [.text(moduleLine(module.id, module.status))] + permissionItems(module.status)
+    /// A way to grant each permission a module is missing, in a steady order, or a way to the log
+    /// when it failed or runs with less. Nothing when it's fine.
+    private static func moduleItems(_ module: (id: String, status: ModuleStatus)) -> [MenuItem] {
+        switch module.status {
+        case .needsPermission(let missing):
+            return missing.sorted { $0.description < $1.description }
+                .map { .action(openSettings($0, for: module.id), .openSettings($0)) }
+        case .degraded, .failed:
+            return [.action(moduleLine(module.id, module.status), .showLog)]
+        case .off, .starting, .running:
+            return []
         }
     }
 
-    /// A way to grant each missing permission, in a steady order.
-    private static func permissionItems(_ status: ModuleStatus) -> [MenuItem] {
-        guard case .needsPermission(let missing) = status else { return [] }
-        return missing.sorted { $0.description < $1.description }
-            .map { .action(openSettings($0), .openSettings($0)) }
-    }
-
-    /// The problems `malum.toml` has, and a way to get to the file: open it, or show the dots
-    /// folder when it's missing. Without dots, the problem itself says what to run.
-    private static func configItems(_ problems: [Message], path: String?, exists: Bool) -> [MenuItem] {
-        let lines: [MenuItem] =
-            problems.isEmpty
-            ? [.text(noConfigProblems)] : problems.map { .text($0.description) }
-        guard let path else { return lines }
-        guard exists else { return lines + [.action(showDotsFolder, .showFolder(folder(of: path)))] }
-        return lines + [.action(openConfig, .openFile(path))]
+    /// What picking a config problem does: open `malum.toml`, show the dots folder when it's
+    /// missing, or show the log without dots, where the problem itself says what to run.
+    private static func configFix(path: String?, exists: Bool) -> MenuFix {
+        guard let path else { return .showLog }
+        guard exists else { return .showFolder(folder(of: path)) }
+        return .openFile(path)
     }
 
     /// The folder that holds `path`.
     private static func folder(of path: String) -> String {
         guard let slash = path.lastIndex(of: "/") else { return path }
         return String(path[..<slash])
-    }
-
-    /// Whether a module's status should change the icon.
-    private static func needsAttention(_ status: ModuleStatus) -> Bool {
-        switch status {
-        case .degraded, .failed, .needsPermission:
-            true
-        case .off, .starting, .running:
-            false
-        }
     }
 }

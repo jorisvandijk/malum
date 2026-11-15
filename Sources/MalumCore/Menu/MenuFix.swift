@@ -6,6 +6,10 @@ public enum MenuFix: Equatable, Sendable {
     case showFolder(String)
     /// Opens the page in System Settings where a permission is granted.
     case openSettings(Permission)
+    /// Runs system config, as `malum run` does, showing what it reports in the popup.
+    case run
+    /// Shows Malum's log of the last hour in the popup.
+    case showLog
     /// Loads `malum.toml` again.
     case reload
     /// Turns safe mode off, so the modules start as `malum.toml` says.

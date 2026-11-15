@@ -8,6 +8,8 @@ public protocol PopupSource: AnyObject {
     var placeholder: String { get }
     /// Whether rows can be deleted and the list cleared.
     var canDelete: Bool { get }
+    /// Whether Tab reaches the list. A list only Malum opens, such as the output of a run, says no.
+    var inTabOrder: Bool { get }
     /// The rows matching `query`, best first, or every row for an empty one.
     func rows(matching query: String) -> [PopupRow]
     /// Does what picking `row` means, after the popup has closed.
@@ -23,6 +25,9 @@ public protocol PopupSource: AnyObject {
 extension PopupSource {
     /// Rows can't be deleted unless a list says so.
     public var canDelete: Bool { false }
+
+    /// Tab reaches a list unless it says otherwise.
+    public var inTabOrder: Bool { true }
 
     /// Does nothing, for a list whose rows can't be deleted.
     public func delete(_ row: PopupRow) {
