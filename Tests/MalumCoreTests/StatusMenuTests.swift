@@ -8,7 +8,7 @@ struct StatusMenuTests {
     /// The actions at the bottom while `malum.toml` is there.
     private var actions: [MenuItem] {
         [
-            .action("Run", .run), .action("Show log", .showLog), .action("Reload malum.toml", .reload), .separator,
+            .action("Run", .run), .action("Show log", .showLog), .action("Reload", .reload), .separator,
             .action("About Malum", .about), .action("Quit Malum", .quit),
         ]
     }

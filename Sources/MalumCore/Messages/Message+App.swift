@@ -55,6 +55,11 @@ extension Message {
     public static func wrote(_ path: String) -> Message {
         Message(.info, "wrote \(path)")
     }
+
+    /// macOS didn't show a notification, since Malum's notifications are off.
+    public static var notificationsOff: Message {
+        .couldnt("show a notification", "allow \(Project.name)'s notifications in System Settings", level: .warn)
+    }
 }
 
 // MARK: - ReportableError

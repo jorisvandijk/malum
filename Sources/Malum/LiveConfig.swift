@@ -2,7 +2,7 @@ import MalumCore
 import MalumPlatform
 
 /// The app's config: loads `malum.toml` and the modules' own files, and loads them again when one is
-/// saved or `malum reload` asks.
+/// saved or `malum reload` asks, and restarts every module when Reload in the menu asks.
 /// Each load switches the modules on and off and hands them their new settings.
 @MainActor
 final class LiveConfig {
@@ -30,6 +30,8 @@ final class LiveConfig {
     private var recheck: Task<Void, Never>?
     /// Runs after each load, and again once the modules have been switched.
     var onUpdate: @MainActor () -> Void = {}
+    /// Runs once a restart is done, with what it reported and how many modules are switched on.
+    var onRestart: @MainActor ([Message], Int) -> Void = { _, _ in }
 
     /// Creates the config with nothing loaded yet and every module off.
     init(reloader: ConfigReloader, modules: ModuleSwitch, overrides: OverrideStore) {
@@ -67,9 +69,16 @@ final class LiveConfig {
         reload(force: true)
     }
 
+    /// Loads `malum.toml` and the modules' own files again, then restarts every module, even the
+    /// ones whose settings didn't change: what Reload in the menu does.
+    func restart() {
+        reload(force: true, restart: true)
+    }
+
     /// Loads `malum.toml` and reports what it found. Unless `force` is set, a file that reads the
-    /// same as last time is skipped.
-    func reload(force: Bool) {
+    /// same as last time is skipped. With `restart`, every module is stopped and started again;
+    /// otherwise only the ones whose settings changed get them.
+    func reload(force: Bool, restart: Bool = false) {
         guard let report = reloader.reload(force: force) else { return }
         self.report = report
         report.messages.forEach(announce)
@@ -82,9 +91,17 @@ final class LiveConfig {
             guard let self else { return }
             // Read when the update is queued, so an update can't start modules after quitting stopped them.
             let enabled = self.modulesAllowed ? switchedOn : []
-            let messages = await self.modules.update(enabled: enabled, settings: settings, changed: report.changed)
+            let messages: [Message]
+            if restart {
+                messages = await self.modules.restart(enabled: enabled, settings: settings)
+            } else {
+                messages = await self.modules.update(enabled: enabled, settings: settings, changed: report.changed)
+            }
             messages.forEach(announce)
             self.onUpdate()
+            if restart {
+                self.onRestart(report.messages + messages, enabled.count)
+            }
             self.watchModules()
         }
     }

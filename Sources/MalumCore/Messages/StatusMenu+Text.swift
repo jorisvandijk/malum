@@ -31,8 +31,8 @@ extension StatusMenu {
     /// The way to Malum's log.
     static var showLog: String { "Show log" }
 
-    /// The way to load `malum.toml` again.
-    static var reload: String { "Reload \(Paths.configTOMLName)" }
+    /// The way to load the config again and restart every module.
+    static var reload: String { "Reload" }
 
     /// The way to the About window.
     static var about: String { "About \(Project.name)" }
