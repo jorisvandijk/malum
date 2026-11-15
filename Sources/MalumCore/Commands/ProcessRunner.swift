@@ -46,7 +46,8 @@ public struct ProcessRunner: CommandRunner {
         return CommandResult(status: status, errors: status == nil ? process.failure ?? errorText : errorText)
     }
 
-    /// Reads `handle` as the tool writes it, handing over each whole line, until the tool closes it.
+    /// Reads `handle` as the tool writes it, handing over each line, until the tool closes it. A last
+    /// line without a line break is handed over too.
     private static func readLines(_ handle: FileHandle, each: @escaping @Sendable (String) -> Void) async {
         await withCheckedContinuation { continuation in
             DispatchQueue.global().async {
@@ -57,6 +58,7 @@ public struct ProcessRunner: CommandRunner {
                     handOver(&pending, to: each)
                     chunk = handle.availableData
                 }
+                if !pending.isEmpty { each(String(decoding: pending, as: UTF8.self)) }  // The last line, unended.
                 continuation.resume()
             }
         }
