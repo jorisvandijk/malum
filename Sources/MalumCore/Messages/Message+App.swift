@@ -55,6 +55,16 @@ extension Message {
     public static func wrote(_ path: String) -> Message {
         Message(.info, "wrote \(path)")
     }
+
+    /// kitty didn't open a tab for a menu action, so a new window opens instead.
+    public static func tabFailed(reason: String) -> Message {
+        .couldnt("open a tab in kitty", "\(reason); opening a new window", level: .warn)
+    }
+
+    /// macOS didn't show a notification, since Malum's notifications are off.
+    public static var notificationsOff: Message {
+        .couldnt("show a notification", "allow \(Project.name)'s notifications in System Settings", level: .warn)
+    }
 }
 
 // MARK: - ReportableError

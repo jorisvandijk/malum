@@ -1,17 +1,24 @@
 import AppKit
 import MalumCore
 
-/// The About window: Malum's logo, name and version, who makes it, and a link to its website.
+/// The About window: Malum's logo beside its name and version, who makes it, and a link to its
+/// website.
 /// Like the inspector, it shows without making Malum the active app, and esc or its close button
 /// shuts it.
 @MainActor
 public final class AboutWindow: NSPanel {
-    /// The room round the contents and between its lines.
-    private static let margin = 20.0
+    /// The room round the contents.
+    private static let margin = 40.0
+    /// The room between the logo and the text.
+    private static let logoGap = 32.0
     /// The room between the lines of text.
-    private static let lineGap = 4.0
+    private static let lineGap = 6.0
+    /// The room of one empty line, between the version and the author.
+    private static let blankLine = 18.0
     /// How big the logo is drawn, in points.
     private static let logoSize = 128.0
+    /// The narrowest the text column gets, so the window is wider than it's tall.
+    private static let textWidth = 260.0
 
     /// Creates the window, hidden, with its contents laid out.
     public init() {
@@ -47,30 +54,42 @@ public final class AboutWindow: NSPanel {
         makeKeyAndOrderFront(nil)
     }
 
-    /// Opens the website in the default browser.
+    /// Opens the website in the default browser and closes the window.
     @objc private func openWebsite() {
+        close()
         guard let url = URL(string: Project.website) else { return }
         NSWorkspace.shared.open(url)
     }
 
-    /// The logo above the name, version, author and `link`, centred.
+    /// The logo on the left, and the name, version, author and `link` on its right, with an empty
+    /// line between the version and the author.
     private static func contents(link: NSButton) -> NSStackView {
         let logo = NSImageView(image: NSApplication.shared.applicationIconImage)
         logo.imageScaling = .scaleProportionallyUpOrDown
         logo.widthAnchor.constraint(equalToConstant: logoSize).isActive = true
         logo.heightAnchor.constraint(equalToConstant: logoSize).isActive = true
+        let row = NSStackView(views: [logo, text(link: link)])
+        row.orientation = .horizontal
+        row.alignment = .centerY
+        row.spacing = logoGap
+        row.edgeInsets = NSEdgeInsets(top: margin, left: margin, bottom: margin, right: margin)
+        return row
+    }
+
+    /// The name, version, author and `link`, one under the other.
+    private static func text(link: NSButton) -> NSStackView {
         let name = NSTextField(labelWithString: Project.name)
         name.font = .boldSystemFont(ofSize: NSFont.systemFontSize(for: .large))
         let version = NSTextField(labelWithString: AboutWords.version(Project.version))
         version.textColor = .secondaryLabelColor
         let author = NSTextField(labelWithString: Project.author)
-        let stack = NSStackView(views: [logo, name, version, author, link])
-        stack.orientation = .vertical
-        stack.alignment = .centerX
-        stack.spacing = lineGap
-        stack.setCustomSpacing(margin, after: logo)
-        stack.edgeInsets = NSEdgeInsets(top: margin, left: margin, bottom: margin, right: margin)
-        return stack
+        let column = NSStackView(views: [name, version, author, link])
+        column.orientation = .vertical
+        column.alignment = .leading
+        column.spacing = lineGap
+        column.setCustomSpacing(lineGap + blankLine, after: version)
+        column.widthAnchor.constraint(greaterThanOrEqualToConstant: textWidth).isActive = true
+        return column
     }
 
     /// The website as a link that calls `openWebsite` on `target`.
