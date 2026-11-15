@@ -19,6 +19,13 @@ public enum SystemConfig {
             ReleaseFolders.programsKey: Setting(
                 .string, "The folder programs from GitHub releases are installed in.",
                 default: .string(ReleaseFolders.defaultPrograms)),
+            TerminalLaunch.key: Setting(
+                .string,
+                """
+                The terminal app, by its bundle ID, that Run and Show log in the menu open in, such as \
+                `net.kovidgoyal.kitty`. It's opened with `-e` and the command to run. Left out, they show \
+                their output in the popup.
+                """),
             Wallpaper.key: Setting(
                 .string,
                 """

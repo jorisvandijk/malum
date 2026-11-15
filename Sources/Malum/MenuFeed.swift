@@ -1,6 +1,10 @@
+import Darwin
 import MalumCore
 import MalumPlatform
 import Observation
+
+/// The shell a terminal window runs commands through when the user's own can't be found.
+private let fallbackShell = "/bin/zsh"
 
 /// Keeps the menu bar icon up to date with the modules and the config.
 @MainActor
@@ -52,8 +56,10 @@ final class MenuFeed {
     private static func perform(_ fix: MenuFix, on config: LiveConfig, output: OutputPopup) {
         switch fix {
         case .run:
+            guard !openInTerminal(Invocation.runArguments, config: config) else { return }
             Task { await output.run(OutputPopup.runLabel, work: runSystemConfig) }
         case .showLog:
+            guard !openInTerminal(Invocation.logArguments(last: LogCommand.lastHour), config: config) else { return }
             Task {
                 await output.run(OutputPopup.logLabel) { write in
                     await LogCommand(runner: runner).lines(last: LogCommand.lastHour).forEach(write)
@@ -70,6 +76,25 @@ final class MenuFeed {
         case .openFile, .showFolder, .openSettings, .about:
             break  // MenuBar does these itself.
         }
+    }
+
+    /// Opens Malum with `arguments` in a new window of the terminal that `[system_config]` names,
+    /// and says whether it does. Without a terminal, or outside the app bundle, the popup shows
+    /// the output instead.
+    private static func openInTerminal(_ arguments: [String], config: LiveConfig) -> Bool {
+        guard let executable,
+            let launch = TerminalLaunch(
+                settings: config.settings[SystemConfig.id], executable: executable, command: arguments,
+                shell: loginShell())
+        else { return false }
+        Task {
+            do {
+                try await WorkspaceApps.openNew(launch.bundleID, arguments: launch.arguments)
+            } catch {
+                announce(.failed(error))
+            }
+        }
+        return true
     }
 
     /// Refreshes the menu each time a module's status changes.
@@ -93,4 +118,10 @@ private func runSystemConfig(_ write: @MainActor (String) -> Void) async {
         announce(message)
         write(message.description)
     }
+}
+
+/// The user's login shell, as the user database names it.
+private func loginShell() -> String {
+    guard let entry = getpwuid(getuid()), let shell = entry.pointee.pw_shell else { return fallbackShell }
+    return String(cString: shell)
 }

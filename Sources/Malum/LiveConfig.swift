@@ -165,6 +165,9 @@ final class LiveConfig {
     /// Where `malum.toml` was looked for last, or nil when dots isn't known.
     var path: String? { reloader.path }
 
+    /// Each module's last good settings, by the module's id.
+    var settings: [String: ConfigTable] { reloader.settings }
+
     /// Watches `files` in the folder of `path`, the `malum.toml` the last load looked for, when they
     /// aren't watched already.
     private func follow(_ path: String?, with files: [String]) {
