@@ -187,6 +187,19 @@ struct MacOSSettingsTests {
         #expect(record(files).preferences.isEmpty)
     }
 
+    @Test func appsThatArentRunningAreNotRestarted() async {
+        let runner = FakeRunner { command in
+            command == Killall.restart("Finder")
+                ? CommandResult(status: 1, errors: "No matching processes belonging to you were found")
+                : Self.export()
+        }
+        let files = FakeFileSystem(texts: [file: "[preferences.\"com.apple.finder\"]\nShowPathbar = true\n"])
+        let (succeeded, messages) = await run(files, runner: runner)
+        #expect(succeeded)
+        #expect(runner.commands.last == Killall.restart("Finder"))
+        #expect(messages == [Message(.info, "set ShowPathbar in com.apple.finder from macos.toml")])
+    }
+
     @Test func settingsAlreadySetRestartNothing() async {
         let runner = FakeRunner { _ in Self.export("<key>autohide</key><true/>") }
         let files = FakeFileSystem(texts: [file: "[preferences.\"com.apple.dock\"]\nautohide = true\n"])
