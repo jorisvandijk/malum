@@ -10,12 +10,24 @@ extension MessageText {
     static let removeAppleApps: MessageText = "remove Apple apps"
     /// The action of opening the startup apps.
     static let openStartupApps: MessageText = "open the startup apps"
+    /// Hiding and showing the folders in the home folder.
+    static let setHomeFolders: MessageText = "hide or show the folders in your home folder"
 }
 
 extension Message {
     /// There's no `macos.toml` at `path`, so no macOS setting is touched.
     static func noMacOSSettings(missing path: String) -> Message {
         Message(.info, "no macOS settings to set: \(private: path) doesn't exist")
+    }
+
+    /// The home folder's `name` was shown, or hidden when not `shown`.
+    static func homeFolderChanged(_ name: String, shown: Bool) -> Message {
+        Message(.info, "\(shown ? "showed" : "hid") ~/\(name) in Finder, from macos.toml")
+    }
+
+    /// The home folder's `name` couldn't be shown, or hidden when not `shown`.
+    static func homeFolderUnchanged(_ name: String, shown: Bool, reason: String) -> Message {
+        couldnt("\(shown ? "show" : "hide") ~/\(name) in Finder", "\(reason)", level: .warn)
     }
 
     /// Every macOS setting already holds what dots says.
