@@ -27,14 +27,19 @@ name="$(value name)"
 bundle_id="$(value bundleID)"
 version="$(value version)"
 executable="$name"
+web_app="${name}WebApp"
 app="$output/$name.app"
 
 swift build -c release --arch arm64 --product "$executable"
-bin="$(swift build -c release --arch arm64 --show-bin-path)/$executable"
+swift build -c release --arch arm64 --product "$web_app"
+bin="$(swift build -c release --arch arm64 --show-bin-path)"
 
 rm -rf "$app"
-mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-cp "$bin" "$app/Contents/MacOS/$executable"
+mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$app/Contents/Helpers"
+cp "$bin/$executable" "$app/Contents/MacOS/$executable"
+# The web app every site in webapps.toml becomes a copy of. Nested code is signed before the app.
+cp "$bin/$web_app" "$app/Contents/Helpers/$web_app"
+codesign --force --sign - "$app/Contents/Helpers/$web_app"
 cp Resources/Bundle/* "$app/Contents/Resources/"
 
 plist="$app/Contents/Info.plist"

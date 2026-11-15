@@ -23,6 +23,8 @@ var targets: [Target] = [
         .target(name: "MalumPlatform", dependencies: ["MalumCore"], swiftSettings: strict),
         .executableTarget(
             name: "Malum", dependencies: ["MalumCore", "MalumPlatform"], swiftSettings: strict),
+        // The tiny app every web app in ~/Applications is a copy of, shipped in Malum.app's Helpers.
+        .executableTarget(name: "MalumWebApp", dependencies: ["MalumCore"], swiftSettings: strict),
     ]
 #endif
 
