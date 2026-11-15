@@ -26,6 +26,14 @@ public enum AppBundle {
         return path
     }
 
+    /// The app bundle that holds the executable at `path`, or nil when Malum runs from elsewhere,
+    /// such as a build folder. `path` has its links already resolved.
+    public static func bundle(ofExecutable path: String) -> String? {
+        guard let executable = executable(at: path) else { return nil }
+        let macOS = URL(fileURLWithPath: executable).deletingLastPathComponent()
+        return macOS.deletingLastPathComponent().deletingLastPathComponent().path
+    }
+
     /// Whether `text` can be a bundle ID: not empty and without spaces.
     static func isBundleID(_ text: String) -> Bool {
         !text.isEmpty && !text.contains(where: \.isWhitespace)

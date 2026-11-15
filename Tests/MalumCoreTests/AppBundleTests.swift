@@ -41,6 +41,12 @@ struct AppBundleTests {
         #expect(AppBundle.executable(at: "/Users/test/git/malum/.build/debug/Malum") == nil)
     }
 
+    @Test func bundleIsFoundFromItsExecutable() {
+        let path = "/Users/test/Applications/Malum.app/Contents/MacOS/Malum"
+        #expect(AppBundle.bundle(ofExecutable: path) == "/Users/test/Applications/Malum.app")
+        #expect(AppBundle.bundle(ofExecutable: "/Users/test/.local/bin/malum") == nil)
+    }
+
     @Test func appWithoutContentsIsNotAnApp() {
         #expect(AppBundle.executable(at: "/Users/test/Applications/Malum.app/MacOS/Malum") == nil)
     }
