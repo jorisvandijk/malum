@@ -75,7 +75,7 @@ final class WindowManagerModule: Module {
         self.system = system
         self.routes = routes
         self.log = log.module(WindowManagerConfig.module)
-        runRaise = RunRaise(apps: system.apps, log: self.log)
+        runRaise = RunRaise(apps: system.apps, scheduler: system.scheduler, log: self.log)
         inspector = WindowInspector(
             windows: system.windows, watcher: system.watcher, system: system.inspector, log: self.log)
     }
