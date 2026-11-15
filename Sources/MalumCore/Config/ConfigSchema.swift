@@ -11,6 +11,9 @@ public struct ConfigSchema: Equatable, Sendable {
 
     /// The key that switches a module on or off.
     public static let switchKey = "enabled"
+    /// The table a module's own file holds its plain settings in. Lists of tables, such as `[[float]]`,
+    /// keep their own headings.
+    public static let settingsTable = "settings"
     /// The setting that switches a module on or off. Every module is off until it's set.
     static let switchSetting = Setting(
         .boolean, "Switches the module on. The module stays off until this is set to true.",
@@ -27,6 +30,11 @@ public struct ConfigSchema: Equatable, Sendable {
         self.settings = settings.merging([Self.switchKey: Self.switchSetting]) { _, common in common }
         self.fileCheck = fileCheck
         self.settingsCheck = settingsCheck
+    }
+
+    /// Whether the setting `key` takes a table or a list of tables, which sits under its own heading.
+    func isTable(_ key: String) -> Bool {
+        [.table, .tables].contains(settings[key]?.kind)
     }
 
     /// What's wrong with `table`, found at `path`, keyed by the setting it's about. Empty when the

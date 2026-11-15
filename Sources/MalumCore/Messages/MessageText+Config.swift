@@ -26,6 +26,11 @@ extension MessageText {
         "\(ConfigSchema.switchKey) goes in the [\(module)] table of \(Paths.configTOMLName), not here"
     }
 
+    /// A module's own file has the setting `key` at the top, outside `[settings]`.
+    static func outsideSettings(_ key: String) -> MessageText {
+        "\(key) goes under [\(ConfigSchema.settingsTable)]"
+    }
+
     /// `malum.toml` has a setting `key` outside every module's table.
     static func outsideModule(_ key: String) -> MessageText {
         "\(key) isn't inside a module's table"

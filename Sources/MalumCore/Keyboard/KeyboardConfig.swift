@@ -5,7 +5,7 @@ struct KeyboardConfig: Equatable, Sendable {
 
     /// The keyboard module's id, which names its file in dots.
     static let module = "keyboard"
-    /// The key that names the hyper key.
+    /// The key under `[settings]` that names the hyper key.
     private static let hyperKeyKey = "hyper_key"
     /// The table of key remaps.
     private static let remapTable = "remap"
@@ -33,12 +33,20 @@ struct KeyboardConfig: Equatable, Sendable {
             return (nil, [error])
         }
         let document = reader.document
-        let hyperKey = Self.hyperKey(document[hyperKeyKey], reader: &reader)
+        let settings = reader.table(document, ConfigSchema.settingsTable, at: [])
+        reader.unknownKeys(settings, at: [ConfigSchema.settingsTable], known: [hyperKeyKey])
+        let hyperKey = Self.hyperKey(settings[hyperKeyKey], reader: &reader)
         let remaps = Self.remaps(reader.table(document, remapTable, at: []), hyperKey: hyperKey, reader: &reader)
         var bindings: [KeyBinding] = []
         // `enabled` is reported by the config, which says it belongs in `malum.toml`.
-        let tables = document.filter { ![hyperKeyKey, remapTable, ConfigSchema.switchKey].contains($0.key) }
+        let tables = document.filter {
+            ![ConfigSchema.settingsTable, remapTable, ConfigSchema.switchKey].contains($0.key)
+        }
         for (name, value) in tables.sorted(by: { $0.key < $1.key }) {
+            guard SettingKind.table.accepts(value) || Modifier.modifiers(inTable: name) != nil else {
+                reader.add(.error, at: [name], .outsideSettings(name))
+                continue
+            }
             bindings += Self.bindings(inTable: name, value, reader: &reader)
         }
         let problems = reader.problemsByLine
@@ -50,7 +58,7 @@ struct KeyboardConfig: Equatable, Sendable {
     private static func hyperKey(_ value: ConfigValue?, reader: inout TableReader) -> Key? {
         guard let value else { return nil }
         guard case .string(let name) = value, let key = Key.named(name), key.canBeHyper else {
-            reader.expect([hyperKeyKey], MessageText.hyperKeyName)
+            reader.expect([ConfigSchema.settingsTable, hyperKeyKey], MessageText.hyperKeyName)
             return nil
         }
         return key

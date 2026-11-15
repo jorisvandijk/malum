@@ -4,7 +4,7 @@ The screenshots module freezes the screen the mouse is on, lets you crop it and 
 
 ## Switching it on
 
-The switch lives in `malum.toml`. The settings go either in the same table or in `screenshots.toml`, at the top of your dots folder:
+The switch lives in `malum.toml`. The settings go either in the same table or under `[settings]` in `screenshots.toml`, at the top of your dots folder:
 
 ```toml
 [screenshots]

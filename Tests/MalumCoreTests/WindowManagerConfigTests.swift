@@ -27,6 +27,7 @@ struct WindowManagerConfigTests {
 
     @Test func everySettingIsRead() {
         let text = """
+            [settings]
             frame = "full"
             block_hide_minimize = false
 
@@ -60,10 +61,12 @@ struct WindowManagerConfigTests {
     }
 
     @Test func unknownFrameIsAnErrorAtItsLine() {
-        let (config, problems) = load("frame = \"half\"\n")
+        let (config, problems) = load("[settings]\nframe = \"half\"\n")
         #expect(config == nil)
         #expect(
-            problems == [ConfigProblem(.error, file: fileName, line: 1, .shouldBe("frame", MessageText.screenFrame))])
+            problems == [
+                ConfigProblem(.error, file: fileName, line: 2, .shouldBe("settings.frame", MessageText.screenFrame))
+            ])
     }
 
     @Test func badFloatRulesAreErrorsAtTheirOwnLines() {

@@ -9,6 +9,7 @@ struct KeyTapTests {
 
     /// A `keyboard.toml` with a module's action on hyper, one on ctrl+shift, and an app.
     private static let text = """
+        [settings]
         hyper_key = "caps_lock"
 
         [ctrl_shift]

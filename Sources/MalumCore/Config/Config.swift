@@ -104,22 +104,65 @@ public struct Config: Sendable {
             problems.append(error)
             return nil
         }
-        let document = reader.document
-        if document[ConfigSchema.switchKey] != nil {
-            reader.add(.error, at: [ConfigSchema.switchKey], .switchOutsideConfig(module))
-        }
         var checked: [ConfigProblem] = []
+        var table = reader.document
         if let check = schema.fileCheck {
             checked = check.problems(in: text)
+            Self.checkSwitch(in: table, at: [], of: module, in: &reader)
         } else {
-            for (key, problem) in schema.problems(in: document, at: []) where key != ConfigSchema.switchKey {
-                reader.add(.error, at: [key], problem)
-            }
-            schema.settingsCheck?.check(document, at: [], in: &reader)
+            let parts = Self.parts(of: table, schema: schema, in: &reader)
+            table = Self.check(parts, of: module, schema: schema, in: &reader)
         }
         problems += reader.problems + checked
         guard reader.problems.isEmpty, checked.isEmpty else { return nil }
-        return ModuleSettings(table: document, file: text)
+        return ModuleSettings(table: table, file: text)
+    }
+
+    /// A module's own file, `document`, split by where its settings sit, by path: the tables at the
+    /// top, under `[]`, and the plain settings under `[settings]`. A plain setting at the top is an error.
+    /// A key `schema` takes as a table stays at the top whatever it holds, so its kind is checked.
+    private static func parts(
+        of document: ConfigTable, schema: ConfigSchema, in reader: inout TableReader
+    ) -> [[String]: ConfigTable] {
+        var tables: ConfigTable = [:]
+        for (key, value) in document where key != ConfigSchema.settingsTable {
+            if Self.isTable(value) || schema.isTable(key) || key == ConfigSchema.switchKey {
+                tables[key] = value
+            } else {
+                reader.add(.error, at: [key], .outsideSettings(key))
+            }
+        }
+        let settings = reader.table(document, ConfigSchema.settingsTable, at: [])
+        return [[]: tables, [ConfigSchema.settingsTable]: settings]
+    }
+
+    /// Whether `value` is a table or a list of tables.
+    private static func isTable(_ value: ConfigValue) -> Bool {
+        SettingKind.table.accepts(value) || SettingKind.tables.accepts(value)
+    }
+
+    /// Checks each of `parts`, by path, against `module`'s `schema`, and gives them back as one table.
+    private static func check(
+        _ parts: [[String]: ConfigTable], of module: String, schema: ConfigSchema, in reader: inout TableReader
+    ) -> ConfigTable {
+        var table: ConfigTable = [:]
+        for (path, part) in parts {
+            checkSwitch(in: part, at: path, of: module, in: &reader)
+            for (key, problem) in schema.problems(in: part, at: path) where key != ConfigSchema.switchKey {
+                reader.add(.error, at: path + [key], problem)
+            }
+            schema.settingsCheck?.check(part, at: path, in: &reader)
+            table.merge(part) { first, _ in first }
+        }
+        return table
+    }
+
+    /// Adds an error when `table`, found at `path` in `module`'s own file, holds the switch.
+    private static func checkSwitch(
+        in table: ConfigTable, at path: [String], of module: String, in reader: inout TableReader
+    ) {
+        guard table[ConfigSchema.switchKey] != nil else { return }
+        reader.add(.error, at: path + [ConfigSchema.switchKey], .switchOutsideConfig(module))
     }
 
     /// Takes `read` as the settings of `module`, adding it to `changed` when they differ from the

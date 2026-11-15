@@ -18,6 +18,7 @@ The module needs Accessibility. Until it's granted, the module waits, and the [m
 ## keyboard.toml
 
 ```toml
+[settings]
 hyper_key = "caps_lock"
 
 [remap]
@@ -29,7 +30,7 @@ f = "com.apple.finder"
 return = "net.kovidgoyal.kitty"
 ```
 
-### hyper_key
+### [settings] hyper_key
 
 The key that holds ctrl, option, cmd and shift down together while you hold it. One of `caps_lock`, `left_option`, `right_option`, `right_command` or `f13` to `f20`. Leave it out for no hyper key.
 

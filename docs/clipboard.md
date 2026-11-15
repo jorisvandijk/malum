@@ -4,7 +4,7 @@ The clipboard history keeps what you copy, and shows it in the same popup as the
 
 ## Switching it on
 
-The switch lives in `malum.toml`. The settings go either in the same table or in `clipboard.toml`, at the top of your dots folder:
+The switch lives in `malum.toml`. The settings go either in the same table or under `[settings]` in `clipboard.toml`, at the top of your dots folder:
 
 ```toml
 [clipboard]

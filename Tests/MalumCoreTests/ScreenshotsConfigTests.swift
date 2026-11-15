@@ -26,7 +26,8 @@ struct ScreenshotsConfigTests {
     }
 
     @Test func folderAndColorsAreRead() {
-        let (config, problems) = load("folder = \"~/Pictures/Shots\"\ncolors = [\"#00FF00\", \"#123abc\"]\n")
+        let (config, problems) = load(
+            "[settings]\nfolder = \"~/Pictures/Shots\"\ncolors = [\"#00FF00\", \"#123abc\"]\n")
         #expect(problems.isEmpty)
         #expect(config?.folder == "~/Pictures/Shots")
         #expect(
@@ -51,30 +52,32 @@ struct ScreenshotsConfigTests {
     }
 
     @Test func eachProblemIsAtItsLineAndTheModuleGetsNoSettings() {
-        let (config, problems) = load("folder = \"\"\ncolors = [\"red\"]\nsize = 3\n")
+        let (config, problems) = load("[settings]\nfolder = \"\"\ncolors = [\"red\"]\nsize = 3\n")
         #expect(config == nil)
         #expect(
             problems == [
-                ConfigProblem(.error, file: fileName, line: 1, .shouldBe("folder", MessageText.screenshotFolder)),
-                ConfigProblem(.error, file: fileName, line: 2, .shouldBe("colors", MessageText.screenshotColors)),
-                ConfigProblem(.error, file: fileName, line: 3, .unknownKey("size", isTable: false)),
+                ConfigProblem(
+                    .error, file: fileName, line: 2, .shouldBe("settings.folder", MessageText.screenshotFolder)),
+                ConfigProblem(
+                    .error, file: fileName, line: 3, .shouldBe("settings.colors", MessageText.screenshotColors)),
+                ConfigProblem(.error, file: fileName, line: 4, .unknownKey("settings.size", isTable: false)),
             ])
     }
 
     @Test func colorsNeedOneToSeven() {
         let eight = Array(repeating: "\"#000000\"", count: ScreenshotsConfig.maxColors + 1).joined(separator: ", ")
         for list in ["[]", "[\(eight)]"] {
-            let (config, problems) = load("colors = \(list)\n")
+            let (config, problems) = load("[settings]\ncolors = \(list)\n")
             #expect(config == nil)
-            #expect(problems.map(\.text) == [.shouldBe("colors", MessageText.screenshotColors)])
+            #expect(problems.map(\.text) == [.shouldBe("settings.colors", MessageText.screenshotColors)])
         }
     }
 
     @Test func wrongKindsAreReported() {
-        let (_, problems) = load("folder = 1\ncolors = \"#ff0000\"\n")
+        let (_, problems) = load("[settings]\nfolder = 1\ncolors = \"#ff0000\"\n")
         #expect(
             problems.map(\.text) == [
-                .shouldBe("folder", SettingKind.string), .shouldBe("colors", SettingKind.strings),
+                .shouldBe("settings.folder", SettingKind.string), .shouldBe("settings.colors", SettingKind.strings),
             ])
     }
 }

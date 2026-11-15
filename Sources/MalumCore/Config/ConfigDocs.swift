@@ -16,8 +16,8 @@ public enum ConfigDocs {
 
         A module's settings can go in a file of their own in dots instead, next to \
         `\(Paths.configTOMLName)` and named after the module, such as \
-        `\(Paths.moduleTOMLName(SystemConfig.id))`. That file holds the same settings without the \
-        table around them. `\(ConfigSchema.switchKey)` always stays in `\(Paths.configTOMLName)`, and a \
+        `\(Paths.moduleTOMLName(SystemConfig.id))`. That file holds the same settings under a \
+        `[\(ConfigSchema.settingsTable)]` heading, while a list of tables such as `[[float]]` keeps its own. `\(ConfigSchema.switchKey)` always stays in `\(Paths.configTOMLName)`, and a \
         module's settings go in one of the two places, never both.
 
         """
