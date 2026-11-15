@@ -20,17 +20,15 @@ public struct StatusMenu: Equatable, Sendable {
             Self.signingItems(signingProblem) + Self.safeModeItems(overrides.safeMode)
             + Self.disabledItems(overrides.disabled) + modules.flatMap(Self.moduleItems)
             + problems.map { .action($0.description, configFix) }
-        items = (fixes.isEmpty ? [] : fixes + [.separator]) + Self.actionItems(path: configPath, exists: configExists)
+        items = (fixes.isEmpty ? [] : fixes + [.separator]) + Self.actionItems
         needsAttention = !fixes.isEmpty
     }
 
-    /// Malum's own actions: run system config, show the log, open `malum.toml` when it's there,
-    /// reload and quit.
-    private static func actionItems(path: String?, exists: Bool) -> [MenuItem] {
-        let open: [MenuItem] = path.flatMap { exists ? [.action(openConfig, .openFile($0))] : nil } ?? []
-        return [.action(run, .run), .action(showLog, .showLog)] + open
-            + [.action(reload, .reload), .separator, .action(quit, .quit)]
-    }
+    /// Malum's own actions: run system config, show the log, reload, about and quit.
+    private static let actionItems: [MenuItem] = [
+        .action(run, .run), .action(showLog, .showLog), .action(reload, .reload), .separator,
+        .action(about, .about), .action(quit, .quit),
+    ]
 
     /// Why the modules stay off unsigned, which the log tells more about, or nothing when Malum is signed.
     private static func signingItems(_ problem: String?) -> [MenuItem] {

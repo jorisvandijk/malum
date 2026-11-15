@@ -16,6 +16,8 @@ public enum MenuFix: Equatable, Sendable {
     case leaveSafeMode
     /// Lets a disabled module run again, by its id.
     case enable(String)
+    /// Shows the About window: the logo, the version, who makes Malum and its website.
+    case about
     /// Quits Malum.
     case quit
 }

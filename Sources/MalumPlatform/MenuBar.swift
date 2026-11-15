@@ -22,6 +22,8 @@ public final class MenuBar: NSObject {
     private var fixes: [MenuFix] = []
     /// The logo, drawn in the menu bar's own colours, or nil outside the app bundle.
     private let logo: NSImage?
+    /// The About window, built the first time it's asked for.
+    private lazy var about = AboutWindow()
 
     /// Puts the icon in the menu bar. `onPick` runs when the user picks an item the app handles:
     /// run, show the log, reload, leave safe mode, enable a module, or quit.
@@ -95,6 +97,8 @@ public final class MenuBar: NSObject {
         case .openSettings(let permission):
             PermissionProbe.request(permission)
             PrivacySettings.open(permission)
+        case .about:
+            about.present()
         case .run, .showLog, .reload, .leaveSafeMode, .enable, .quit:
             onPick(fix)
         }
