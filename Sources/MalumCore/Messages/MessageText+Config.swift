@@ -165,6 +165,17 @@ extension MessageText {
     /// What a release's `repo` has to be.
     static var repository: MessageText { "the repository, as \"owner/name\"" }
 
+    /// What a web app's `url` should be.
+    static var webAddress: MessageText { "an http or https address" }
+
+    /// What a web app's `icon` should be.
+    static var iconFile: MessageText { "a .png or .icns file's path inside dots" }
+
+    /// The web app named at `path`, written dotted, has no letter or digit for its bundle ID.
+    static func noBundleIDLetters(_ path: String) -> MessageText {
+        "\(path): the name needs at least one letter or digit"
+    }
+
     /// What a key in `keyboard.toml` has to be.
     static var keyName: MessageText { "a key name, such as \"caps_lock\"" }
 
