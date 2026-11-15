@@ -1,7 +1,7 @@
 import Foundation
 
 /// Makes the web apps `webapps.toml` lists in `~/Applications`, each a copy of the web app executable
-/// in the installed app with its own `Info.plist` and icon, signed with Malum's certificate so it
+/// in the running app with its own `Info.plist` and icon, signed with Malum's certificate so it
 /// keeps its cookies and permissions. A web app whose site, icon or executable changed is built
 /// again; one that's no longer listed is removed. Other apps are never touched.
 @MainActor
@@ -19,17 +19,20 @@ struct WebAppInstaller {
     private let state: StateFolder
     /// Malum's signing certificate.
     private let certificate: SigningCertificate
+    /// The web app executable every web app is a copy of.
+    private let executable: String
 
     /// Creates the part.
     init(
         files: any FileSystem, runner: any CommandRunner, paths: Paths, state: StateFolder,
-        certificate: SigningCertificate
+        certificate: SigningCertificate, executable: String
     ) {
         self.files = files
         self.runner = runner
         self.paths = paths
         self.state = state
         self.certificate = certificate
+        self.executable = executable
     }
 
     /// Makes the web apps `webapps.toml` in the dots folder `dots` lists, and removes the ones it
@@ -51,8 +54,8 @@ struct WebAppInstaller {
         }
         let removed = removeUnlisted(apps, report: report)
         guard !apps.isEmpty else { return removed }
-        guard files.item(at: paths.webAppExecutable) == .file else {
-            report(.noWebAppExecutable(paths.webAppExecutable))
+        guard files.item(at: executable) == .file else {
+            report(.noWebAppExecutable(executable))
             return false
         }
         guard let identity = await certificate.find() else {
@@ -95,11 +98,11 @@ struct WebAppInstaller {
 
     /// `app`'s `Info.plist`, with a fingerprint of the executable and of the `icon` file.
     private func infoPlist(of app: WebApp, icon: String?) throws(WebAppError) -> String {
-        let executable = try onDisk { () throws(FileSystemError) in try files.data(at: paths.webAppExecutable) }
+        let program = try onDisk { () throws(FileSystemError) in try files.data(at: executable) }
         let picture = try icon.map { path throws(WebAppError) in
             try onDisk { () throws(FileSystemError) in try files.data(at: path) }
         }
-        let source = [Fingerprint.of(executable), picture.map(Fingerprint.of) ?? ""].joined(separator: "-")
+        let source = [Fingerprint.of(program), picture.map(Fingerprint.of) ?? ""].joined(separator: "-")
         return app.infoPlist(source: source)
     }
 
@@ -112,7 +115,7 @@ struct WebAppInstaller {
             if files.item(at: bundle) != nil { try files.remove(bundle) }
             try files.createDirectory(Paths.executableFolder(of: bundle))
             try files.createDirectory(resources)
-            try files.copy(paths.webAppExecutable, to: "\(Paths.executableFolder(of: bundle))/\(WebAppInfo.executable)")
+            try files.copy(executable, to: "\(Paths.executableFolder(of: bundle))/\(WebAppInfo.executable)")
             try files.write(plist, to: Paths.info(of: bundle))
         }
         guard let icon else { return bundle }

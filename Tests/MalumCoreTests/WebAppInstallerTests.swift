@@ -8,6 +8,7 @@ struct WebAppInstallerTests {
     private let paths = Paths(home: "/Users/test")
     private let dots = "/Users/test/dots"
     private let bundle = "/Users/test/Applications/Frigate.app"
+    private let executable = Paths.webAppExecutable(in: "/Users/test/Git/malum/build/Malum.app")
     private let list = "[Frigate]\nurl = \"http://192.168.1.5:5000\"\nicon = \"icons/frigate.png\"\n"
     private let runner = FakeRunner { command in
         guard command.arguments.first == "find-identity" else { return CommandResult(status: 0) }
@@ -17,7 +18,7 @@ struct WebAppInstallerTests {
     /// A disk with the web app executable, the icon and `texts`.
     private func disk(_ texts: [String: String]) -> FakeFileSystem {
         FakeFileSystem(
-            texts: texts.merging([paths.webAppExecutable: "executable", "\(dots)/icons/frigate.png": "png"]) { $1 })
+            texts: texts.merging([executable: "executable", "\(dots)/icons/frigate.png": "png"]) { $1 })
     }
 
     /// Runs the installer on `files`, giving whether it worked and what it said.
@@ -26,7 +27,8 @@ struct WebAppInstallerTests {
         let installer = WebAppInstaller(
             files: files, runner: runner, paths: paths,
             state: StateFolder(files: files, locks: FakeFileLocks(), paths: paths),
-            certificate: SigningCertificate(runner: runner, files: files, paths: paths, temporaryDirectory: "/tmp"))
+            certificate: SigningCertificate(runner: runner, files: files, paths: paths, temporaryDirectory: "/tmp"),
+            executable: executable)
         let worked = await installer.run(dots: dots) { messages.append($0) }
         return (worked, messages)
     }
@@ -94,7 +96,7 @@ struct WebAppInstallerTests {
         let files = FakeFileSystem(texts: ["\(dots)/webapps.toml": list])
         let (worked, messages) = await run(files)
         #expect(!worked)
-        #expect(messages == [.noWebAppExecutable(paths.webAppExecutable)])
+        #expect(messages == [.noWebAppExecutable(executable)])
     }
 
     @Test func noFileMakesNothing() async {

@@ -101,7 +101,7 @@ func systemConfig(canAsk: Bool, github: GitHubAPI) -> RunCommand {
     RunCommand(
         files: files, paths: paths, runner: runner, github: github, state: state, canAsk: canAsk,
         handlers: WorkspaceAppHandlers(), desktop: WorkspaceDesktop(), display: BuiltInDisplay(),
-        certificate: signingCertificate())
+        certificate: signingCertificate(), appBundle: Bundle.main.bundlePath)
 }
 
 /// GitHub, with the token from the keychain when one is stored. A token that can't be read is

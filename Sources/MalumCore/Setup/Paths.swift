@@ -52,8 +52,10 @@ public struct Paths: Equatable, Sendable {
     /// `~/Applications/Malum.app`, the installed app.
     public var installedBundle: String { "\(userApplications)/\(Project.name).app" }
 
-    /// The web app executable inside the installed app, which every web app is a copy of.
-    public var webAppExecutable: String { "\(installedBundle)/\(Self.helpersFolder)/\(WebAppInfo.executable)" }
+    /// The web app executable inside the app bundle `bundle`, which every web app is a copy of.
+    public static func webAppExecutable(in bundle: String) -> String {
+        "\(bundle)/\(helpersFolder)/\(WebAppInfo.executable)"
+    }
 
     /// The user's own apps folder, `~/Applications`, where Malum and Safari's web apps are.
     public var userApplications: String { "\(home)/\(Self.applicationsRoot)" }
