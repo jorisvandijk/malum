@@ -20,6 +20,10 @@ enum FileFormat: Sendable {
     case css(table: String)
     /// `text` as it is, the same on every Mac, read from no table.
     case fixed(String)
+    /// zsh's `.zprofile` in Silo's layout, from `[homebrew]` and `[path]`.
+    case zshProfile
+    /// zsh's `.zshrc` in Silo's layout, from the plugins, history, options and the rest.
+    case zshrc
 
     /// The tables at the top of the TOML the format reads.
     var tables: [String] {
@@ -31,6 +35,10 @@ enum FileFormat: Sendable {
             blocks.compactMap(\.table)
         case .fixed:
             []
+        case .zshProfile:
+            ZshText.profileTables
+        case .zshrc:
+            ZshText.rcTables
         }
     }
 
@@ -40,7 +48,7 @@ enum FileFormat: Sendable {
         switch self {
         case .json, .fixed:
             nil
-        case .lines, .ini, .sections, .list, .feeds:
+        case .lines, .ini, .sections, .list, .feeds, .zshProfile, .zshrc:
             ("#", "")
         case .calls:
             ("//", "")
@@ -54,7 +62,7 @@ enum FileFormat: Sendable {
         switch self {
         case .json:
             "{}\n"
-        case .lines, .ini, .sections, .list, .feeds, .calls, .css, .fixed:
+        case .lines, .ini, .sections, .list, .feeds, .calls, .css, .fixed, .zshProfile, .zshrc:
             ""
         }
     }
@@ -95,6 +103,10 @@ enum FileFormat: Sendable {
             return LineText.verbatim(fields, at: path + [name], reader: &reader)
         case .fixed(let text):
             return text
+        case .zshProfile:
+            return ZshText.profile(table, at: path, reader: &reader)
+        case .zshrc:
+            return ZshText.rc(table, at: path, reader: &reader)
         }
     }
 }
