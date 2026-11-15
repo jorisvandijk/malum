@@ -8,6 +8,9 @@ public enum MenuFix: Equatable, Sendable {
     case openSettings(Permission)
     /// Runs system config, as `malum run` does, showing what it reports in the popup.
     case run
+    /// Runs a module's action by its name, as a shortcut bound to it would, such as the window
+    /// inspector's `inspect_window`.
+    case runAction(String)
     /// Shows Malum's log of the last hour in the popup.
     case showLog
     /// Loads `malum.toml` and the modules' own files again and restarts every module.

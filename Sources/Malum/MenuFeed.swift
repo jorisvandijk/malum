@@ -69,6 +69,9 @@ final class MenuFeed {
         switch fix {
         case .run:
             run(config: config, output: output, routes: routes)
+        case .runAction(let action):
+            guard !routes.run(actionNamed: action) else { return }
+            announce(.noModuleFor(action))
         case .showLog:
             showLog(config: config, output: output, routes: routes)
         case .reload:

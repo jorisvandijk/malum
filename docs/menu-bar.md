@@ -5,6 +5,7 @@ While the app runs, Malum's icon sits in the menu bar. It's the Malum apple whil
 Click the icon to open the menu. When all is well, it holds only actions:
 
 - **Run** does what `malum run` does and shows what it reports in the popup, newest line at the top, as it goes. It doesn't ask for your password, so anything that needs sudo reports that it couldn't, and it doesn't update Malum. Run `malum run` in a terminal for those.
+- **Inspect window**, while the window manager runs, waits for a click on a window and shows what the [window inspector](window-manager.md) finds, as the `inspect_window` key does.
 - **Show log** shows Malum's [log](log.md) of the last hour in the popup, newest line at the top.
 - **Reload** reads `malum.toml` and the modules' own files again and restarts every module that's on, even ones whose settings didn't change. Use it when a module gets stuck, such as the hyper key. A notification says when it's done, or shows the first error. The first time, macOS asks whether Malum may show notifications. `malum reload` and saving a file only apply what changed.
 - **About Malum** shows Malum's logo, version, maker and website.

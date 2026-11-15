@@ -7,6 +7,8 @@ struct WindowManagerConfig: Equatable, Sendable {
 
     /// The window manager's id, which names its table and its file in dots.
     static let module = "window_manager"
+    /// The action that lets the user click a window and shows what it is.
+    static let inspectAction = "inspect_window"
     /// The key of the part of the screen windows fill.
     private static let frameKey = "frame"
     /// The key that blocks cmd+H, cmd+M and cmd+option+M.

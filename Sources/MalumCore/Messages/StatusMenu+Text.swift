@@ -28,6 +28,9 @@ extension StatusMenu {
     /// The way to run system config.
     static var run: String { "Run" }
 
+    /// The way to the window inspector.
+    static var inspectWindow: String { "Inspect window" }
+
     /// The way to Malum's log.
     static var showLog: String { "Show log" }
 
