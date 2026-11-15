@@ -34,4 +34,9 @@ public enum WebAppWords {
     public static func quit(_ name: String) -> String {
         "Quit \(name)"
     }
+
+    /// Why the web app called `name` asks for the local network, which macOS shows with the question.
+    public static func localNetwork(_ name: String) -> String {
+        "\(name) opens its site, which may be on the local network."
+    }
 }

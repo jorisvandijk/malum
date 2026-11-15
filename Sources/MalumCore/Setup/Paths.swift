@@ -78,6 +78,9 @@ public struct Paths: Equatable, Sendable {
     /// `macos.toml`, the name of the file in dots that holds macOS's settings.
     public static var macOSTOMLName: String { "macos.\(tomlExtension)" }
 
+    /// The name of the file that lists the web apps.
+    public static var webAppsTOMLName: String { "webapps.\(tomlExtension)" }
+
     /// `<module>.toml`, the name of the file in dots that can hold `module`'s settings instead of
     /// its table in `malum.toml`.
     public static func moduleTOMLName(_ module: String) -> String { "\(module).\(tomlExtension)" }
@@ -108,6 +111,9 @@ public struct Paths: Equatable, Sendable {
 
     /// `macos.toml` at the top of the dots folder `dots`.
     public func macOSTOML(in dots: String) -> String { "\(dots)/\(Self.macOSTOMLName)" }
+
+    /// `webapps.toml` in dots.
+    public func webAppsTOML(in dots: String) -> String { "\(dots)/\(Self.webAppsTOMLName)" }
 
     /// Whether `name` is safe as a single file name: it isn't empty, doesn't start with a dot and
     /// holds no `/`, so it can't reach outside the folder it's put in.
