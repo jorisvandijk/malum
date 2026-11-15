@@ -44,6 +44,16 @@ public final class ModuleSwitch {
         await enqueue { await $0.run(enabled: enabled, settings: settings, changed: changed) }
     }
 
+    /// Stops every running module, then starts the ones `enabled` names with `settings`, as if
+    /// each one was switched on for the first time. Says what it did.
+    public func restart(enabled: Set<String>, settings: [String: ModuleSettings]) async -> [Message] {
+        await enqueue { switcher in
+            let stopped = await switcher.run(enabled: [], settings: settings, changed: [])
+            let everyModule = Set(switcher.modules.map(\.id))
+            return stopped + (await switcher.run(enabled: enabled, settings: settings, changed: everyModule))
+        }
+    }
+
     /// Stops the running modules that lost a permission, so they wait for it again, starts the waiting
     /// modules whose permissions were granted since, and has the others check what macOS doesn't
     /// announce. Says what it did.

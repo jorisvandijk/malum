@@ -51,6 +51,19 @@ struct ModuleSwitchTests {
         #expect(launcher.calls == ["apply ", "start"])
     }
 
+    @Test func restartStopsAndStartsEveryRunningModule() async {
+        let modules = moduleSwitch()
+        _ = await modules.update(enabled: ["launcher", "screenshots"], settings: [:], changed: [])
+        let messages = await modules.restart(enabled: ["launcher", "screenshots"], settings: [:])
+        #expect(
+            messages == [
+                Message(.info, "stopped launcher"), Message(.info, "stopped screenshots"),
+                Message(.info, "started launcher"), Message(.info, "started screenshots"),
+            ])
+        #expect(launcher.calls == ["apply ", "start", "stop", "apply ", "start"])
+        #expect(modules.started == ["launcher", "screenshots"])
+    }
+
     @Test func failedStartIsTriedAgainOnlyWhenItsTableChanges() async {
         let modules = moduleSwitch()
         launcher.failsToStart = true

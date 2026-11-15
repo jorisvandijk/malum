@@ -60,7 +60,7 @@ final class MenuFeed {
                 }
             }
         case .reload:
-            config.reload(force: true)
+            config.restart()
         case .leaveSafeMode:
             config.change { store throws(StateError) in try store.leaveSafeMode() }
         case .enable(let module):

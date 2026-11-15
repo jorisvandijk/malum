@@ -10,7 +10,7 @@ public enum MenuFix: Equatable, Sendable {
     case run
     /// Shows Malum's log of the last hour in the popup.
     case showLog
-    /// Loads `malum.toml` again.
+    /// Loads `malum.toml` and the modules' own files again and restarts every module.
     case reload
     /// Turns safe mode off, so the modules start as `malum.toml` says.
     case leaveSafeMode
