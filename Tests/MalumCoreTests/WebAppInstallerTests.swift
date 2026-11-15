@@ -10,7 +10,10 @@ struct WebAppInstallerTests {
     private let bundle = "/Users/test/Applications/Frigate.app"
     private let executable = Paths.webAppExecutable(in: "/Users/test/Git/malum/build/Malum.app")
     private let list = "[Frigate]\nurl = \"http://192.168.1.5:5000\"\nicon = \"icons/frigate.png\"\n"
-    private let runner = FakeRunner { command in
+    private let runner = FakeRunner(answer: Self.answer)
+
+    /// Finds the certificate, and runs every other command fine.
+    nonisolated private static func answer(_ command: Command) -> CommandResult {
         guard command.arguments.first == "find-identity" else { return CommandResult(status: 0) }
         return CommandResult(status: 0, output: SigningCertificateTests.listed)
     }
@@ -22,7 +25,8 @@ struct WebAppInstallerTests {
     }
 
     /// Runs the installer on `files`, giving whether it worked and what it said.
-    private func run(_ files: FakeFileSystem) async -> (Bool, [Message]) {
+    private func run(_ files: FakeFileSystem, runner: FakeRunner? = nil) async -> (Bool, [Message]) {
+        let runner = runner ?? self.runner
         var messages: [Message] = []
         let installer = WebAppInstaller(
             files: files, runner: runner, paths: paths,
@@ -58,7 +62,27 @@ struct WebAppInstallerTests {
         let (worked, messages) = await run(files)
         #expect(worked)
         #expect(messages.isEmpty)
-        #expect(runner.commands.count == signings + 1)  // Only looking for the certificate.
+        #expect(runner.commands.count == signings + 2)  // Finding the certificate and checking the app.
+    }
+
+    @Test func appWhoseSigningFailedIsBuiltAgain() async {
+        let files = disk(["\(dots)/webapps.toml": list])
+        let (failed, _) = await run(files, runner: failingCheck(of: "\(bundle).staged"))
+        #expect(!failed)
+        #expect(files.item(at: bundle) != nil)
+        let (worked, messages) = await run(files, runner: failingCheck(of: bundle))
+        #expect(worked)
+        #expect(messages == [.updatedWebApp("Frigate")])
+    }
+
+    /// A runner whose signature check of `path` fails.
+    private func failingCheck(of path: String) -> FakeRunner {
+        FakeRunner { command in
+            guard command.arguments.first == "--verify", command.arguments.last == path else {
+                return Self.answer(command)
+            }
+            return CommandResult(status: 1, errors: "invalid signature")
+        }
     }
 
     @Test func changedSiteBuildsTheAppAgain() async {
