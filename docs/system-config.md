@@ -661,7 +661,7 @@ icon = "icons/frigate.png"
 ```
 
 - `url`: the site, `http` or `https`.
-- `icon`: optional, a square `.png` (512 or 1024 pixels) or an `.icns` file, as a path inside dots. Left out, the app gets the plain app icon.
+- `icon`: optional, a square `.png` or an `.icns` file, as a path inside dots. Left out, the app gets the plain app icon.
 
 `malum run` makes `~/Applications/Frigate.app`, signed with Malum's certificate. It opens the site in one window of its own, shows in cmd+tab and the [launcher](launcher.md), and keeps its own cookies, so you stay logged in. Closing the window quits it. Links to other sites open in your browser. A site on the local network asks for Local Network access the first time.
 
