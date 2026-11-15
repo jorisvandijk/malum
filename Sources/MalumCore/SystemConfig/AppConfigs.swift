@@ -102,8 +102,8 @@ enum AppConfigs {
             files: [
                 AppConfigFile(
                     ".zshenv", .lines([LineBlock("environment", prefix: "export", separator: "=", quoted: .double)])),
-                AppConfigFile(".zprofile", .zshProfile),
-                AppConfigFile(".zshrc", .zshrc, always: true),
+                AppConfigFile(".zprofile", .zsh(.profile)),
+                AppConfigFile(".zshrc", .zsh(.rc), always: true),
                 AppConfigFile(
                     ".config/zsh-abbr/user-abbreviations",
                     .lines([

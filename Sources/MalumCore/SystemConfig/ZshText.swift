@@ -2,6 +2,14 @@
 /// layout: `.zprofile` from `[homebrew]` and `[path]`, and `.zshrc` from the plugins, history,
 /// options, sourced files, functions, prompt and aliases. The plugins load from Homebrew.
 enum ZshText {
+    /// zsh's startup files written from more than one table.
+    enum File: Sendable {
+        /// `.zprofile`, for login shells.
+        case profile
+        /// `.zshrc`, for interactive shells.
+        case rc
+    }
+
     /// A switch in a table and the lines it writes when it's on, and when it's off.
     private struct Switch {
         /// The switch's key.
@@ -14,10 +22,30 @@ enum ZshText {
         var isOn = false
     }
 
-    /// The tables `.zprofile` reads.
-    static let profileTables = [homebrewTable, pathTable]
+    /// The tables `file` is written from.
+    static func tables(of file: File) -> [String] {
+        switch file {
+        case .profile:
+            [homebrewTable, pathTable]
+        case .rc:
+            rcTables
+        }
+    }
+
+    /// The text of `file` from `table`, found at `path`, or nil when it would be empty.
+    static func text(of file: File, from table: ConfigTable, at path: [String], reader: inout TableReader) -> String? {
+        switch file {
+        case .profile:
+            profile(table, at: path, reader: &reader)
+        case .rc:
+            rc(table, at: path, reader: &reader)
+        }
+    }
+
     /// The tables `.zshrc` reads.
-    static let rcTables = [pluginsTable, historyTable, optionsTable, sourceTable, functionsTable, promptTable, aliases]
+    private static let rcTables = [
+        pluginsTable, historyTable, optionsTable, sourceTable, functionsTable, promptTable, aliases,
+    ]
 
     private static let homebrewTable = "homebrew"
     private static let pathTable = "path"
@@ -77,7 +105,7 @@ enum ZshText {
     }
 
     /// `.zprofile` from `table`, found at `path`, or nil when it would be empty.
-    static func profile(_ table: ConfigTable, at path: [String], reader: inout TableReader) -> String? {
+    private static func profile(_ table: ConfigTable, at path: [String], reader: inout TableReader) -> String? {
         var lines = ""
         let homebrew = reader.table(table, homebrewTable, at: path)
         lines += switches([shellenv], in: homebrew, at: path + [homebrewTable], reader: &reader)
@@ -91,7 +119,7 @@ enum ZshText {
     }
 
     /// `.zshrc` from `table`, found at `path`. It's never empty.
-    static func rc(_ table: ConfigTable, at path: [String], reader: inout TableReader) -> String {
+    private static func rc(_ table: ConfigTable, at path: [String], reader: inout TableReader) -> String {
         let plugins = reader.table(table, pluginsTable, at: path)
         let pluginsPath = path + [pluginsTable]
         let usesAbbr = abbreviationTables.contains { table[$0].map { $0 != .table([:]) } ?? false }
