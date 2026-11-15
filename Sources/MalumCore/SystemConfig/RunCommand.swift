@@ -19,13 +19,16 @@ public struct RunCommand {
     private let desktop: any Desktop
     /// The Mac's own screen.
     private let display: any Display
+    /// Signs the web apps.
+    private let certificate: SigningCertificate
 
     /// Creates the command, which asks for the password only when `canAsk` is set, sets the
     /// default apps through `handlers`, the wallpaper through `desktop` and the screen's size
     /// through `display`.
     public init(
         files: any FileSystem, paths: Paths, runner: any CommandRunner, github: any GitHub, state: StateFolder,
-        canAsk: Bool, handlers: any AppHandlers, desktop: any Desktop, display: any Display
+        canAsk: Bool, handlers: any AppHandlers, desktop: any Desktop, display: any Display,
+        certificate: SigningCertificate
     ) {
         self.files = files
         self.paths = paths
@@ -36,6 +39,7 @@ public struct RunCommand {
         self.handlers = handlers
         self.desktop = desktop
         self.display = display
+        self.certificate = certificate
     }
 
     /// Loads `malum.toml` and runs each part of system config in order, reporting as it goes. Says
@@ -69,7 +73,10 @@ public struct RunCommand {
             ).run(dots: dots, report: report)
             let wallpaper = Wallpaper(files: files, paths: paths, desktop: desktop).set(
                 settings, dots: dots, report: report)
-            succeeded = packages && apps && macOS && wallpaper
+            let webApps = await WebAppInstaller(
+                files: files, runner: runner, paths: paths, state: state, certificate: certificate
+            ).run(dots: dots, report: report)
+            succeeded = packages && apps && macOS && wallpaper && webApps
         } catch {
             report(.failed(error))
             return false

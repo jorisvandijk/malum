@@ -626,6 +626,7 @@ It changes nothing when the Mac already asks after that delay. Changing it takes
 [info] the screen asks for your password as soon as it goes black now, from macos.toml
 ```
 
+<<<<<<< HEAD
 ### Startup apps
 
 `apps` in `[startup]` lists apps, by bundle ID, that the menu bar app opens each time it starts, for apps that don't start at login by themselves. An app that already runs is left alone. Malum itself isn't a login item: its login agent starts it.
@@ -648,6 +649,27 @@ show = ["Documents", "Downloads", "Git", "Pictures"]
 
 ```
 [info] hid ~/Movies in Finder, from macos.toml
+=======
+## Web apps
+
+`webapps.toml`, at the top of your dots folder, turns sites into apps of their own. Each table is one web app, named by the app:
+
+```toml
+[Frigate]
+url = "http://192.168.1.5:5000"
+icon = "icons/frigate.png"
+```
+
+- `url`: the site, `http` or `https`.
+- `icon`: optional, a square `.png` (512 or 1024 pixels) or an `.icns` file, as a path inside dots. Left out, the app gets the plain app icon.
+
+`malum run` makes `~/Applications/Frigate.app`, signed with Malum's certificate. It opens the site in one window of its own, shows in cmd+tab and the [launcher](launcher.md), and keeps its own cookies, so you stay logged in. Closing the window quits it. Links to other sites open in your browser. A site on the local network asks for Local Network access the first time.
+
+An app is built again when its site or icon changes, or after Malum is updated. Taking a table out removes its app. An app in `~/Applications` that isn't one of Malum's web apps is never touched: a web app whose name is taken by another app is an error, and the other app stays.
+
+```
+[info] made the web app Frigate
+>>>>>>> 20e7ee1 (Make the web apps in malum run)
 ```
 
 ## Status

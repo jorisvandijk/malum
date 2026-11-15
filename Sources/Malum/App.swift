@@ -93,9 +93,7 @@ func stopAndQuit(_ config: LiveConfig) {
 /// install is signed in place first, and started again through launchd as the signed app.
 @MainActor
 private func startWhenSigned(config: LiveConfig, menu: MenuFeed) async {
-    let certificate = SigningCertificate(
-        runner: runner, files: files, paths: paths, temporaryDirectory: NSTemporaryDirectory())
-    let signing = SelfSigning(runner: runner, files: files, paths: paths, certificate: certificate)
+    let signing = SelfSigning(runner: runner, files: files, paths: paths, certificate: signingCertificate())
     switch await signing.check(executable: executable) {
     case .signed:
         config.allowModules()

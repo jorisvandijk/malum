@@ -26,7 +26,9 @@ public struct WebApp: Equatable, Sendable {
 
     /// Its `Info.plist`: the name, bundle ID and site, the icon when it has one, and permission to
     /// load plain `http` and local network sites, which a self-hosted service such as Frigate often is.
-    var infoPlist: String? {
+    /// `source` is a fingerprint of the web app executable and the icon it was built from, so a
+    /// bundle whose `Info.plist` matches needs nothing done.
+    func infoPlist(source: String) -> String {
         var info: ConfigTable = [
             "CFBundlePackageType": .string("APPL"),
             "CFBundleInfoDictionaryVersion": .string("6.0"),
@@ -40,10 +42,11 @@ public struct WebApp: Equatable, Sendable {
                 "NSAllowsArbitraryLoadsInWebContent": .boolean(true), "NSAllowsLocalNetworking": .boolean(true),
             ]),
             WebAppInfo.urlKey: .string(url),
+            WebAppInfo.sourceKey: .string(source),
         ]
         if icon != nil {
             info["CFBundleIconFile"] = .string(Self.iconName)
         }
-        return PlistText.document(.table(info))
+        return PlistText.document(.table(info)) ?? ""  // Text and true only, which always make a document.
     }
 }
