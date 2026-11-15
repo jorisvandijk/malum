@@ -167,6 +167,7 @@ func selfUpdate(github: any GitHub) -> SelfUpdate {
 @MainActor
 func showStatus() -> Never {
     terminal.report(tokenCommand().status())
+    ModuleOverview(files: files, paths: paths, state: state).report { terminal.report($0) }
     finishing {
         await StatusCommand(files: files, paths: paths, runner: runner, state: state).run { terminal.report($0) }
     }
