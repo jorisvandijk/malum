@@ -8,8 +8,8 @@ struct StatusMenuTests {
     /// The actions at the bottom while `malum.toml` is there.
     private var actions: [MenuItem] {
         [
-            .action("Run", .run), .action("Show log", .showLog), .action("Open malum.toml", .openFile(path)),
-            .action("Reload malum.toml", .reload), .separator, .action("Quit Malum", .quit),
+            .action("Run", .run), .action("Show log", .showLog), .action("Reload malum.toml", .reload), .separator,
+            .action("About Malum", .about), .action("Quit Malum", .quit),
         ]
     }
 
@@ -52,7 +52,6 @@ struct StatusMenuTests {
         #expect(
             missing.items.first
                 == .action("[error] couldn't load /dots/malum.toml: it doesn't exist", .showFolder("/dots")))
-        #expect(!missing.items.contains(.action("Open malum.toml", .openFile(path))))
     }
 
     @Test func noDotsLeadsToTheLog() {

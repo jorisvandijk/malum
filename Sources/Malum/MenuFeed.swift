@@ -67,7 +67,7 @@ final class MenuFeed {
             config.change { store throws(StateError) in try store.enable(module) }
         case .quit:
             stopAndQuit(config)
-        case .openFile, .showFolder, .openSettings:
+        case .openFile, .showFolder, .openSettings, .about:
             break  // MenuBar does these itself.
         }
     }

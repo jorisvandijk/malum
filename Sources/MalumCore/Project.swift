@@ -13,6 +13,10 @@ public enum Project {
     public static let repository = "jorisvandijk/malum"
     /// Where the source and the releases live.
     public static let repositoryURL = "https://github.com/\(repository)"
+    /// Who makes Malum, as the About window names them.
+    public static let author = "Joris van Dijk"
+    /// Malum's website, which the About window links to.
+    public static let website = "https://malum.jorisvandijk.com"
     /// The keychain service of the GitHub token that lets Malum see its repository while it's private.
     public static let tokenService = "\(bundleID).github"
     /// The keychain service of the Samba passwords, whose account is `user@host`.

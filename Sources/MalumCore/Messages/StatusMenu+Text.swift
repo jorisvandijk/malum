@@ -31,11 +31,11 @@ extension StatusMenu {
     /// The way to Malum's log.
     static var showLog: String { "Show log" }
 
-    /// The way to open `malum.toml`.
-    static var openConfig: String { "Open \(Paths.configTOMLName)" }
-
     /// The way to load `malum.toml` again.
     static var reload: String { "Reload \(Paths.configTOMLName)" }
+
+    /// The way to the About window.
+    static var about: String { "About \(Project.name)" }
 
     /// The way to quit.
     static var quit: String { "Quit \(Project.name)" }
