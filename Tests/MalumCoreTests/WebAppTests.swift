@@ -15,15 +15,16 @@ struct WebAppTests {
     }
 
     @Test func infoPlistNamesTheSiteAndTheIcon() throws {
-        let plist = try #require(frigate.infoPlist)
+        let plist = frigate.infoPlist(source: "abc")
         #expect(plist.contains("<key>\(WebAppInfo.urlKey)</key><string>http://192.168.1.5:5000</string>"))
         #expect(plist.contains("<key>CFBundleIconFile</key><string>AppIcon</string>"))
         #expect(plist.contains("<key>CFBundleExecutable</key><string>\(WebAppInfo.executable)</string>"))
         #expect(plist.contains("<key>NSAllowsArbitraryLoadsInWebContent</key><true/>"))
+        #expect(plist.contains("<key>\(WebAppInfo.sourceKey)</key><string>abc</string>"))
     }
 
     @Test func infoPlistWithoutIconHasNoIconFile() throws {
         let plain = WebApp(name: "Frigate", url: "https://a.b", icon: nil)
-        #expect(try #require(plain.infoPlist).contains("CFBundleIconFile") == false)
+        #expect(plain.infoPlist(source: "abc").contains("CFBundleIconFile") == false)
     }
 }

@@ -24,7 +24,9 @@ struct RunCommandTests {
             files: files, paths: paths, runner: runner, github: FakeGitHub([:], files: files),
             state: StateFolder(files: files, locks: FakeFileLocks(), paths: paths),
             canAsk: true, handlers: FakeAppHandlers(), desktop: FakeDesktop(),
-            display: FakeDisplay()
+            display: FakeDisplay(),
+            certificate: SigningCertificate(runner: runner, files: files, paths: paths, temporaryDirectory: "/tmp"),
+            appBundle: "/Users/test/Applications/Malum.app"
         ).run {
             messages.append($0)
         }

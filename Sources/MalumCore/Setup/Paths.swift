@@ -27,6 +27,10 @@ public struct Paths: Equatable, Sendable {
     private static let executableFolder = "Contents/MacOS"
     /// An app bundle's `Info.plist`.
     private static let infoFile = "Contents/Info.plist"
+    /// Where a bundle keeps the programs it runs besides its own, as `scripts/bundle.sh` writes it.
+    private static let helpersFolder = "Contents/Helpers"
+    /// Where a bundle keeps its icon.
+    private static let resourcesFolder = "Contents/Resources"
     /// The state folder's folder that keeps the version an update replaced.
     private static let previousFolder = "previous"
 
@@ -48,6 +52,11 @@ public struct Paths: Equatable, Sendable {
     /// `~/Applications/Malum.app`, the installed app.
     public var installedBundle: String { "\(userApplications)/\(Project.name).app" }
 
+    /// The web app executable inside the app bundle `bundle`, which every web app is a copy of.
+    public static func webAppExecutable(in bundle: String) -> String {
+        "\(bundle)/\(helpersFolder)/\(WebAppInfo.executable)"
+    }
+
     /// The user's own apps folder, `~/Applications`, where Malum and Safari's web apps are.
     public var userApplications: String { "\(home)/\(Self.applicationsRoot)" }
     /// `~/Applications/Malum.app/Contents/MacOS/Malum`, the executable of the installed app.
@@ -62,6 +71,10 @@ public struct Paths: Equatable, Sendable {
 
     /// The `Info.plist` of the app bundle `bundle`.
     public static func info(of bundle: String) -> String { "\(bundle)/\(infoFile)" }
+    /// `bundle`'s `Contents/MacOS`, where its executable goes.
+    static func executableFolder(of bundle: String) -> String { "\(bundle)/\(executableFolder)" }
+    /// `bundle`'s `Contents/Resources`, where its icon goes.
+    static func resources(of bundle: String) -> String { "\(bundle)/\(resourcesFolder)" }
     /// `~/Library/Keychains/login.keychain-db`, where Malum's signing certificate goes.
     public var loginKeychain: String { "\(home)/\(Self.loginKeychainPath)" }
     /// `~/Library/LaunchAgents`, where the login agent goes.

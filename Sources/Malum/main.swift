@@ -100,7 +100,8 @@ func applySystemConfig(force: Bool) -> Never {
 func systemConfig(canAsk: Bool, github: GitHubAPI) -> RunCommand {
     RunCommand(
         files: files, paths: paths, runner: runner, github: github, state: state, canAsk: canAsk,
-        handlers: WorkspaceAppHandlers(), desktop: WorkspaceDesktop(), display: BuiltInDisplay())
+        handlers: WorkspaceAppHandlers(), desktop: WorkspaceDesktop(), display: BuiltInDisplay(),
+        certificate: signingCertificate(), appBundle: Bundle.main.bundlePath)
 }
 
 /// GitHub, with the token from the keychain when one is stored. A token that can't be read is
@@ -157,13 +158,16 @@ func keepSambaPassword(server name: String) -> Never {
     exit(EXIT_SUCCESS)
 }
 
+/// Malum's own signing certificate, in the login keychain.
+func signingCertificate() -> SigningCertificate {
+    SigningCertificate(runner: runner, files: files, paths: paths, temporaryDirectory: NSTemporaryDirectory())
+}
+
 /// Updates the installed app from `github`, and rolls it back.
 @MainActor
 func selfUpdate(github: any GitHub) -> SelfUpdate {
-    let certificate = SigningCertificate(
-        runner: runner, files: files, paths: paths, temporaryDirectory: NSTemporaryDirectory())
-    return SelfUpdate(
-        github: github, runner: runner, files: files, paths: paths, state: state, certificate: certificate,
+    SelfUpdate(
+        github: github, runner: runner, files: files, paths: paths, state: state, certificate: signingCertificate(),
         executable: executable, current: Project.version, userID: getuid())
 }
 

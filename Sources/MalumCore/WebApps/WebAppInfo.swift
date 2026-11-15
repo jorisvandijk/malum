@@ -3,6 +3,8 @@
 public enum WebAppInfo {
     /// The key whose value is the site the web app opens.
     public static let urlKey = "WebAppURL"
+    /// The key whose value is a fingerprint of what the bundle was built from.
+    static let sourceKey = "WebAppSource"
     /// The web app executable's name, in Malum.app's `Contents/Helpers`.
     public static let executable = "\(Project.name)WebApp"
 }
