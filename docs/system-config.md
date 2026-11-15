@@ -630,7 +630,18 @@ It changes nothing when the Mac already asks after that delay. Changing it takes
 
 `malum status` shows what Malum manages and what doesn't match dots right now. It changes nothing and never asks for your password. It works whether `system_config` is on or off.
 
-For each kind of thing Malum manages it prints one count, followed by a warning for each thing that's off: a listed package or release that isn't installed, one Malum manages that isn't listed anymore, a file Malum wrote that is missing or was changed outside Malum, and a power setting that holds something else than Malum set. Each warning says what the next `malum run` does about it.
+It starts with the modules the app runs, one line each: `on`, `off in malum.toml`, kept off with `malum disable`, or off in [safe mode](safe-mode.md), with any problem in `malum.toml` before them:
+
+```
+[info] clipboard: on
+[info] keyboard: on
+[info] launcher: on
+[warn] samba: kept off with malum disable, the menu bar enables it
+[info] screenshots: off in malum.toml
+[info] window_manager: on
+```
+
+Then, for each kind of thing Malum manages it prints one count, followed by a warning for each thing that's off: a listed package or release that isn't installed, one Malum manages that isn't listed anymore, a file Malum wrote that is missing or was changed outside Malum, and a power setting that holds something else than Malum set. Each warning says what the next `malum run` does about it.
 
 ```
 [info] managed Homebrew formulae: 41

@@ -27,6 +27,31 @@ extension Message {
         couldnt(.showStatus, "no dots folder yet, run \(Project.command) init")
     }
 
+    /// Safe mode is on, for `reason`, so the app runs no module.
+    static func statusSafeMode(_ reason: SafeModeReason) -> Message {
+        Message(.warn, "safe mode is on: \(reason)")
+    }
+
+    /// `malum.toml` switches `module` on, so the app runs it.
+    static func statusModuleOn(_ module: String) -> Message {
+        Message(.info, "\(module): on")
+    }
+
+    /// `malum.toml` doesn't switch `module` on.
+    static func statusModuleOff(_ module: String) -> Message {
+        Message(.info, "\(module): off in \(Paths.configTOMLName)")
+    }
+
+    /// `module` is switched on but kept off with `malum disable`.
+    static func statusModuleDisabled(_ module: String) -> Message {
+        Message(.warn, "\(module): kept off with \(Project.command) disable, the menu bar enables it")
+    }
+
+    /// `module` is switched on but kept off by safe mode.
+    static func statusModuleSafe(_ module: String) -> Message {
+        Message(.warn, "\(module): off in safe mode")
+    }
+
     /// Malum manages `count` of what `plural` names.
     static func statusManaged(_ count: Int, _ plural: MessageText) -> Message {
         Message(.info, "managed \(plural): \(count)")
