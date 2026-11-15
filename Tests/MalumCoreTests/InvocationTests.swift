@@ -34,6 +34,7 @@ struct InvocationTests {
     @Test func logTakesAStretchAfterLast() {
         #expect(Invocation(arguments: ["log"]) == .log(last: nil))
         #expect(Invocation(arguments: ["log", "--last", "2h"]) == .log(last: "2h"))
+        #expect(Invocation(arguments: Invocation.logArguments(last: "2h")) == .log(last: "2h"))
         #expect(Invocation(arguments: ["log", "--last", "soon"]) == .unknown("soon"))
         #expect(Invocation(arguments: ["log", "--last", "2h", "more"]) == .unknown("more"))
         #expect(Invocation(arguments: ["log", "--follow"]) == .unknown("--follow"))
@@ -104,6 +105,7 @@ struct InvocationTests {
 
     @Test func runMakesTheMacMatchDots() {
         #expect(Invocation(arguments: ["run"]) == .run(force: false))
+        #expect(Invocation(arguments: Invocation.runArguments) == .run(force: false))
     }
 
     @Test func runWithForceInstallsAnOlderRelease() {

@@ -10,6 +10,8 @@ Click the icon to open the menu. When all is well, it holds only actions:
 - **About Malum** shows Malum's logo, version, maker and website.
 - **Quit Malum**, also with ⌘Q while the menu is open. Quitting stops every module first, so what they changed, such as the hyper key, is undone.
 
+With `terminal` set in `[system_config]` (see [config](config.md)), such as `terminal = "net.kovidgoyal.kitty"`, Run and Show log open in that terminal instead: Run as `malum run`, which can ask for your password and update Malum, and Show log as `malum log --last 1h`. A shell stays open when the command is done. With kitty running and listening on its socket (`allow_remote_control socket-only` and `listen_on unix:/tmp/kitty` in kitty.conf), they open as a new tab in it and kitty comes to the front. Otherwise they open a new kitty window.
+
 In the popup, type to keep only the lines that hold the text, and press Escape to close it.
 
 When something is wrong, each problem shows at the top of the menu, and picking it fixes it or shows where to look:

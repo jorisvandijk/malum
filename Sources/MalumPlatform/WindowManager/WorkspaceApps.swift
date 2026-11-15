@@ -55,10 +55,25 @@ extension WorkspaceApps: AppControl {
     /// Opens the app with `bundleID` and brings it to the front. A running app is asked for a new
     /// window, as a click on its Dock icon does.
     public func open(_ bundleID: String) async throws(WindowManagerError) {
+        try await Self.open(bundleID, configuration: NSWorkspace.OpenConfiguration())
+    }
+
+    /// Opens a new copy of the app with `bundleID`, handing it `arguments`, and brings it to the
+    /// front, such as a terminal that runs a command in its own window.
+    public static func openNew(_ bundleID: String, arguments: [String]) async throws(WindowManagerError) {
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        configuration.arguments = arguments
+        try await open(bundleID, configuration: configuration)
+    }
+
+    /// Opens the app with `bundleID` as `configuration` says, and brings it to the front.
+    private static func open(
+        _ bundleID: String, configuration: NSWorkspace.OpenConfiguration
+    ) async throws(WindowManagerError) {
         guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else {
             throw .notInstalled(bundleID)
         }
-        let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = true
         do {
             _ = try await NSWorkspace.shared.openApplication(at: url, configuration: configuration)

@@ -120,6 +120,12 @@ The folder programs from GitHub releases are installed in.
 - Value: text in quotes
 - Default: `"~/.local/bin"`
 
+### `system_config.terminal`
+
+The terminal app, by its bundle ID, that Run and Show log in the menu open in, such as `net.kovidgoyal.kitty`. A running kitty that listens on `unix:/tmp/kitty` gets a new tab; otherwise a new window opens with `-e` and the command to run. Left out, they show their output in the popup.
+
+- Value: text in quotes
+
 ### `system_config.wallpaper`
 
 The picture every screen shows, by its file name in the `wallpapers` folder in dots, with or without its extension. Left out, the wallpaper stays as it is.

@@ -58,7 +58,7 @@ public enum Invocation: Equatable, Sendable {
 
     /// The commands that read their own arguments, by name.
     private static let withArguments: [String: @Sendable ([String]) -> Self] = [
-        "init": initialize, "disable": disable, "token": token, "run": run, "samba": samba, "log": log,
+        "init": initialize, "disable": disable, "token": token, runName: run, "samba": samba, logName: log,
     ]
 
     /// The commands that take no arguments, by name.
@@ -106,6 +106,20 @@ public enum Invocation: Equatable, Sendable {
         guard let stretch = rest.first else { return .incomplete(command: "log \(lastFlag)", needs: needsStretch) }
         guard UnifiedLog.isStretch(stretch) else { return .unknown(stretch) }
         return rest.dropFirst().first.map(Self.unknown) ?? .log(last: stretch)
+    }
+
+    /// The name of `run`.
+    private static let runName = "run"
+    /// The name of `log`.
+    private static let logName = "log"
+
+    /// The arguments of `run` without a password asked or a release forced: what Run in the menu
+    /// opens in the terminal.
+    public static let runArguments = [runName]
+
+    /// The arguments of `log` for the `last` stretch of time, such as `1h`.
+    public static func logArguments(last: String) -> [String] {
+        [logName, lastFlag, last]
     }
 
     /// The flag that makes `log` show a stretch of time.
