@@ -111,7 +111,7 @@ enum ZshText {
         lines += switches([shellenv], in: homebrew, at: path + [homebrewTable], reader: &reader)
         let paths = reader.table(table, pathTable, at: path)
         reader.unknownKeys(paths, at: path + [pathTable], known: [prependKey])
-        let folders = texts(paths, prependKey, at: path + [pathTable], reader: &reader)
+        let folders = reader.texts(paths, prependKey, at: path + [pathTable]) ?? []
         if !folders.isEmpty {
             lines += "export PATH=\(Escaping.quoted((folders + ["$PATH"]).joined(separator: ":"), controls: .none))\n"
         }
@@ -148,7 +148,7 @@ enum ZshText {
         _ list: [Switch], in table: ConfigTable, at path: [String], reader: inout TableReader
     ) -> String {
         list.compactMap { item in
-            let isOn = flag(table, item.key, at: path, default: item.isOn, reader: &reader)
+            let isOn = reader.flag(table, item.key, at: path) ?? item.isOn
             return isOn ? item.on : item.off
         }.joined()
     }
@@ -165,7 +165,7 @@ enum ZshText {
             }
             return "\(variable)=\"\(number)\"\n"
         }.joined()
-        let file = text(table, historyFileKey, at: path, reader: &reader)
+        let file = reader.text(table, historyFileKey, at: path)
         lines += "HISTFILE=\(Escaping.quoted(file ?? "$HOME/.zsh_history", controls: .none))\n"
         if file != nil { lines += "mkdir -p \"$(dirname \"$HISTFILE\")\"\n" }
         return lines + "setopt HIST_FCNTL_LOCK\n" + switches(historySwitches, in: table, at: path, reader: &reader)
@@ -175,7 +175,7 @@ enum ZshText {
     private static func options(_ table: ConfigTable, at path: [String], reader: inout TableReader) -> String {
         table.keys.sorted().compactMap { name in
             guard isName(name, at: path, reader: &reader) else { return nil }
-            return flag(table, name, at: path, default: false, reader: &reader)
+            return (reader.flag(table, name, at: path) ?? false)
                 ? "setopt \(name)\n" : "unsetopt \(name)\n"
         }.joined()
     }
@@ -183,7 +183,7 @@ enum ZshText {
     /// A `source` line for each of the files in `table`, found at `path`.
     private static func sources(_ table: ConfigTable, at path: [String], reader: inout TableReader) -> String {
         reader.unknownKeys(table, at: path, known: [filesKey])
-        return texts(table, filesKey, at: path, reader: &reader).map {
+        return (reader.texts(table, filesKey, at: path) ?? []).map {
             "source \(Escaping.quoted($0, controls: .none))\n"
         }.joined()
     }
@@ -192,7 +192,7 @@ enum ZshText {
     private static func functions(_ table: ConfigTable, at path: [String], reader: inout TableReader) -> [String] {
         table.keys.sorted().compactMap { name in
             guard isName(name, at: path, reader: &reader) else { return nil }
-            guard let body = text(table, name, at: path, reader: &reader) else { return nil }
+            guard let body = reader.text(table, name, at: path) else { return nil }
             let lines = body.split(separator: "\n", omittingEmptySubsequences: false)
             let indented = (body.hasSuffix("\n") ? lines.dropLast() : lines[...]).map {
                 $0.isEmpty ? "\n" : "  \($0)\n"
@@ -205,14 +205,14 @@ enum ZshText {
     private static func prompt(_ table: ConfigTable, at path: [String], reader: inout TableReader) -> String {
         reader.unknownKeys(table, at: path, known: prompts.map(\.0))
         return prompts.compactMap { key, variable in
-            text(table, key, at: path, reader: &reader).map { "\(variable)=\(Escaping.shell($0))\n" }
+            reader.text(table, key, at: path).map { "\(variable)=\(Escaping.shell($0))\n" }
         }.joined()
     }
 
     /// The line that loads zoxide with its options from `plugins`, found at `path`, when it's on.
     private static func zoxideLine(_ plugins: ConfigTable, at path: [String], reader: inout TableReader) -> String {
-        let options = texts(plugins, zoxideOptionsKey, at: path, reader: &reader).map { " " + Escaping.shell($0) }
-        guard flag(plugins, zoxideKey, at: path, default: false, reader: &reader) else { return "" }
+        let options = (reader.texts(plugins, zoxideOptionsKey, at: path) ?? []).map { " " + Escaping.shell($0) }
+        guard reader.flag(plugins, zoxideKey, at: path) ?? false else { return "" }
         return "eval \"$(zoxide init zsh\(options.joined()))\"\n"
     }
 
@@ -223,41 +223,5 @@ enum ZshText {
             return false
         }
         return true
-    }
-
-    /// The switch `key` of `table`, found at `path`, or `fallback` when it's left out or isn't one.
-    private static func flag(
-        _ table: ConfigTable, _ key: String, at path: [String], default fallback: Bool, reader: inout TableReader
-    ) -> Bool {
-        guard let value = table[key] else { return fallback }
-        guard case .boolean(let isOn) = value else {
-            reader.expect(path + [key], SettingKind.boolean)
-            return fallback
-        }
-        return isOn
-    }
-
-    /// The text `key` of `table`, found at `path`, or nil when it's left out or isn't text.
-    private static func text(
-        _ table: ConfigTable, _ key: String, at path: [String], reader: inout TableReader
-    ) -> String? {
-        guard let value = table[key] else { return nil }
-        guard case .string(let text) = value else {
-            reader.expect(path + [key], SettingKind.string)
-            return nil
-        }
-        return text
-    }
-
-    /// The list of text `key` of `table`, found at `path`, or none when it's left out or isn't one.
-    private static func texts(
-        _ table: ConfigTable, _ key: String, at path: [String], reader: inout TableReader
-    ) -> [String] {
-        guard let value = table[key] else { return [] }
-        guard let texts = TableReader.texts(value) else {
-            reader.expect(path + [key], SettingKind.strings)
-            return []
-        }
-        return texts
     }
 }

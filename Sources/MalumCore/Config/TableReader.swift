@@ -86,6 +86,39 @@ struct TableReader {
         return items
     }
 
+    /// The switch `key` of `table`, found at `path`, or nil when it's left out or isn't one, which
+    /// is an error.
+    mutating func flag(_ table: ConfigTable, _ key: String, at path: [String]) -> Bool? {
+        guard let value = table[key] else { return nil }
+        guard case .boolean(let isOn) = value else {
+            expect(path + [key], SettingKind.boolean)
+            return nil
+        }
+        return isOn
+    }
+
+    /// The text `key` of `table`, found at `path`, or nil when it's left out or isn't text, which
+    /// is an error.
+    mutating func text(_ table: ConfigTable, _ key: String, at path: [String]) -> String? {
+        guard let value = table[key] else { return nil }
+        guard case .string(let text) = value else {
+            expect(path + [key], SettingKind.string)
+            return nil
+        }
+        return text
+    }
+
+    /// The list of text `key` of `table`, found at `path`, or nil when it's left out or isn't one,
+    /// which is an error.
+    mutating func texts(_ table: ConfigTable, _ key: String, at path: [String]) -> [String]? {
+        guard let value = table[key] else { return nil }
+        guard let texts = Self.texts(value) else {
+            expect(path + [key], SettingKind.strings)
+            return nil
+        }
+        return texts
+    }
+
     /// The entries of `table`, found at `path`, in alphabetical order, each value written by
     /// `write`. A value `write` turns down, by giving nil, is an error that says it should be
     /// `expected`, such as `SettingKind.string`.
