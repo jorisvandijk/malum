@@ -6,8 +6,10 @@ public struct TerminalLaunch: Equatable, Sendable {
     public static let key = "terminal"
     /// The option terminal apps take for the program to run in the new window.
     private static let programOption = "-e"
-    /// The shell's options: a login shell that runs the text after them.
-    private static let shellOptions = ["-l", "-c"]
+    /// The shell's option for a login shell, which reads the user's own setup.
+    private static let loginOption = "-l"
+    /// The shell's option that runs the text after it.
+    private static let commandOption = "-c"
 
     /// The terminal app's bundle ID.
     public let bundleID: String
@@ -20,7 +22,7 @@ public struct TerminalLaunch: Equatable, Sendable {
         guard case .string(let bundleID)? = settings?[Self.key], AppBundle.isBundleID(bundleID) else { return nil }
         self.bundleID = bundleID
         let line = ([executable] + command).map(Escaping.shell).joined(separator: " ")
-        let script = "\(line); exec \(Escaping.shell(shell)) \(Self.shellOptions[0])"
-        arguments = [Self.programOption, shell] + Self.shellOptions + [script]
+        let script = "\(line); exec \(Escaping.shell(shell)) \(Self.loginOption)"
+        arguments = [Self.programOption, shell, Self.loginOption, Self.commandOption, script]
     }
 }
