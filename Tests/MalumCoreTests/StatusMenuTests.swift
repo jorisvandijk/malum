@@ -36,7 +36,8 @@ struct StatusMenuTests {
         let running = menu(modules: [("window_manager", .running)])
         #expect(
             Array(running.items.prefix(3)) == [
-                .action("Run", .run), .action("Inspect window", .runAction("inspect_window")), .action("Show log", .showLog),
+                .action("Run", .run), .action("Inspect window", .runAction("inspect_window")),
+                .action("Show log", .showLog),
             ])
         let off = menu(modules: [("window_manager", .off)])
         #expect(!off.items.contains(.action("Inspect window", .runAction("inspect_window"))))

@@ -28,7 +28,8 @@ public struct StatusMenu: Equatable, Sendable {
     /// Malum's own actions: run system config, inspect a window while the window manager runs
     /// (`inspects`), show the log, reload, about and quit.
     private static func actionItems(inspects: Bool) -> [MenuItem] {
-        let inspect: [MenuItem] = inspects ? [.action(inspectWindow, .runAction(WindowManagerConfig.inspectAction))] : []
+        let inspect: [MenuItem] =
+            inspects ? [.action(inspectWindow, .runAction(WindowManagerConfig.inspectAction))] : []
         return [.action(run, .run)] + inspect + [
             .action(showLog, .showLog), .action(reload, .reload), .separator, .action(about, .about),
             .action(quit, .quit),
