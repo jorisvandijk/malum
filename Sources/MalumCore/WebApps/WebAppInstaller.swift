@@ -76,15 +76,7 @@ struct WebAppInstaller {
             let icon = app.icon.map { "\(dots)/\($0)" }
             let plist = try infoPlist(of: app, icon: icon)
             let existing = files.item(at: bundle) != nil
-            if existing {
-                guard AppBundle.bundleID(of: bundle, files: files) == app.bundleID else {
-                    throw .inTheWay(path: bundle)
-                }
-                let current = try onDisk { () throws(FileSystemError) in
-                    try files.text(ifFileAt: Paths.info(of: bundle))
-                }
-                guard current != plist else { return true }
-            }
+            if existing, try await isCurrent(app, at: bundle, plist: plist, identity: identity) { return true }
             let staged = try await stage(plist, icon: icon, name: app.name)
             try await install(staged, at: bundle, identity: identity)
             let message: Message = if existing { .updatedWebApp(app.name) } else { .madeWebApp(app.name) }
@@ -94,6 +86,17 @@ struct WebAppInstaller {
             report(.couldntMakeWebApp(app.name, error))
             return false
         }
+    }
+
+    /// Whether the bundle at `bundle` is `app` as `plist` describes it, signed with `identity`. A
+    /// bundle whose signing failed part way isn't, so it's built again. Throws when another app is there.
+    private func isCurrent(
+        _ app: WebApp, at bundle: String, plist: String, identity: String
+    ) async throws(WebAppError) -> Bool {
+        guard AppBundle.bundleID(of: bundle, files: files) == app.bundleID else { throw .inTheWay(path: bundle) }
+        let current = try onDisk { () throws(FileSystemError) in try files.text(ifFileAt: Paths.info(of: bundle)) }
+        guard current == plist else { return false }
+        return await BundleSigner(runner: runner, files: files).isSigned(bundle, by: identity)
     }
 
     /// `app`'s `Info.plist`, with a fingerprint of the executable and of the `icon` file.
