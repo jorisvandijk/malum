@@ -131,6 +131,7 @@ struct MacOSSettings {
             known: [
                 preferencesTable, currentHostTable, hostsTable, sudoTable, PowerSettings.table, AppleApps.table,
                 DefaultApps.table, ComputerSettings.table, DisplaySettings.table, ScreenLockSettings.table,
+                StartupApps.table,
             ])
         var wanted = Wanted()
         wanted.preferences =
@@ -148,6 +149,7 @@ struct MacOSSettings {
         wanted.computer = ComputerSettings.read(&reader)
         wanted.resolution = DisplaySettings.read(&reader)
         wanted.screenLock = ScreenLockSettings.read(&reader)
+        _ = StartupApps.read(&reader)  // The app opens them when it starts; the run only checks the list.
         let problems = reader.problemsByLine
         return (reader.hasErrors ? nil : wanted, problems)
     }

@@ -98,6 +98,7 @@ private func startWhenSigned(config: LiveConfig, menu: MenuFeed) async {
     switch await signing.check(executable: executable) {
     case .signed:
         config.allowModules()
+        await StartupApps(files: files, paths: paths, apps: WorkspaceApps()).open { announce($0) }
     case .resigned:
         announce(.resigned)
         do {
