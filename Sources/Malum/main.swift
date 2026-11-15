@@ -74,6 +74,8 @@ func runCommand(_ invocation: Invocation) {
         finishing { await selfUpdate(github: GitHubAPI(token: nil)).rollBack { announce($0) } }
     case .status:
         showStatus()
+    case .log(let last):
+        showLog(last: last)
     case .token, .sambaPassword:
         keepSecret(invocation)
     case .incomplete, .unknown:
@@ -172,6 +174,15 @@ func showStatus() -> Never {
     }
 }
 
+/// Runs `malum log`, live or for the `last` stretch of time, and exits once `log` ends.
+@MainActor
+func showLog(last: String?) -> Never {
+    let output = terminal
+    finishing {
+        await LogCommand(runner: runner).run(last: last, write: { output.write($0) }) { output.report($0) }
+    }
+}
+
 /// Runs `work`, then exits with an error when it says it didn't succeed.
 @MainActor
 func finishing(_ work: @escaping @MainActor () async -> Bool) -> Never {
@@ -191,7 +202,7 @@ func reject(_ invocation: Invocation) -> Never {
     case .unknown(let argument):
         terminal.report(.unknownArgument(argument))
     case .version, .help, .initialize, .reload, .safe, .disable, .permissions, .run, .rollback, .status, .token,
-        .sambaPassword, .action:
+        .sambaPassword, .action, .log:
         break  // These make sense; runCommand runs them.
     }
     terminal.write(Invocation.usage)

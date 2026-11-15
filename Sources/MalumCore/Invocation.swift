@@ -24,6 +24,8 @@ public enum Invocation: Equatable, Sendable {
     case token(remove: Bool)
     /// Ask for the password of the Samba server called `server` and keep it in the keychain.
     case sambaPassword(server: String)
+    /// Show Malum's log as it comes in, or the `last` stretch of it, such as `1h`.
+    case log(last: String?)
     /// Ask the running app to run a module's action, by the action's name.
     case action(String)
     /// A command that's missing an argument, with what it needs.
@@ -53,6 +55,8 @@ public enum Invocation: Equatable, Sendable {
             self = Self.run(rest)
         case "samba":
             self = Self.samba(rest)
+        case "log":
+            self = Self.log(rest)
         default:
             guard let plain = Self.plain[first] else {
                 self = .unknown(first)
@@ -98,6 +102,19 @@ public enum Invocation: Equatable, Sendable {
         guard first == forceFlag else { return .unknown(first) }
         return arguments.dropFirst().first.map(Self.unknown) ?? .run(force: true)
     }
+
+    /// Reads the arguments of `log`: nothing, or `--last` and a stretch of time.
+    private static func log(_ arguments: [String]) -> Self {
+        guard let first = arguments.first else { return .log(last: nil) }
+        guard first == lastFlag else { return .unknown(first) }
+        let rest = arguments.dropFirst()
+        guard let stretch = rest.first else { return .incomplete(command: "log \(lastFlag)", needs: needsStretch) }
+        guard UnifiedLog.isStretch(stretch) else { return .unknown(stretch) }
+        return rest.dropFirst().first.map(Self.unknown) ?? .log(last: stretch)
+    }
+
+    /// The flag that makes `log` show a stretch of time.
+    private static let lastFlag = "--last"
 
     /// The flag that lets `run` install an older release.
     private static let forceFlag = "--force"

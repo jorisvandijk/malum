@@ -2,4 +2,16 @@
 public protocol CommandRunner: Sendable {
     /// Runs `command` and waits for it to finish.
     func run(_ command: Command) async -> CommandResult
+    /// Runs `command`, handing each line of its output to `each` as it comes, and waits for it to
+    /// finish. The result's output is empty.
+    func lines(of command: Command, each: @escaping @Sendable (String) -> Void) async -> CommandResult
+}
+
+extension CommandRunner {
+    /// Runs `command` to the end, then hands over each line of its output.
+    public func lines(of command: Command, each: @escaping @Sendable (String) -> Void) async -> CommandResult {
+        let result = await run(command)
+        result.output.split(separator: "\n").forEach { each(String($0)) }
+        return CommandResult(status: result.status, errors: result.errors)
+    }
 }
