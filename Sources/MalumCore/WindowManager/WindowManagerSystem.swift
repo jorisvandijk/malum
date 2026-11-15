@@ -12,21 +12,29 @@ public struct WindowManagerSystem {
     let screens: any Screens
     /// Runs the later looks at windows and apps.
     let scheduler: any WindowScheduler
+    /// What the window inspector works through.
+    let inspector: WindowInspectorSystem
 
     /// Gathers the parts the window manager needs.
-    public init(apps: any AppControl, windows: any WindowAccess, watcher: any AppWatcher, screens: any Screens) {
-        self.init(apps: apps, windows: windows, watcher: watcher, screens: screens, scheduler: TaskScheduler())
+    public init(
+        apps: any AppControl, windows: any WindowAccess, watcher: any AppWatcher, screens: any Screens,
+        inspector: WindowInspectorSystem
+    ) {
+        self.init(
+            apps: apps, windows: windows, watcher: watcher, screens: screens, scheduler: TaskScheduler(),
+            inspector: inspector)
     }
 
     /// Gathers the parts, with a `scheduler` the tests run by hand.
     init(
         apps: any AppControl, windows: any WindowAccess, watcher: any AppWatcher, screens: any Screens,
-        scheduler: any WindowScheduler
+        scheduler: any WindowScheduler, inspector: WindowInspectorSystem
     ) {
         self.apps = apps
         self.windows = windows
         self.watcher = watcher
         self.screens = screens
         self.scheduler = scheduler
+        self.inspector = inspector
     }
 }

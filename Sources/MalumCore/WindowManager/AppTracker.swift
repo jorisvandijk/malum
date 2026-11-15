@@ -66,6 +66,11 @@ final class AppTracker {
         followDrag()
     }
 
+    /// What it decided about `window`, or nil when it doesn't know the window yet.
+    func kind(of window: any AppWindow) -> WindowKind? {
+        windows.first { $0.window.isSame(as: window) }?.kind
+    }
+
     /// Reads the app's windows again: forgets closed ones, sorts out new ones and puts the managed
     /// ones in place. A hidden app is left until it comes back, since its windows can say the wrong
     /// kind while hidden, and nobody sees them anyway.

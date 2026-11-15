@@ -174,6 +174,7 @@ final class KeyboardModule: Module {
     private func register() {
         registry = HotkeyRegistry(
             bindings: config.bindings, offers: routes.offers, switchedOn: routes.switchedOn, lines: lines)
+        routes.appKeys = registry.appKeys
         for problem in registry.problems {
             log.report(problem.message)
         }

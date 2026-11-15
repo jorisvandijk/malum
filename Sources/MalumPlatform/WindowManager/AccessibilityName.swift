@@ -5,6 +5,8 @@ enum AccessibilityName {
     static let role = "AXRole"
     /// What kind of window it is, such as a dialog.
     static let subrole = "AXSubrole"
+    /// The role of a window, and the attribute that gives any element its window.
+    static let window = "AXWindow"
     /// A window's title.
     static let title = "AXTitle"
     /// Whether a window is modal.

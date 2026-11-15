@@ -21,6 +21,10 @@ struct WindowManagerModuleTests {
     private let watcher = FakeAppWatcher()
     private let screens = FakeScreens()
     private let scheduler = FakeScheduler()
+    private let picker = FakeWindowPicker()
+    private let panel = FakeInspectorPanel()
+    private let clipboard = FakeClipboard()
+    private let routes = ModuleRoutes()
     private let kitty = Self.app(1, "net.kovidgoyal.kitty", "kitty")
     private let finder = Self.app(2, "com.apple.finder", "Finder")
 
@@ -33,8 +37,9 @@ struct WindowManagerModuleTests {
     private func module() -> WindowManagerModule {
         screens.screen = screen
         let system = WindowManagerSystem(
-            apps: apps, windows: access, watcher: watcher, screens: screens, scheduler: scheduler)
-        return WindowManagerModule(system: system, log: Log(writer: RecordingLogWriter()))
+            apps: apps, windows: access, watcher: watcher, screens: screens, scheduler: scheduler,
+            inspector: WindowInspectorSystem(picker: picker, panel: panel, clipboard: clipboard))
+        return WindowManagerModule(system: system, routes: routes, log: Log(writer: RecordingLogWriter()))
     }
 
     /// A window of the app with process ID `pid`, which Accessibility reaches.
@@ -203,5 +208,92 @@ struct WindowManagerModuleTests {
         scheduler.runPending()
         watcher.send(.launched(finder))
         #expect(access.apps[finder.pid] == nil)
+    }
+
+    /// The value of the inspector's line `label`, or nil when nothing was shown.
+    private func shown(_ label: String) -> String? {
+        panel.shown?.first { $0.label == label }?.value
+    }
+
+    /// Inspects a window of the running module and waits for it.
+    private func inspect(_ module: WindowManagerModule) async {
+        module.perform(.module(WindowManagerModule.inspectAction))
+        await module.raising?.value
+    }
+
+    @Test func offersTheInspectAction() {
+        #expect(module().hotkeys.actions == [WindowManagerModule.inspectAction])
+    }
+
+    @Test func inspectShowsTheClickedWindow() async throws {
+        watcher.apps = [kitty]
+        let window = window(of: kitty.pid)
+        let module = module()
+        try await module.start()
+        routes.appKeys = [kitty.bundleID ?? "": [Hotkey(modifiers: Set(Modifier.allCases), key: Key.tab)]]
+        access.pointerLocation = CGPoint(x: 40, y: 50)
+        access.pointed = PointedWindow(pid: kitty.pid, window: window)
+        await inspect(module)
+        #expect(access.lookedAt == [CGPoint(x: 40, y: 50)])
+        #expect(shown("app") == "kitty")
+        #expect(shown("bundle id") == "net.kovidgoyal.kitty")
+        #expect(shown("title") == "Main")
+        #expect(shown("role") == "AXWindow / AXStandardWindow")
+        #expect(shown("frame") == "1512x957 at 0,25")
+        #expect(shown("workspace") == "hyper+tab")
+        #expect(shown("window manager") == "managed")
+    }
+
+    @Test func inspectSaysWhyAWindowFloats() async throws {
+        watcher.apps = [kitty]
+        let window = window(of: kitty.pid)
+        window.facts.subrole = "AXDialog"
+        let module = module()
+        try await module.start()
+        access.pointed = PointedWindow(pid: kitty.pid, window: window)
+        await inspect(module)
+        #expect(shown("window manager") == "floats: it's a AXDialog")
+        #expect(shown("workspace") == "none")
+    }
+
+    @Test func inspectSaysAnUntrackedAppIsLeftAlone() async throws {
+        let menuBarApp = Self.app(3, "com.example.menu", "Menu", isRegular: false)
+        watcher.apps = [menuBarApp]
+        let module = module()
+        try await module.start()
+        access.pointed = PointedWindow(pid: menuBarApp.pid, window: FakeAppWindow())
+        await inspect(module)
+        #expect(shown("window manager")?.hasPrefix("left alone") == true)
+    }
+
+    @Test func cancelledInspectShowsNothing() async throws {
+        picker.clicks = false
+        let module = module()
+        try await module.start()
+        await inspect(module)
+        #expect(picker.picks == 1)
+        #expect(access.lookedAt.isEmpty)
+        #expect(panel.shown == nil)
+    }
+
+    @Test func clickOnNoWindowShowsNothing() async throws {
+        let module = module()
+        try await module.start()
+        await inspect(module)
+        #expect(access.lookedAt.count == 1)
+        #expect(panel.shown == nil)
+    }
+
+    @Test func copyPutsTheReportOnTheClipboard() async throws {
+        watcher.apps = [kitty]
+        let window = window(of: kitty.pid)
+        window.facts.title = nil
+        let module = module()
+        try await module.start()
+        access.pointed = PointedWindow(pid: kitty.pid, window: window)
+        await inspect(module)
+        panel.clickCopy()
+        let text = try #require(clipboard.put.first?.0.text)
+        #expect(text.hasPrefix("app: kitty\nbundle id: net.kovidgoyal.kitty\ntitle: none\n"))
     }
 }

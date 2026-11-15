@@ -66,6 +66,17 @@ title = "^Picture-in-Picture$"
 
 `app` is a bundle ID, and `title` is a regular expression. A title that isn't a valid expression is a config error at its line, and only that rule is left out.
 
+## Inspecting a window
+
+The window manager's action `inspect_window` shows what Malum sees in a window, which helps when writing a float rule. Bind it to a key in `keyboard.toml`:
+
+```toml
+[hyper]
+i = "inspect_window"
+```
+
+The key dims the screens a little and shows a crosshair. Click any window to see its app, bundle ID, title, role and subrole, frame (size and top left corner, in points from the top left of the screen with the menu bar), workspace (the keys that raise its app) and whether the window manager manages it, or why it floats. The click doesn't reach the window. Esc cancels. Copy puts the whole report on the clipboard, and esc closes it. Inspecting changes nothing.
+
 ## window_manager.toml
 
 ```toml

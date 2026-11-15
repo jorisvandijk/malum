@@ -37,4 +37,19 @@ extension AccessibilityWindows: WindowAccess {
         let height = NSScreen.screens.first?.frame.height ?? location.y
         return CGPoint(x: location.x, y: height - location.y)
     }
+
+    /// The window at `point`: the element Accessibility finds there, or the window it's in.
+    public func window(at point: CGPoint) -> PointedWindow? {
+        var found: AXUIElement?
+        let hit = AXUIElementCopyElementAtPosition(
+            AXUIElementCreateSystemWide(), Float(point.x), Float(point.y), &found)
+        guard hit == .success, let found else { return nil }
+        let element = AccessibilityElement(element: found)
+        let isWindow = element.string(AccessibilityName.role) == AccessibilityName.window
+        let window = if isWindow { found } else { element.element(AccessibilityName.window) }
+        guard let window else { return nil }
+        var pid: pid_t = 0
+        guard AXUIElementGetPid(window, &pid) == .success else { return nil }
+        return PointedWindow(pid: pid, window: AccessibilityWindow(window, of: AXUIElementCreateApplication(pid)))
+    }
 }
