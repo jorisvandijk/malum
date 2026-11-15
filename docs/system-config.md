@@ -626,6 +626,17 @@ It changes nothing when the Mac already asks after that delay. Changing it takes
 [info] the screen asks for your password as soon as it goes black now, from macos.toml
 ```
 
+### Startup apps
+
+`apps` in `[startup]` lists apps, by bundle ID, that the menu bar app opens each time it starts, for apps that don't start at login by themselves. An app that already runs is left alone. Malum itself isn't a login item: its login agent starts it.
+
+```toml
+[startup]
+apps = ["com.if.Amphetamine", "com.sindresorhus.Command-X", "com.doomlaser.cursorcerer"]
+```
+
+`malum run` only checks the list; the app opens them, and the log says `[info] opened com.if.Amphetamine at start` for each.
+
 ## Status
 
 `malum status` shows what Malum manages and what doesn't match dots right now. It changes nothing and never asks for your password. It works whether `system_config` is on or off.

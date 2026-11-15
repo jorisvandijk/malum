@@ -8,6 +8,8 @@ extension MessageText {
     static let changePower: MessageText = "change power settings"
     /// Removing the Apple apps `macos.toml` lists.
     static let removeAppleApps: MessageText = "remove Apple apps"
+    /// The action of opening the startup apps.
+    static let openStartupApps: MessageText = "open the startup apps"
 }
 
 extension Message {
@@ -19,6 +21,11 @@ extension Message {
     /// Every macOS setting already holds what dots says.
     static var macOSUpToDate: Message {
         Message(.info, "every macOS setting is up to date")
+    }
+
+    /// The app with `bundleID` was opened as Malum started.
+    static func openedAtStart(_ bundleID: String) -> Message {
+        Message(.info, "opened \(bundleID) at start")
     }
 
     /// `process` was restarted so it shows the changed settings.
