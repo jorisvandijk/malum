@@ -58,7 +58,7 @@ public struct ProcessRunner: CommandRunner {
                     handOver(&pending, to: each)
                     chunk = handle.availableData
                 }
-                if !pending.isEmpty { each(String(decoding: pending, as: UTF8.self)) }  // The last line, unended.
+                if !pending.isEmpty { each(String(bytes: pending, encoding: .utf8) ?? "") }  // The last line, unended.
                 continuation.resume()
             }
         }
