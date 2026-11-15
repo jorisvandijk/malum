@@ -19,7 +19,7 @@ struct ConfigModuleFileTests {
 
     @Test func settingsComeFromTheModulesFileAndTheSwitchFromConfig() {
         var config = config()
-        let report = load(&config, "[launcher]\nenabled = true\n", launcher: "size = 3\n")
+        let report = load(&config, "[launcher]\nenabled = true\n", launcher: "[settings]\nsize = 3\n")
         #expect(
             report == ConfigReport(loaded: path, moduleFiles: [file], changed: ["launcher"], kept: [], problems: []))
         #expect(config.settings == ["launcher": ["size": .integer(3)]])
@@ -28,15 +28,15 @@ struct ConfigModuleFileTests {
 
     @Test func moduleWithOnlyItsFileIsOff() {
         var config = config()
-        _ = load(&config, "", launcher: "size = 3\n")
+        _ = load(&config, "", launcher: "[settings]\nsize = 3\n")
         #expect(config.settings == ["launcher": ["size": .integer(3)]])
         #expect(config.enabled.isEmpty)
     }
 
     @Test func settingsInBothPlacesKeepTheLastGoodOnes() {
         var config = config()
-        _ = load(&config, "[launcher]\n", launcher: "size = 3\n")
-        let report = load(&config, "# both\n[launcher]\nsize = 4\n", launcher: "size = 5\n")
+        _ = load(&config, "[launcher]\n", launcher: "[settings]\nsize = 3\n")
+        let report = load(&config, "# both\n[launcher]\nsize = 4\n", launcher: "[settings]\nsize = 5\n")
         #expect(
             report.problems == [
                 ConfigProblem(
@@ -49,11 +49,11 @@ struct ConfigModuleFileTests {
 
     @Test func switchInTheModulesFileIsAProblem() {
         var config = config()
-        let report = load(&config, "", launcher: "size = 3\nenabled = true\n")
+        let report = load(&config, "", launcher: "[settings]\nsize = 3\nenabled = true\n")
         #expect(
             report.problems == [
                 ConfigProblem(
-                    .error, file: "launcher.toml", line: 2,
+                    .error, file: "launcher.toml", line: 3,
                     "enabled goes in the [launcher] table of malum.toml, not here")
             ])
         #expect(report.kept == ["launcher"])
@@ -62,28 +62,36 @@ struct ConfigModuleFileTests {
 
     @Test func everyProblemInTheModulesFileIsReportedAtItsLine() {
         var config = config()
-        let report = load(&config, "", launcher: "# launcher\nsize = \"big\"\ncolour = 1\n")
+        let report = load(&config, "", launcher: "[settings]\n# launcher\nsize = \"big\"\ncolour = 1\n")
         #expect(
             report.messages.map(\.description) == [
                 "[info] loaded /dots/malum.toml",
-                "[error] launcher.toml line 2: size should be a whole number",
-                "[error] launcher.toml line 3: unknown setting colour",
+                "[error] launcher.toml line 3: settings.size should be a whole number",
+                "[error] launcher.toml line 4: unknown setting settings.colour",
                 "[warn] launcher keeps its last good settings",
             ])
     }
 
+    @Test func settingOutsideItsHeadingIsAnErrorAtItsLine() {
+        var config = config()
+        let report = config.load("", from: path, moduleFiles: ["launcher": .text(path: file, "# old\nsize = 3\n")])
+        #expect(report.problems == [ConfigProblem(.error, file: "launcher.toml", line: 2, .outsideSettings("size"))])
+        #expect(report.problems.first?.text.description == "size goes under [settings]")
+        #expect(report.kept == ["launcher"])
+    }
+
     @Test func syntaxErrorInTheModulesFileKeepsOnlyThatModule() {
         var config = config()
-        let report = load(&config, "", launcher: "size = \n")
+        let report = load(&config, "", launcher: "[settings]\nsize = \n")
         #expect(report.loaded == path)
         #expect(report.kept == ["launcher"])
         #expect(report.problems.first?.file == "launcher.toml")
-        #expect(report.problems.first?.line == 1)
+        #expect(report.problems.first?.line == 2)
     }
 
     @Test func unreadableModuleFileKeepsTheLastGoodSettings() {
         var config = config()
-        _ = load(&config, "", launcher: "size = 3\n")
+        _ = load(&config, "", launcher: "[settings]\nsize = 3\n")
         let error = FileSystemError.unreadable(path: file, reason: "no such file")
         let report = config.load("", from: path, moduleFiles: ["launcher": .unreadable(path: file, error)])
         #expect(report.problems == [ConfigProblem(.error, file: "launcher.toml", error.text)])
@@ -93,7 +101,7 @@ struct ConfigModuleFileTests {
 
     @Test func removedModuleFileDropsItsSettings() {
         var config = config()
-        _ = load(&config, "", launcher: "size = 3\n")
+        _ = load(&config, "", launcher: "[settings]\nsize = 3\n")
         let report = config.load("", from: path)
         #expect(report.changed == ["launcher"])
         #expect(config.settings == ["launcher": [:]])
@@ -124,17 +132,19 @@ struct ConfigModuleFileTests {
 
     @Test func moduleThatChecksItsOwnFileTakesItWhole() {
         var config = Config(schemas: ["keyboard": ConfigSchema(about: "Keys.", settings: [:], fileCheck: .keyboard)])
-        let keyboard = "hyper_key = \"caps_lock\"\n\n[hyper]\nf = \"com.apple.finder\"\n"
+        let keyboard = "[settings]\nhyper_key = \"caps_lock\"\n\n[hyper]\nf = \"com.apple.finder\"\n"
         let file = "/dots/keyboard.toml"
         let report = config.load("", from: path, moduleFiles: ["keyboard": .text(path: file, keyboard)])
         #expect(report.problems.isEmpty)
-        #expect(config.settings["keyboard"]?["hyper_key"] == .string("caps_lock"))
+        #expect(config.settings["keyboard"]?["settings"] == .table(["hyper_key": .string("caps_lock")]))
     }
 
     @Test func moduleFileTextIsHandedOverAsChecked() {
         var config = config()
-        _ = load(&config, "[launcher]\nenabled = true\n", launcher: "size = 3\n")
-        #expect(config.moduleSettings["launcher"] == ModuleSettings(table: ["size": .integer(3)], file: "size = 3\n"))
+        _ = load(&config, "[launcher]\nenabled = true\n", launcher: "[settings]\nsize = 3\n")
+        #expect(
+            config.moduleSettings["launcher"]
+                == ModuleSettings(table: ["size": .integer(3)], file: "[settings]\nsize = 3\n"))
     }
 
     @Test func settingsInConfigHaveNoFileText() {
@@ -145,8 +155,8 @@ struct ConfigModuleFileTests {
 
     @Test func fileChangeThatKeepsTheSettingsStillCountsAsChanged() {
         var config = config()
-        _ = load(&config, "", launcher: "size = 3\n")
-        let report = load(&config, "", launcher: "# moved down\nsize = 3\n")
+        _ = load(&config, "", launcher: "[settings]\nsize = 3\n")
+        let report = load(&config, "", launcher: "[settings]\n# moved down\nsize = 3\n")
         #expect(report.changed == ["launcher"])
     }
 }

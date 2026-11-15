@@ -12,6 +12,7 @@ struct KeyboardConfigTests {
     @Test func exampleLayoutIsRead() throws {
         let reading = KeyboardConfig.read(
             """
+            [settings]
             hyper_key = "caps_lock"
 
             [remap]
@@ -57,14 +58,14 @@ struct KeyboardConfigTests {
     }
 
     @Test func hyperKeyThatCantBeOneIsAnError() {
-        let reading = KeyboardConfig.read("hyper_key = \"a\"\n")
+        let reading = KeyboardConfig.read("[settings]\nhyper_key = \"a\"\n")
         #expect(reading.config == nil)
         #expect(
             reading.problems.map(\.message) == [
                 Message(
                     .error,
                     """
-                    keyboard.toml line 1: hyper_key should be one of "f13", "f14", "f15", "f16", "f17", "f18", \
+                    keyboard.toml line 2: settings.hyper_key should be one of "f13", "f14", "f15", "f16", "f17", "f18", \
                     "f19", "f20", "caps_lock", "left_option", "right_option", "right_command"
                     """)
             ])
@@ -99,13 +100,13 @@ struct KeyboardConfigTests {
     }
 
     @Test func remappingTheHyperKeyIsAnError() {
-        let reading = KeyboardConfig.read("hyper_key = \"caps_lock\"\n\n[remap]\ncaps_lock = \"escape\"\n")
+        let reading = KeyboardConfig.read("[settings]\nhyper_key = \"caps_lock\"\n\n[remap]\ncaps_lock = \"escape\"\n")
         #expect(reading.config == nil)
         #expect(
             reading.problems.map(\.message) == [
                 Message(
                     .error,
-                    "keyboard.toml line 4: remap.caps_lock: caps_lock is the hyper key, so it can't be remapped too")
+                    "keyboard.toml line 5: remap.caps_lock: caps_lock is the hyper key, so it can't be remapped too")
             ])
     }
 
@@ -123,6 +124,15 @@ struct KeyboardConfigTests {
                     "keyboard.toml line 3: hyper.b should be an app's bundle ID or a module's action, such as \"launcher\""
                 ),
                 Message(.error, "keyboard.toml line 4: hyper.c: a bundle ID can't be empty or hold spaces"),
+            ])
+    }
+
+    @Test func hyperKeyOutsideItsHeadingIsAnError() {
+        let reading = KeyboardConfig.read("hyper_key = \"caps_lock\"\n")
+        #expect(reading.config == nil)
+        #expect(
+            reading.problems.map(\.message) == [
+                Message(.error, "keyboard.toml line 1: hyper_key goes under [settings]")
             ])
     }
 

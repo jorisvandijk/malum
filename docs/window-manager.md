@@ -11,7 +11,7 @@ The switch lives in `malum.toml`:
 enabled = true
 ```
 
-The settings go either in the same table or in `window_manager.toml`, at the top of your dots folder, next to `malum.toml`. Use one or the other: settings in both places are a config error. Saving the file puts it to work straight away.
+The settings go either in the same table or in `window_manager.toml` (plain settings under `[settings]`, float rules as `[[float]]`), at the top of your dots folder, next to `malum.toml`. Use one or the other: settings in both places are a config error. Saving the file puts it to work straight away.
 
 The module needs Accessibility. Until it's granted, the module waits, and the [menu bar](menu-bar.md) offers to open the page in System Settings (see [permissions](permissions.md)).
 
@@ -69,6 +69,7 @@ title = "^Picture-in-Picture$"
 ## window_manager.toml
 
 ```toml
+[settings]
 frame = "visible"
 block_hide_minimize = true
 ```

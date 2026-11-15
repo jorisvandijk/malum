@@ -68,7 +68,9 @@ struct ConfigReloaderTests {
 
     @Test func modulesOwnFileIsReadAndWatched() throws {
         let launcher = "/Users/test/dots/launcher.toml"
-        let files = FakeFileSystem(texts: [pointer: "/Users/test/dots\n", file: "[launcher]\n", launcher: "size = 3\n"])
+        let files = FakeFileSystem(texts: [
+            pointer: "/Users/test/dots\n", file: "[launcher]\n", launcher: "[settings]\nsize = 3\n",
+        ])
         let reloader = ConfigReloader(files: files, paths: paths, schemas: schemas)
         #expect(
             reloader.reload(force: false)?.messages == [
@@ -76,7 +78,7 @@ struct ConfigReloaderTests {
             ])
         #expect(reloader.settings == ["launcher": ["size": .integer(3)]])
         #expect(reloader.watchedFiles == [file, launcher])
-        try files.write("size = 4\n", to: launcher)
+        try files.write("[settings]\nsize = 4\n", to: launcher)
         #expect(reloader.reload(force: false)?.changed == ["launcher"])
         #expect(reloader.settings == ["launcher": ["size": .integer(4)]])
     }
