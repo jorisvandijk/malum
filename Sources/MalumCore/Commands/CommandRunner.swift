@@ -11,7 +11,9 @@ extension CommandRunner {
     /// Runs `command` to the end, then hands over each line of its output.
     public func lines(of command: Command, each: @escaping @Sendable (String) -> Void) async -> CommandResult {
         let result = await run(command)
-        result.output.split(separator: "\n").forEach { each(String($0)) }
+        for line in result.output.split(separator: "\n") {
+            each(String(line))
+        }
         return CommandResult(status: result.status, errors: result.errors)
     }
 }

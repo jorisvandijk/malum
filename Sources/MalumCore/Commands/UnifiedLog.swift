@@ -45,8 +45,8 @@ public enum UnifiedLog {
             let eventMessage: String
         }
         guard line.hasPrefix("{") else { return nil }
-        // A line that isn't an entry, such as the closing summary, is no answer.
-        guard let fields = try? JSONDecoder().decode(Fields.self, from: Data(line.utf8)) else { return nil }
+        let decoder = JSONDecoder()
+        guard let fields = try? decoder.decode(Fields.self, from: Data(line.utf8)) else { return nil }  // Not an entry.
         let time = fields.timestamp.dropFirst(timeOfDay.start).prefix(timeOfDay.length)
         var text = fields.eventMessage
         if text.hasSuffix(privateTail) { text.removeLast(privateTail.count) }

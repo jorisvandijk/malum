@@ -72,10 +72,8 @@ func runCommand(_ invocation: Invocation) {
         applySystemConfig(force: force)
     case .rollback:
         finishing { await selfUpdate(github: GitHubAPI(token: nil)).rollBack { announce($0) } }
-    case .status:
-        showStatus()
-    case .log(let last):
-        showLog(last: last)
+    case .status, .log:
+        show(invocation)
     case .token, .sambaPassword:
         keepSecret(invocation)
     case .incomplete, .unknown:
@@ -174,12 +172,19 @@ func showStatus() -> Never {
     }
 }
 
+/// Runs `malum status`, or `malum log` when `invocation` is that.
+@MainActor
+func show(_ invocation: Invocation) -> Never {
+    guard case .log(let last) = invocation else { showStatus() }
+    showLog(last: last)
+}
+
 /// Runs `malum log`, live or for the `last` stretch of time, and exits once `log` ends.
 @MainActor
 func showLog(last: String?) -> Never {
     let output = terminal
     finishing {
-        await LogCommand(runner: runner).run(last: last, write: { output.write($0) }) { output.report($0) }
+        await LogCommand(runner: runner).run(last: last, write: { output.write($0) }, report: { output.report($0) })
     }
 }
 

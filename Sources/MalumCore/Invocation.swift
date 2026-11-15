@@ -45,18 +45,8 @@ public enum Invocation: Equatable, Sendable {
             self = .version
         case "--help", "-h":
             self = .help
-        case "init":
-            self = Self.initialize(rest)
-        case "disable":
-            self = Self.disable(rest)
-        case "token":
-            self = Self.token(rest)
-        case "run":
-            self = Self.run(rest)
-        case "samba":
-            self = Self.samba(rest)
-        case "log":
-            self = Self.log(rest)
+        case let command where Self.withArguments[command] != nil:
+            self = Self.withArguments[command].map { $0(rest) } ?? .unknown(command)
         default:
             guard let plain = Self.plain[first] else {
                 self = .unknown(first)
@@ -65,6 +55,11 @@ public enum Invocation: Equatable, Sendable {
             self = rest.first.map(Self.unknown) ?? plain
         }
     }
+
+    /// The commands that read their own arguments, by name.
+    private static let withArguments: [String: @Sendable ([String]) -> Self] = [
+        "init": initialize, "disable": disable, "token": token, "run": run, "samba": samba, "log": log,
+    ]
 
     /// The commands that take no arguments, by name.
     private static let plain: [String: Self] = [
