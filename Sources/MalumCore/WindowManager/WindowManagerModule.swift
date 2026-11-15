@@ -21,7 +21,7 @@ final class WindowManagerModule: Module {
     private static let settleMilliseconds = 500
     /// The action that lets the user click a window and shows what it is, for `keyboard.toml` and
     /// the menu.
-    public static let inspectAction = "inspect_window"
+    public static let inspectAction = WindowManagerConfig.inspectAction
     /// The action of the keys it swallows, which isn't offered to `keyboard.toml`.
     private static let blockAction = "block"
     /// cmd+H, cmd+M and cmd+option+M, which hide the app or minimise windows, for

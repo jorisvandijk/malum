@@ -61,9 +61,9 @@ final class MenuFeed {
         case .run:
             guard !openInTerminal(Invocation.runArguments, config: config) else { return }
             Task { await output.run(OutputPopup.runLabel, work: runSystemConfig) }
-        case .inspectWindow:
-            guard !routes.run(actionNamed: WindowManagerModule.inspectAction) else { return }
-            announce(.noModuleFor(WindowManagerModule.inspectAction))
+        case .runAction(let action):
+            guard !routes.run(actionNamed: action) else { return }
+            announce(.noModuleFor(action))
         case .showLog:
             guard !openInTerminal(Invocation.logArguments(last: LogCommand.lastHour), config: config) else { return }
             Task {
