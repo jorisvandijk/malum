@@ -142,6 +142,12 @@ public struct LocalFileSystem: FileSystem {
         }
     }
 
+    /// Asks the file's resource values; a file that can't be read isn't hidden.
+    public func isHidden(_ path: String) -> Bool {
+        let values = try? URL(fileURLWithPath: path).resourceValues(forKeys: [.isHiddenKey])  // Unreadable: shown.
+        return values?.isHidden ?? false
+    }
+
     /// Asks `FileManager`.
     public func isExecutable(_ path: String) -> Bool {
         FileManager.default.isExecutableFile(atPath: path)

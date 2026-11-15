@@ -34,6 +34,8 @@ struct MacOSSettings {
         var resolution: DisplayResolution?
         /// The seconds after the screen goes black before it asks for the password, or nil to leave it.
         var screenLock: Int?
+        /// The folders in the home folder Finder shows, or nil to leave them.
+        var homeFolders: [String]?
     }
 
     /// The process that shows the settings of a domain, which is restarted after a change to it.
@@ -114,7 +116,9 @@ struct MacOSSettings {
         let computer = await ComputerSettings(runner: runner, sudo: sudo).write(wanted.computer, report: report)
         let resolution = DisplaySettings(display: display).set(wanted.resolution, report: report)
         let lock = await ScreenLockSettings(runner: runner, sudo: sudo).set(wanted.screenLock, report: report)
-        return wrote && set && power && removed && defaults && computer && resolution && lock
+        let folders = await HomeFolders(runner: runner, files: files, paths: paths).set(
+            wanted.homeFolders, report: report)
+        return wrote && set && power && removed && defaults && computer && resolution && lock && folders
     }
 
     /// Reads `text`, the contents of `macos.toml`: what it sets, or nil when an error stops it, and
@@ -132,6 +136,7 @@ struct MacOSSettings {
                 preferencesTable, currentHostTable, hostsTable, sudoTable, PowerSettings.table, AppleApps.table,
                 DefaultApps.table, ComputerSettings.table, DisplaySettings.table, ScreenLockSettings.table,
                 StartupApps.table,
+                HomeFolders.table,
             ])
         var wanted = Wanted()
         wanted.preferences =
@@ -150,6 +155,7 @@ struct MacOSSettings {
         wanted.resolution = DisplaySettings.read(&reader)
         wanted.screenLock = ScreenLockSettings.read(&reader)
         _ = StartupApps.read(&reader)  // The app opens them when it starts; the run only checks the list.
+        wanted.homeFolders = HomeFolders.read(&reader)
         let problems = reader.problemsByLine
         return (reader.hasErrors ? nil : wanted, problems)
     }

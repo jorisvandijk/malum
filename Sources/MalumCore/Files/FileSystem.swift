@@ -33,6 +33,9 @@ public protocol FileSystem: Sendable {
     func contents(of path: String) throws(FileSystemError) -> [String]
     /// Whether the file at `path` can be run.
     func isExecutable(_ path: String) -> Bool
+    /// Whether Finder hides the file or folder at `path`, as it does a name starting with a dot or
+    /// one with the hidden flag.
+    func isHidden(_ path: String) -> Bool
     /// Lets the file at `path` be run.
     func makeExecutable(_ path: String) throws(FileSystemError)
 }

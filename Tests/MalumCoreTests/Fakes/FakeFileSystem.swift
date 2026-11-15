@@ -17,12 +17,14 @@ final class FakeFileSystem: FileSystem {
     private let blobs = Mutex<[String: Data]>([:])
     /// Paths whose writes fail.
     let failing: Set<String>
+    /// Paths Finder hides.
+    let hidden: Set<String>
     /// Paths spelled differently from how they are on disk, with their spelling on disk.
     let spellings: [String: String]
 
     init(
         items: [String: FileItem] = [:], texts: [String: String] = [:], failing: Set<String> = [],
-        spellings: [String: String] = [:], executables: Set<String> = []
+        spellings: [String: String] = [:], executables: Set<String> = [], hidden: Set<String> = []
     ) {
         var all = items
         for path in texts.keys { all[path] = .file }
@@ -31,6 +33,7 @@ final class FakeFileSystem: FileSystem {
         self.executables = Mutex(executables)
         self.failing = failing
         self.spellings = spellings
+        self.hidden = hidden
     }
 
     func canonicalPath(_ path: String) -> String {
@@ -133,6 +136,10 @@ final class FakeFileSystem: FileSystem {
         guard item(at: path) == .directory else { throw .unlistable(path: path, reason: "not a folder") }
         let names = allPaths.filter { $0.hasPrefix(path + "/") }.map { $0.dropFirst(path.count + 1) }
         return Array(Set(names.compactMap { $0.split(separator: "/").first.map(String.init) }))
+    }
+
+    func isHidden(_ path: String) -> Bool {
+        hidden.contains(path)
     }
 
     func isExecutable(_ path: String) -> Bool {

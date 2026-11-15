@@ -637,6 +637,19 @@ apps = ["com.if.Amphetamine", "com.sindresorhus.Command-X", "com.doomlaser.curso
 
 `malum run` only checks the list; the app opens them, and the log says `[info] opened com.if.Amphetamine at start` for each.
 
+### Home folders
+
+`show` in `[home_folders]` lists the folders in your home folder that Finder shows. Every other folder there is hidden with `chflags hidden`, and a listed folder that's hidden is shown again. Names match without regard to case. Folders whose name starts with a dot stay as they are, and taking the table out leaves every folder as it is.
+
+```toml
+[home_folders]
+show = ["Documents", "Downloads", "Git", "Pictures"]
+```
+
+```
+[info] hid ~/Movies in Finder, from macos.toml
+```
+
 ## Status
 
 `malum status` shows what Malum manages and what doesn't match dots right now. It changes nothing and never asks for your password. It works whether `system_config` is on or off.
