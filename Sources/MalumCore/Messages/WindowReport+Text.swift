@@ -48,7 +48,7 @@ extension WindowReport {
         case .kind(.notReady):
             "doesn't say what it is yet"
         case .appNotTracked:
-            "left alone: its app isn't tracked, as apps without a Dock icon aren't"
+            "left alone: its app only runs in the menu bar or in the background"
         }
     }
 

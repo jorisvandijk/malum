@@ -11,8 +11,8 @@ struct WindowReport: Equatable, Sendable {
     enum Handling: Equatable, Sendable {
         /// It's managed or floats, as the window manager decided.
         case kind(WindowKind)
-        /// The window manager doesn't track its app, as with apps without a Dock icon, so it leaves
-        /// all the app's windows alone.
+        /// The window manager doesn't track its app, which only runs in the menu bar or in the
+        /// background, so it leaves all the app's windows alone.
         case appNotTracked
     }
 

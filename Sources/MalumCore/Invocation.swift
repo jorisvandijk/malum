@@ -45,15 +45,15 @@ public enum Invocation: Equatable, Sendable {
             self = .version
         case "--help", "-h":
             self = .help
-        case let command where Self.withArguments[command] != nil:
-            self = Self.withArguments[command].map { $0(rest) } ?? .unknown(command)
         default:
-            guard let plain = Self.plain[first] else {
-                self = .unknown(first)
-                return
-            }
-            self = rest.first.map(Self.unknown) ?? plain
+            self = Self.withArguments[first].map { $0(rest) } ?? Self.plainCommand(first, rest)
         }
+    }
+
+    /// The command `name` that takes no arguments, unknown when it isn't one or `rest` holds any.
+    private static func plainCommand(_ name: String, _ rest: [String]) -> Self {
+        guard let plain = plain[name] else { return .unknown(name) }
+        return rest.first.map(Self.unknown) ?? plain
     }
 
     /// The commands that read their own arguments, by name.
