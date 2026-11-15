@@ -5,120 +5,103 @@ import Testing
 @Suite(.timeLimit(.minutes(1)))
 struct StatusMenuTests {
     private let path = "/dots/malum.toml"
-    private let title = MenuItem.text("Malum \(Project.version)")
+    /// The actions at the bottom while `malum.toml` is there.
+    private var actions: [MenuItem] {
+        [
+            .action("Run", .run), .action("Show log", .showLog), .action("Open malum.toml", .openFile(path)),
+            .action("Reload malum.toml", .reload), .separator, .action("Quit Malum", .quit),
+        ]
+    }
 
     private func report(_ problems: [ConfigProblem], loaded: String? = "/dots/malum.toml") -> ConfigReport {
         ConfigReport(loaded: loaded, changed: [], kept: [], problems: problems)
     }
 
-    @Test func calmMenuListsNoModulesAndNoProblems() {
-        let menu = StatusMenu(modules: [], report: report([]), configPath: path, configExists: true)
-        #expect(
-            menu.items == [
-                title, .separator,
-                .text("no modules yet"), .separator,
-                .text("malum.toml has no problems"), .action("Open malum.toml", .openFile(path)), .separator,
-                .action("Reload malum.toml", .reload), .action("Quit Malum", .quit),
-            ])
-        #expect(!menu.needsAttention)
+    private func menu(
+        modules: [(id: String, status: ModuleStatus)] = [], problems: [ConfigProblem] = [],
+        overrides: Overrides = Overrides(), signingProblem: String? = nil
+    ) -> StatusMenu {
+        StatusMenu(
+            modules: modules, report: report(problems), configPath: path, configExists: true, overrides: overrides,
+            signingProblem: signingProblem)
     }
 
-    @Test func signingProblemTopsTheMenu() {
-        let menu = StatusMenu(
-            modules: [], report: report([]), configPath: path, configExists: true, signingProblem: "not signed")
-        #expect(Array(menu.items.prefix(4)) == [title, .separator, .text("not signed"), .separator])
-        #expect(menu.needsAttention)
+    @Test func calmMenuHoldsOnlyTheActions() {
+        let calm = menu(modules: [("launcher", .running), ("samba", .off)])
+        #expect(calm.items == actions)
+        #expect(!calm.needsAttention)
     }
 
-    @Test func configProblemsAreListedWithTheirTags() {
+    @Test func signingProblemLeadsToTheLog() {
+        let signing = menu(signingProblem: "not signed")
+        #expect(signing.items == [.action("not signed", .showLog), .separator] + actions)
+        #expect(signing.needsAttention)
+    }
+
+    @Test func configProblemsOpenTheFile() {
         let problems = [ConfigProblem(.warn, line: 1, "unknown module samba")]
-        let menu = StatusMenu(modules: [], report: report(problems), configPath: path, configExists: true)
-        #expect(menu.items.contains(.text("[warn] malum.toml line 1: unknown module samba")))
-        #expect(!menu.items.contains(.text("malum.toml has no problems")))
-        #expect(menu.needsAttention)
+        let listed = menu(problems: problems)
+        #expect(listed.items.first == .action("[warn] malum.toml line 1: unknown module samba", .openFile(path)))
+        #expect(listed.needsAttention)
     }
 
-    @Test func missingFileOffersTheDotsFolder() {
+    @Test func missingFileShowsTheDotsFolder() {
         let problems = [ConfigProblem(.error, "couldn't load \(private: path): it doesn't exist")]
-        let menu = StatusMenu(
+        let missing = StatusMenu(
             modules: [], report: report(problems, loaded: nil), configPath: path, configExists: false)
-        #expect(menu.items.contains(.action("Show dots folder", .showFolder("/dots"))))
-        #expect(!menu.items.contains(.action("Open malum.toml", .openFile(path))))
+        #expect(
+            missing.items.first
+                == .action("[error] couldn't load /dots/malum.toml: it doesn't exist", .showFolder("/dots")))
+        #expect(!missing.items.contains(.action("Open malum.toml", .openFile(path))))
     }
 
-    @Test func noDotsOffersNoWayToTheFile() {
+    @Test func noDotsLeadsToTheLog() {
         let problems = [ConfigProblem(.error, "couldn't load malum.toml: no dots folder yet, run malum init")]
-        let menu = StatusMenu(modules: [], report: report(problems, loaded: nil), configPath: nil, configExists: false)
+        let noDots = StatusMenu(
+            modules: [], report: report(problems, loaded: nil), configPath: nil, configExists: false)
         #expect(
-            !menu.items.contains {
-                if case .action(_, .openFile) = $0 { return true }
-                if case .action(_, .showFolder) = $0 { return true }
-                return false
-            })
+            noDots.items.first
+                == .action("[error] couldn't load malum.toml: no dots folder yet, run malum init", .showLog))
+        #expect(!noDots.items.contains { if case .action(_, .openFile) = $0 { true } else { false } })
     }
 
-    @Test func unparsableFileStillOffersToOpenIt() {
-        let problems = [ConfigProblem(.error, line: 3, column: 7, "cannot redefine existing integer 'gap'")]
-        let menu = StatusMenu(modules: [], report: report(problems, loaded: nil), configPath: path, configExists: true)
-        #expect(menu.items.contains(.action("Open malum.toml", .openFile(path))))
-    }
-
-    @Test func modulesShowTheirStatusInOrder() {
-        let modules: [(id: String, status: ModuleStatus)] = [("launcher", .running), ("samba", .off)]
-        let menu = StatusMenu(modules: modules, report: report([]), configPath: path, configExists: true)
-        #expect(Array(menu.items[2...3]) == [.text("launcher: running"), .text("samba: off")])
-        #expect(!menu.needsAttention)
-    }
-
-    @Test func missingPermissionsEachGetASettingsItem() {
-        let modules: [(id: String, status: ModuleStatus)] = [
-            ("keyboard", .needsPermission([.inputMonitoring, .accessibility]))
-        ]
-        let menu = StatusMenu(modules: modules, report: report([]), configPath: path, configExists: true)
+    @Test func missingPermissionsEachOpenTheirSettings() {
+        let waiting = menu(modules: [("keyboard", .needsPermission([.inputMonitoring, .accessibility]))])
         #expect(
-            Array(menu.items[2...4]) == [
-                .text("keyboard: needs Accessibility, Input Monitoring"),
-                .action("Open Accessibility settings", .openSettings(.accessibility)),
-                .action("Open Input Monitoring settings", .openSettings(.inputMonitoring)),
+            Array(waiting.items.prefix(2)) == [
+                .action("keyboard: open Accessibility settings", .openSettings(.accessibility)),
+                .action("keyboard: open Input Monitoring settings", .openSettings(.inputMonitoring)),
             ])
-        #expect(menu.needsAttention)
+        #expect(waiting.needsAttention)
     }
 
-    @Test func failedOrDegradedModuleNeedsAttention() {
+    @Test func failedOrDegradedModuleLeadsToTheLog() {
         for status in [ModuleStatus.failed(reason: "boom"), .degraded(reason: "bad table")] {
-            let menu = StatusMenu(
-                modules: [(id: "launcher", status: status)], report: report([]), configPath: path, configExists: true)
-            #expect(menu.needsAttention)
+            let broken = menu(modules: [(id: "launcher", status: status)])
+            #expect(broken.items.first == .action("launcher: \(status)", .showLog))
+            #expect(broken.needsAttention)
         }
     }
 
-    @Test func noReportYetShowsNoProblems() {
-        let menu = StatusMenu(modules: [], report: nil, configPath: nil, configExists: false)
-        #expect(menu.items.contains(.text("malum.toml has no problems")))
-        #expect(!menu.needsAttention)
+    @Test func noReportYetIsCalm() {
+        let early = StatusMenu(modules: [], report: nil, configPath: nil, configExists: false)
+        #expect(early.items.first == .action("Run", .run))
+        #expect(!early.needsAttention)
     }
 
-    @Test func safeModeShowsItsReasonAndTheWayOut() {
-        let menu = StatusMenu(
-            modules: [], report: report([]), configPath: path, configExists: true,
-            overrides: Overrides(safeMode: .crashLoop))
+    @Test func safeModeOffersTheWayOutWithItsReason() {
+        let safe = menu(overrides: Overrides(safeMode: .crashLoop))
         #expect(
-            Array(menu.items[2...5]) == [
-                .text("safe mode: Malum started 3 times within 2 minutes"),
-                .action("Leave safe mode", .leaveSafeMode), .separator, .text("no modules yet"),
-            ])
-        #expect(menu.needsAttention)
+            safe.items.first == .action("Leave safe mode (Malum started 3 times within 2 minutes)", .leaveSafeMode))
+        #expect(safe.needsAttention)
     }
 
     @Test func disabledModulesEachGetAnEnableItem() {
-        let menu = StatusMenu(
-            modules: [(id: "samba", status: .off)], report: report([]), configPath: path, configExists: true,
-            overrides: Overrides(disabled: ["samba", "launcher"]))
+        let disabled = menu(overrides: Overrides(disabled: ["samba", "launcher"]))
         #expect(
-            Array(menu.items[2...4]) == [
-                .text("samba: off"), .action("Enable launcher", .enable("launcher")),
-                .action("Enable samba", .enable("samba")),
+            Array(disabled.items.prefix(3)) == [
+                .action("Enable launcher", .enable("launcher")), .action("Enable samba", .enable("samba")), .separator,
             ])
-        #expect(!menu.needsAttention)
+        #expect(disabled.needsAttention)
     }
 }

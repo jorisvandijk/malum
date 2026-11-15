@@ -11,18 +11,22 @@ final class MenuFeed {
     private let modules: [any Module]
     /// The config, which says what its last load found.
     private let config: LiveConfig
+    /// Shows what Run and Show log write.
+    private let output: OutputPopup
     /// Why the modules stay off because Malum isn't signed, or nil when they don't.
     var signingProblem: String? {
         didSet { refresh() }
     }
 
-    /// Puts the icon in the menu bar and shows the state of `modules` and `config` in it.
-    init(modules: [any Module], config: LiveConfig) {
+    /// Puts the icon in the menu bar and shows the state of `modules` and `config` in it, with
+    /// what Run and Show log write in `output`.
+    init(modules: [any Module], config: LiveConfig, output: OutputPopup) {
         self.modules = modules
         self.config = config
-        menuBar = MenuBar { [weak config] fix in
-            guard let config else { return }
-            Self.perform(fix, on: config)
+        self.output = output
+        menuBar = MenuBar { [weak config, weak output] fix in
+            guard let config, let output else { return }
+            Self.perform(fix, on: config, output: output)
         }
         config.onUpdate = { [weak self] in self?.refresh() }
         refresh()
@@ -45,8 +49,16 @@ final class MenuFeed {
     }
 
     /// Does what a picked item asks of the app.
-    private static func perform(_ fix: MenuFix, on config: LiveConfig) {
+    private static func perform(_ fix: MenuFix, on config: LiveConfig, output: OutputPopup) {
         switch fix {
+        case .run:
+            Task { await output.run(OutputPopup.runLabel, work: runSystemConfig) }
+        case .showLog:
+            Task {
+                await output.run(OutputPopup.logLabel) { write in
+                    await LogCommand(runner: runner).lines(last: LogCommand.lastHour).forEach(write)
+                }
+            }
         case .reload:
             config.reload(force: true)
         case .leaveSafeMode:
@@ -70,5 +82,15 @@ final class MenuFeed {
                 self?.observeModules()
             }
         }
+    }
+}
+
+/// Runs system config as `malum run` does, without asking for the password or updating Malum,
+/// writing what it reports to `write` and to the log.
+@MainActor
+private func runSystemConfig(_ write: @MainActor (String) -> Void) async {
+    _ = await systemConfig(canAsk: false, github: gitHub()).run { message in
+        announce(message)
+        write(message.description)
     }
 }

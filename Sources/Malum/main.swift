@@ -88,15 +88,19 @@ func applySystemConfig(force: Bool) -> Never {
     finishing {
         let issues = IssueList { announce($0) }
         let github = gitHub()
-        let command = RunCommand(
-            files: files, paths: paths, runner: runner, github: github, state: state,
-            canAsk: isatty(STDIN_FILENO) == 1, handlers: WorkspaceAppHandlers(),
-            desktop: WorkspaceDesktop(), display: BuiltInDisplay())
-        let applied = await command.run { issues.add($0) }
+        let applied = await systemConfig(canAsk: isatty(STDIN_FILENO) == 1, github: github).run { issues.add($0) }
         let updated = await selfUpdate(github: github).run(force: force) { issues.add($0) }
         issues.finish()
         return applied && updated
     }
+}
+
+/// The command behind `malum run`, which asks for the password only when `canAsk` is set.
+@MainActor
+func systemConfig(canAsk: Bool, github: GitHubAPI) -> RunCommand {
+    RunCommand(
+        files: files, paths: paths, runner: runner, github: github, state: state, canAsk: canAsk,
+        handlers: WorkspaceAppHandlers(), desktop: WorkspaceDesktop(), display: BuiltInDisplay())
 }
 
 /// GitHub, with the token from the keychain when one is stored. A token that can't be read is

@@ -50,4 +50,11 @@ struct LogCommandTests {
         #expect(!outcome.succeeded)
         #expect(outcome.messages == [Message(.error, "couldn't read the log: log: bad predicate")])
     }
+
+    @Test func linesHoldTheEntriesThenWhyLogFailed() async {
+        let entry = #"{"timestamp":"2026-11-15 09:00:00.1+0100","category":"app","eventMessage":"[info] running"}"#
+        let runner = FakeRunner { _ in CommandResult(status: 64, output: entry, errors: "log: bad predicate") }
+        let lines = await LogCommand(runner: runner).lines(last: LogCommand.lastHour)
+        #expect(lines == ["09:00:00 app [info] running", "[error] couldn't read the log: log: bad predicate"])
+    }
 }

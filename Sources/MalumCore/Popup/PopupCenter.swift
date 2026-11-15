@@ -26,7 +26,7 @@ public final class PopupCenter {
 
     /// Adds `source` as the list of module `id`, or replaces the one it gave before.
     public func register(_ source: any PopupSource, as id: String) {
-        if sources[id] == nil { order.append(id) }
+        if sources[id] == nil, source.inTabOrder { order.append(id) }
         sources[id] = source
     }
 
@@ -42,16 +42,21 @@ public final class PopupCenter {
     /// The key of module `id`'s list: opens the popup on it, moves to it when the popup shows
     /// another list, or closes the popup when it shows this one.
     public func toggle(_ id: String) {
+        guard popup.isOpen, current == id else {
+            show(id)
+            return
+        }
+        popup.close()
+    }
+
+    /// Opens the popup on list `id`, or moves to it when the popup shows another list.
+    public func show(_ id: String) {
         guard sources[id] != nil else { return }
         guard popup.isOpen else {
             current = id
             query = ""
             refilter()
             popup.open(content)
-            return
-        }
-        guard current != id else {
-            popup.close()
             return
         }
         current = id

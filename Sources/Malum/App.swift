@@ -23,12 +23,13 @@ func runApp() -> Never {
     let launches = LaunchRecord(state: state)
     checkCrashLoop(launches, overrides: OverrideStore(state: state))
     let routes = ModuleRoutes()
-    let modules = makeModules(routes: routes)
+    let popup = PopupCenter(popup: PopupPanel())
+    let modules = makeModules(routes: routes, popup: popup)
     let config = LiveConfig(
         reloader: ConfigReloader(files: files, paths: paths, schemas: ConfigSchemas.all),
         modules: ModuleSwitch(modules: modules, permissions: PermissionProbe(home: paths.home), routes: routes),
         overrides: OverrideStore(state: state))
-    let menu = MenuFeed(modules: modules, config: config)
+    let menu = MenuFeed(modules: modules, config: config, output: OutputPopup(center: popup))
     config.start()
     Task { await startWhenSigned(config: config, menu: menu) }
     let hangup = SignalWatcher(SIGHUP) { config.reload(force: true) }
@@ -56,11 +57,11 @@ private func runRequestedActions(_ routes: ModuleRoutes) {
     }
 }
 
-/// Builds every module with its macOS parts, routing shortcuts through `routes`.
+/// Builds every module with its macOS parts, routing shortcuts through `routes`, with the
+/// launcher and clipboard history in `popup`.
 @MainActor
-func makeModules(routes: ModuleRoutes) -> [any Module] {
+func makeModules(routes: ModuleRoutes, popup: PopupCenter) -> [any Module] {
     let apps = WorkspaceApps()
-    let popup = PopupCenter(popup: PopupPanel())
     let systems = ModuleSystems(
         keyboard: KeyboardSystem(
             remapper: KeyRemapper(runner: runner, state: state), keyCatcher: EventTap(), state: SystemKeyboardState()),
