@@ -59,18 +59,12 @@ final class MenuFeed {
     private static func perform(_ fix: MenuFix, on config: LiveConfig, output: OutputPopup, routes: ModuleRoutes) {
         switch fix {
         case .run:
-            guard !openInTerminal(Invocation.runArguments, config: config) else { return }
-            Task { await output.run(OutputPopup.runLabel, work: runSystemConfig) }
+            run(config: config, output: output)
         case .runAction(let action):
             guard !routes.run(actionNamed: action) else { return }
             announce(.noModuleFor(action))
         case .showLog:
-            guard !openInTerminal(Invocation.logArguments(last: LogCommand.lastHour), config: config) else { return }
-            Task {
-                await output.run(OutputPopup.logLabel) { write in
-                    await LogCommand(runner: runner).lines(last: LogCommand.lastHour).forEach(write)
-                }
-            }
+            showLog(config: config, output: output)
         case .reload:
             config.restart()
         case .leaveSafeMode:
@@ -81,6 +75,22 @@ final class MenuFeed {
             stopAndQuit(config)
         case .openFile, .showFolder, .openSettings, .about:
             break  // MenuBar does these itself.
+        }
+    }
+
+    /// Runs system config in the terminal, or in the popup when there's none.
+    private static func run(config: LiveConfig, output: OutputPopup) {
+        guard !openInTerminal(Invocation.runArguments, config: config) else { return }
+        Task { await output.run(OutputPopup.runLabel, work: runSystemConfig) }
+    }
+
+    /// Shows the log of the last hour in the terminal, or in the popup when there's none.
+    private static func showLog(config: LiveConfig, output: OutputPopup) {
+        guard !openInTerminal(Invocation.logArguments(last: LogCommand.lastHour), config: config) else { return }
+        Task {
+            await output.run(OutputPopup.logLabel) { write in
+                await LogCommand(runner: runner).lines(last: LogCommand.lastHour).forEach(write)
+            }
         }
     }
 
