@@ -30,6 +30,8 @@ final class LiveConfig {
     private var recheck: Task<Void, Never>?
     /// Runs after each load, and again once the modules have been switched.
     var onUpdate: @MainActor () -> Void = {}
+    /// Runs once a restart is done, with what it reported and how many modules are switched on.
+    var onRestart: @MainActor ([Message], Int) -> Void = { _, _ in }
 
     /// Creates the config with nothing loaded yet and every module off.
     init(reloader: ConfigReloader, modules: ModuleSwitch, overrides: OverrideStore) {
@@ -97,6 +99,9 @@ final class LiveConfig {
             }
             messages.forEach(announce)
             self.onUpdate()
+            if restart {
+                self.onRestart(report.messages + messages, enabled.count)
+            }
             self.watchModules()
         }
     }

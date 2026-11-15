@@ -29,6 +29,15 @@ final class MenuFeed {
             Self.perform(fix, on: config, output: output)
         }
         config.onUpdate = { [weak self] in self?.refresh() }
+        config.onRestart = { messages, running in
+            let notice = ReloadNotice(messages: messages, running: running)
+            Task {
+                let shown = await Notifier().show(title: notice.title, body: notice.body)
+                if !shown {
+                    announce(.notificationsOff)
+                }
+            }
+        }
         refresh()
         observeModules()
     }
