@@ -6,10 +6,19 @@ final class RunRaise {
     private let apps: any AppControl
     /// The window manager's log.
     private let log: Log
+    /// Runs the looks at an app that was just started.
+    private let scheduler: any WindowScheduler
+    /// How long after starting an app run or raise looks at its windows.
+    private static let launchLookMilliseconds = 500
+    /// How many times it looks at a started app that doesn't answer Accessibility yet.
+    private static let launchLooks = 10
+    /// Asking a started app for a window, so tests can wait for it.
+    private(set) var reopening: Task<Void, Never>?
 
-    /// Creates run or raise, working through `apps` and logging to `log`.
-    init(apps: any AppControl, log: Log) {
+    /// Creates run or raise, working through `apps`, waiting through `scheduler` and logging to `log`.
+    init(apps: any AppControl, scheduler: any WindowScheduler, log: Log) {
         self.apps = apps
+        self.scheduler = scheduler
         self.log = log
     }
 
@@ -42,12 +51,32 @@ final class RunRaise {
         return !config.floats.contains { $0.app == app.bundleID && $0.title == nil }
     }
 
-    /// Starts the app with `bundleID`, or brings it into view.
+    /// Starts the app with `bundleID`, or brings it into view. An app that starts without a window,
+    /// such as Finder after it quit, is then asked for one.
     func raise(_ bundleID: String) async {
         let app = apps.running(bundleID)
         let steps = Self.steps(for: app, windows: app.map(apps.windows) ?? .unknown)
         for step in steps {
             await take(step, for: app, bundleID: bundleID)
+        }
+        if steps == [.launch] {
+            lookAfterLaunch(bundleID)
+        }
+    }
+
+    /// Asks the app with `bundleID`, which was just started, for a window when it has none. One that
+    /// doesn't answer Accessibility yet is looked at again, up to `launchLooks` times.
+    private func lookAfterLaunch(_ bundleID: String, look number: Int = 1) {
+        scheduler.after(.milliseconds(Self.launchLookMilliseconds)) { [weak self] in
+            guard let self, let app = apps.running(bundleID) else { return }
+            switch apps.windows(of: app) {
+            case .noWindows:
+                reopening = Task { [weak self] in await self?.open(bundleID) }
+            case .unknown where number < Self.launchLooks:
+                lookAfterLaunch(bundleID, look: number + 1)
+            case .unknown, .onlyMinimized, .some:
+                return
+            }
         }
     }
 

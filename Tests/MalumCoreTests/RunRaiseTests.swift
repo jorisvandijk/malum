@@ -7,11 +7,14 @@ import Testing
 struct RunRaiseTests {
     private let apps = FakeAppControl()
     private let writer = RecordingLogWriter()
+    private let scheduler = FakeScheduler()
     private let finder = "com.apple.finder"
 
-    /// Run or raise, logging to `writer`.
-    private func runRaise() -> RunRaise {
-        RunRaise(apps: apps, log: Log(writer: writer))
+    /// Run or raise, logging to `writer`, kept for the whole test so its later looks still run.
+    private let raiser: RunRaise
+
+    init() {
+        raiser = RunRaise(apps: apps, scheduler: scheduler, log: Log(writer: writer))
     }
 
     /// A running app.
@@ -50,28 +53,67 @@ struct RunRaiseTests {
     }
 
     @Test func raiseOpensAnAppThatDoesNotRun() async {
-        await runRaise().raise(finder)
+        await raiser.raise(finder)
         #expect(apps.calls == ["open \(finder)"])
+    }
+
+    @Test func appStartedWithoutAWindowIsAskedForOne() async {
+        await raiser.raise(finder)
+        apps.running[finder] = app(1, "Finder")
+        apps.windows[1] = .noWindows
+        scheduler.runPending()
+        await raiser.reopening?.value
+        #expect(apps.calls == ["open \(finder)", "open \(finder)"])
+    }
+
+    @Test func appStartedWithAWindowIsLeftAlone() async {
+        await raiser.raise(finder)
+        apps.running[finder] = app(1, "Finder")
+        apps.windows[1] = .some
+        scheduler.runPending()
+        #expect(apps.calls == ["open \(finder)"])
+        #expect(scheduler.pending.isEmpty)
+    }
+
+    @Test func startedAppThatDoesNotAnswerIsLookedAtAgain() async {
+        await raiser.raise(finder)
+        apps.running[finder] = app(1, "Finder")
+        scheduler.runPending()
+        #expect(scheduler.pending.count == 1)
+    }
+
+    @Test func appThatFailedToStartIsNotLookedAt() async {
+        await raiser.raise(finder)
+        scheduler.runPending()
+        #expect(apps.calls == ["open \(finder)"])
+        #expect(scheduler.pending.isEmpty)
+    }
+
+    @Test func runningAppIsNotLookedAtAgain() async {
+        apps.running[finder] = app(1, "Finder")
+        apps.windows[1] = .noWindows
+        await raiser.raise(finder)
+        #expect(scheduler.pending.isEmpty)
     }
 
     @Test func raiseTakesEveryStep() async {
         let hidden = app(1, "Finder", hidden: true)
         apps.running[finder] = hidden
         apps.windows[1] = .noWindows
-        await runRaise().raise(finder)
+        await raiser.raise(finder)
         #expect(apps.calls == ["unhide Finder", "activate Finder", "open \(finder)"])
     }
 
     @Test func failedOpenIsLogged() async {
         apps.openError = .notInstalled(finder)
-        await runRaise().raise(finder)
+        await raiser.raise(finder)
         #expect(writer.entries.map(\.text) == [Message.failed(WindowManagerError.notInstalled(finder)).text])
     }
 
     @Test func activeAppHidesTheOthers() {
         let kitty = app(1, "kitty", active: true)
         apps.running = ["kitty": kitty, "Finder": app(2, "Finder"), "Mail": app(3, "Mail")]
-        runRaise().hideOthers(except: kitty, config: WindowManagerConfig())
+        raiser.hideOthers(except: kitty, config: WindowManagerConfig())
         #expect(apps.calls == ["hide Finder", "hide Mail"])
         #expect(writer.entries.isEmpty)
     }
@@ -80,7 +122,7 @@ struct RunRaiseTests {
         let kitty = app(1, "kitty", active: true)
         apps.running = ["kitty": kitty, "Finder": app(2, "Finder")]
         apps.refusesToHide = [2]
-        runRaise().hideOthers(except: kitty, config: WindowManagerConfig())
+        raiser.hideOthers(except: kitty, config: WindowManagerConfig())
         #expect(writer.entries.map(\.text) == [Message.couldntHide(["Finder"]).text])
     }
 
