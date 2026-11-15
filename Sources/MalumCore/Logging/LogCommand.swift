@@ -12,7 +12,7 @@ public struct LogCommand: Sendable {
     /// Writes each entry to `write` as it comes in, or the entries of the `last` stretch of time
     /// when it's set, such as `1h`. Gives whether `log` ran, after reporting why not.
     public func run(
-        last: String?, write: @escaping @Sendable (String) -> Void, report: (Message) -> Void
+        last: String?, write: @escaping @Sendable (String) -> Void, report: @Sendable (Message) -> Void
     ) async -> Bool {
         let command = last.map(UnifiedLog.show) ?? UnifiedLog.follow()
         let result = await runner.lines(of: command) { line in

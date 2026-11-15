@@ -15,10 +15,11 @@ struct LogCommandTests {
     /// Runs the command with `runner`.
     private func run(_ runner: FakeRunner, last: String?) async -> Outcome {
         let written = Mutex<[String]>([])
-        var messages: [Message] = []
+        let messages = Mutex<[Message]>([])
         let succeeded = await LogCommand(runner: runner).run(
-            last: last, write: { line in written.withLock { $0.append(line) } }, report: { messages.append($0) })
-        return Outcome(succeeded: succeeded, written: written.withLock { $0 }, messages: messages)
+            last: last, write: { line in written.withLock { $0.append(line) } },
+            report: { message in messages.withLock { $0.append(message) } })
+        return Outcome(succeeded: succeeded, written: written.withLock { $0 }, messages: messages.withLock { $0 })
     }
 
     @Test func entriesAreWrittenOneLineEach() async {
