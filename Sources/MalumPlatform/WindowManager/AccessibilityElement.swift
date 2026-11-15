@@ -29,6 +29,12 @@ struct AccessibilityElement {
         value(attribute) as? [AXUIElement]
     }
 
+    /// The element in `attribute`, or nil when it holds something else.
+    func element(_ attribute: String) -> AXUIElement? {
+        guard let value = value(attribute), CFGetTypeID(value) == AXUIElementGetTypeID() else { return nil }
+        return unsafeDowncast(value, to: AXUIElement.self)
+    }
+
     /// The point in `attribute`, or nil.
     func point(_ attribute: String) -> CGPoint? {
         var point = CGPoint.zero

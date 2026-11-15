@@ -14,7 +14,7 @@ public enum Modules {
     public static func all(_ systems: ModuleSystems, routes: ModuleRoutes, log: Log) -> [any Module] {
         [
             KeyboardModule(system: systems.keyboard, routes: routes, log: log),
-            WindowManagerModule(system: systems.windows, log: log),
+            WindowManagerModule(system: systems.windows, routes: routes, log: log),
             LauncherModule(system: systems.launcher, routes: routes, log: log),
             ClipboardModule(system: systems.clipboard, log: log),
             SambaModule(system: systems.samba, log: log),

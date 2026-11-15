@@ -56,6 +56,11 @@ struct HotkeyRegistryTests {
                 == HotkeyTarget(module: "window_manager", action: .app("com.apple.finder")))
     }
 
+    @Test func appKeysListTheShortcutsThatOpenEachApp() throws {
+        let registry = try registry(offers: offers())
+        #expect(registry.appKeys == ["com.apple.finder": [try hotkey(hyper, "f")]])
+    }
+
     @Test func fixedKeyGoesToItsModule() throws {
         let registry = try registry(offers: offers())
         #expect(

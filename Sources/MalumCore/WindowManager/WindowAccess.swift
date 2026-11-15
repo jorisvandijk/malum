@@ -17,6 +17,9 @@ public protocol WindowAccess: AnyObject {
     var isPointerDown: Bool { get }
     /// Where the pointer is, in Accessibility's coordinates.
     var pointerLocation: CGPoint { get }
+    /// The window at `point`, in Accessibility's coordinates, or nil when no window Accessibility
+    /// reaches is there.
+    func window(at point: CGPoint) -> PointedWindow?
 }
 
 /// What happened to a watched app's windows.

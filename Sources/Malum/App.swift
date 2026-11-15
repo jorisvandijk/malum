@@ -66,7 +66,9 @@ func makeModules(routes: ModuleRoutes, popup: PopupCenter) -> [any Module] {
         keyboard: KeyboardSystem(
             remapper: KeyRemapper(runner: runner, state: state), keyCatcher: EventTap(), state: SystemKeyboardState()),
         windows: WindowManagerSystem(
-            apps: apps, windows: AccessibilityWindows(), watcher: WorkspaceAppWatcher(), screens: MainScreen()),
+            apps: apps, windows: AccessibilityWindows(), watcher: WorkspaceAppWatcher(), screens: MainScreen(),
+            inspector: WindowInspectorSystem(
+                picker: ClickPicker(), panel: InspectorWindow(), clipboard: PasteboardClipboard())),
         launcher: LauncherSystem(
             files: files, paths: paths, state: state, apps: apps, folders: FolderWatcher(), popup: popup),
         clipboard: ClipboardSystem(files: files, state: state, clipboard: PasteboardClipboard(), popup: popup),

@@ -19,6 +19,9 @@ final class WindowManagerModule: Module {
     /// How long to wait after the screens change before laying the windows out again, since macOS
     /// sends a burst of changes while a display comes and goes.
     private static let settleMilliseconds = 500
+    /// The action that lets the user click a window and shows what it is, for `keyboard.toml` and
+    /// the menu.
+    public static let inspectAction = "inspect_window"
     /// The action of the keys it swallows, which isn't offered to `keyboard.toml`.
     private static let blockAction = "block"
     /// cmd+H, cmd+M and cmd+option+M, which hide the app or minimise windows, for
@@ -38,7 +41,9 @@ final class WindowManagerModule: Module {
     /// It opens the apps the shortcuts in `keyboard.toml` name, and swallows the keys that hide and
     /// minimise when `block_hide_minimize` is on.
     var hotkeys: HotkeyOffer {
-        HotkeyOffer(fixedKeys: config.blocksHideMinimize ? Self.blockedKeys : [:], opensApps: true)
+        HotkeyOffer(
+            actions: [Self.inspectAction], fixedKeys: config.blocksHideMinimize ? Self.blockedKeys : [:],
+            opensApps: true)
     }
     /// Where the module is now.
     private(set) var status = ModuleStatus.off
@@ -47,6 +52,10 @@ final class WindowManagerModule: Module {
     @ObservationIgnored private let system: WindowManagerSystem
     /// Runs and raises apps, and hides the others.
     @ObservationIgnored private let runRaise: RunRaise
+    /// Shows what a clicked window is.
+    @ObservationIgnored private let inspector: WindowInspector
+    /// Where the workspace keys of each app come from.
+    @ObservationIgnored private let routes: ModuleRoutes
     /// The module's own log.
     @ObservationIgnored private let log: Log
     /// The settings last given.
@@ -57,14 +66,18 @@ final class WindowManagerModule: Module {
     @ObservationIgnored private var isStarted = false
     /// Whether laying the windows out again after a change to the screens is waiting.
     @ObservationIgnored private var isLayoutPending = false
-    /// The last app raised for a shortcut, which tests wait for.
+    /// The last app raised for a shortcut, or the last window inspected, which tests wait for.
     @ObservationIgnored private(set) var raising: Task<Void, Never>?
 
-    /// Creates the module, off, working through `system` and logging to `log`.
-    init(system: WindowManagerSystem, log: Log) {
+    /// Creates the module, off, working through `system`, reading workspace keys from `routes` and
+    /// logging to `log`.
+    init(system: WindowManagerSystem, routes: ModuleRoutes, log: Log) {
         self.system = system
+        self.routes = routes
         self.log = log.module(WindowManagerConfig.module)
         runRaise = RunRaise(apps: system.apps, log: self.log)
+        inspector = WindowInspector(
+            windows: system.windows, watcher: system.watcher, system: system.inspector, log: self.log)
     }
 
     /// Nothing to undo: the window manager changes nothing that outlives Malum.
@@ -108,10 +121,32 @@ final class WindowManagerModule: Module {
         layOutAgain()
     }
 
-    /// Starts the app a shortcut names, or brings it into view. A swallowed key does nothing.
+    /// Starts the app a shortcut names, or brings it into view, or inspects a window. A swallowed
+    /// key does nothing.
     func perform(_ action: KeyAction) {
-        guard case .app(let bundleID) = action else { return }
-        raising = Task { [runRaise] in await runRaise.raise(bundleID) }
+        switch action {
+        case .app(let bundleID):
+            raising = Task { [runRaise] in await runRaise.raise(bundleID) }
+        case .module(Self.inspectAction):
+            raising = Task { [weak self] in await self?.inspect() }
+        case .module:
+            return
+        }
+    }
+
+    /// Lets the user click a window and shows what it is.
+    private func inspect() async {
+        await inspector.inspect(keys: routes.appKeys, handling: handling(of:app:))
+    }
+
+    /// What the module does with `pointed`, a window of `app`: what its tracker decided, or what it
+    /// would decide when the tracker hasn't seen the window yet.
+    private func handling(of pointed: PointedWindow, app: RunningApp?) -> WindowReport.Handling {
+        guard let tracker = trackers[pointed.pid] else { return .appNotTracked }
+        let kind =
+            tracker.kind(of: pointed.window)
+            ?? WindowLayout.classify(pointed.window.facts, app: app?.bundleID, floats: config.floats)
+        return .kind(kind)
     }
 
     /// The part of the screen windows fill now, or nil when there's no screen.

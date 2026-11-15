@@ -15,6 +15,8 @@ public final class ModuleRoutes {
     private var entries: [String: Entry] = [:]
     /// The modules `malum.toml` switches on, whether or not they run yet.
     public private(set) var switchedOn: Set<String> = []
+    /// The shortcuts that open each app, by bundle ID, as the keyboard module registered them last.
+    var appKeys: [String: [Hotkey]] = [:]
 
     /// Creates routes that know no modules yet.
     public init() {}

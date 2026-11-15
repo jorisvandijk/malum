@@ -28,6 +28,16 @@ struct HotkeyRegistry: Sendable {
     func target(for hotkey: Hotkey) -> HotkeyTarget? {
         targets[hotkey]
     }
+
+    /// The registered shortcuts that open each app, by bundle ID, in the order they're written.
+    var appKeys: [String: [Hotkey]] {
+        var keys: [String: [Hotkey]] = [:]
+        for (hotkey, target) in targets.sorted(by: { $0.key.description < $1.key.description }) {
+            guard case .app(let bundleID) = target.action else { continue }
+            keys[bundleID, default: []].append(hotkey)
+        }
+        return keys
+    }
 }
 
 extension HotkeyRegistry {
