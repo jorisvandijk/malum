@@ -34,7 +34,9 @@ func runApp() -> Never {
     Task { await startWhenSigned(config: config, menu: menu) }
     let hangup = SignalWatcher(SIGHUP) { config.reload(force: true) }
     let terminate = SignalWatcher(SIGTERM) { stopAndQuit(config) }
-    let actions = SignalWatcher(SIGUSR1) { runRequestedActions(routes) }
+    let walk = PermissionWalk(
+        check: PermissionProbe(home: paths.home), open: { PrivacySettings.grant($0) }, report: { announce($0) })
+    let actions = SignalWatcher(SIGUSR1) { runRequestedActions(routes, walk: walk, config: config) }
     let keyboards = KeyboardChangeWatcher(onEach: { announce(.keyboardChanged($0)) }, onChange: { config.resume() })
     let quit = NotificationCenter.default.addObserver(
         forName: NSApplication.willTerminateNotification, object: nil, queue: .main
@@ -45,12 +47,19 @@ func runApp() -> Never {
     exit(EXIT_SUCCESS)
 }
 
-/// Runs the actions commands such as `malum screenshot` left for the app.
+/// Runs the actions commands such as `malum screenshot` left for the app, and starts `walk` for
+/// `malum permissions`.
 @MainActor
-private func runRequestedActions(_ routes: ModuleRoutes) {
+private func runRequestedActions(_ routes: ModuleRoutes, walk: PermissionWalk, config: LiveConfig) {
     do {
-        for action in try ActionRequests(state: state).take() where !routes.run(actionNamed: action) {
-            announce(.noModuleFor(action))
+        for action in try ActionRequests(state: state).take() {
+            switch action {
+            case PermissionWalk.actionName:
+                walk.start(waiting: config.waiting)
+            default:
+                guard !routes.run(actionNamed: action) else { continue }
+                announce(.noModuleFor(action))
+            }
         }
     } catch {
         announce(.failed(error))

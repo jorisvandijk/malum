@@ -68,6 +68,7 @@ func runCommand(_ invocation: Invocation) {
         finish(applyOverride(invocation))
     case .permissions:
         checkTerminal()
+        askApp(.action(PermissionWalk.actionName))
     case .run(let force):
         applySystemConfig(force: force)
     case .rollback:

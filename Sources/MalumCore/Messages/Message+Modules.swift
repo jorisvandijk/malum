@@ -68,6 +68,17 @@ extension Message {
         Message(.info, "opened System Settings at \(permission)")
     }
 
+    /// The permission walk opened System Settings at `permission`, the `number`th of `total`.
+    static func grantNext(_ permission: Permission, number: Int, of total: Int) -> Message {
+        Message(
+            .info, "switch \(Project.name) on under \(permission) in System Settings (\(number) of \(total))")
+    }
+
+    /// Every permission the switched-on modules wait for is granted.
+    static var everyPermissionGranted: Message {
+        Message(.info, "\(Project.name) has every permission its modules wait for")
+    }
+
     /// System Settings couldn't be opened at `permission`'s page.
     public static func settingsUnopenable(at permission: Permission) -> Message {
         Message(.warn, "couldn't open System Settings at \(permission)")
