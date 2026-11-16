@@ -29,7 +29,7 @@ extension Message {
 
     /// What kept keys from reaching Malum has ended.
     static var keysReachMalumAgain: Message {
-        Message(.info, "keys reach Malum again")
+        Message(.info, "keys reach \(Project.name) again")
     }
 
     /// macOS switched the event tap off `times` times since the last check, and it was switched

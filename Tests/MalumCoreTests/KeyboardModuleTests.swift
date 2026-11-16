@@ -8,17 +8,17 @@ struct KeyboardModuleTests {
     private let paths = Paths(home: "/Users/test")
     private let files = FakeFileSystem()
     private let runner = FakeRunner()
-    private let catcher = FakeKeyCatcher()
-    private let keyboardState = FakeKeyboardState()
+    let catcher = FakeKeyCatcher()
+    let keyboardState = FakeKeyboardState()
     private let routes = ModuleRoutes()
     private let launcher = RecordingModule(id: "launcher")
-    private let logWriter = RecordingLogWriter()
+    let logWriter = RecordingLogWriter()
     /// caps lock as the hyper key, and the launcher on hyper+space.
     private let launcherKey = "[settings]\nhyper_key = \"caps_lock\"\n\n[hyper]\nspace = \"launcher\"\n"
     private var marker: String { "\(paths.stateDirectory)/\(KeyRemapper.markerName)" }
 
     /// The module, off, running its commands through `runner`.
-    private func module(runner: FakeRunner? = nil) -> KeyboardModule {
+    func module(runner: FakeRunner? = nil) -> KeyboardModule {
         let state = StateFolder(files: files, locks: FakeFileLocks(), paths: paths)
         return KeyboardModule(
             system: KeyboardSystem(
@@ -28,7 +28,7 @@ struct KeyboardModuleTests {
     }
 
     /// Settings with `text` as the checked `keyboard.toml`, or no file when it's nil.
-    private func settings(_ text: String?) -> ModuleSettings {
+    func settings(_ text: String?) -> ModuleSettings {
         ModuleSettings(file: text)
     }
 
@@ -120,34 +120,6 @@ struct KeyboardModuleTests {
         keyboardState.secureInput = .off
         keyboard.check()
         #expect(keyboard.status == .running)
-    }
-
-    @Test func secureInputIsLoggedWhenItStartsAndEnds() async throws {
-        let keyboard = module()
-        keyboard.apply(settings("[settings]\nhyper_key = \"caps_lock\"\n"))
-        try await keyboard.start()
-        keyboardState.secureInput = .on(app: "Terminal")
-        keyboard.check()
-        keyboard.check()
-        keyboardState.secureInput = .off
-        keyboard.check()
-        let blocked = Message.keysBlocked(.secureInput(in: "Terminal"))
-        #expect(logWriter.entries.map(\.text).suffix(2) == [blocked.text, Message.keysReachMalumAgain.text])
-        #expect(logWriter.entries.filter { $0.text == blocked.text }.count == 1)
-    }
-
-    @Test func tapSwitchOffsAreLoggedOnceAtTheNextCheck() async throws {
-        let keyboard = module()
-        keyboard.apply(settings("[settings]\nhyper_key = \"caps_lock\"\n"))
-        try await keyboard.start()
-        let session = try #require(catcher.session)
-        _ = session.decide(.switchedOff)
-        _ = session.decide(.switchedOff)
-        keyboard.check()
-        keyboard.check()
-        let switchedOff = Message.tapSwitchedOffByMacOS(times: 2).text
-        #expect(logWriter.entries.filter { $0.text == switchedOff }.count == 1)
-        #expect(!logWriter.entries.contains { $0.text == Message.tapSwitchedOffByMacOS(times: 0).text })
     }
 
     @Test func modifierKeysSwapOfTheHyperKeyWarns() async throws {
