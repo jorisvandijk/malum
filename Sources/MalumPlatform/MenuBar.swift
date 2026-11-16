@@ -95,8 +95,7 @@ public final class MenuBar: NSObject {
         case .showFolder(let path):
             NSWorkspace.shared.open(URL(fileURLWithPath: path, isDirectory: true))
         case .openSettings(let permission):
-            PermissionProbe.request(permission)
-            PrivacySettings.open(permission)
+            PrivacySettings.grant(permission)
         case .about:
             about.present()
         case .run, .runAction, .showLog, .reload, .leaveSafeMode, .enable, .quit:

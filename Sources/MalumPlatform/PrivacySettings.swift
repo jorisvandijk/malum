@@ -14,6 +14,14 @@ public enum PrivacySettings {
         return NSWorkspace.shared.open(url)
     }
 
+    /// Lists Malum under `permission` when macOS lets an app ask, then opens its page, so the user
+    /// only has to switch Malum on.
+    @MainActor
+    public static func grant(_ permission: Permission) {
+        PermissionProbe.request(permission)
+        open(permission)
+    }
+
     /// The name System Settings gives the page for `permission`.
     private static func page(for permission: Permission) -> String {
         switch permission {

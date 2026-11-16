@@ -19,7 +19,7 @@ extension Invocation {
           reload       ask the running app to reload
           safe         keep every module off until you leave safe mode from the menu bar
           disable      keep one module off until you enable it from the menu bar
-          permissions  check that this terminal has Full Disk Access
+          permissions  check this terminal's Full Disk Access, then grant what modules wait for
           run          make the Mac match dots, then update \(Project.name) to its latest release
                        (--force installs it even when it's older)
           rollback     put back the version of \(Project.name) the last update replaced

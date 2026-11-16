@@ -12,7 +12,8 @@ public enum Invocation: Equatable, Sendable {
     case safe
     /// Keep a module off, by its id.
     case disable(module: String)
-    /// Check that the terminal has the permissions Malum needs in it.
+    /// Check that the terminal has the permissions Malum needs in it, and have the app open each
+    /// permission its modules wait for.
     case permissions
     /// Make the Mac match dots and update Malum, installing an older release too when `force` is set.
     case run(force: Bool)
