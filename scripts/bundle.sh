@@ -30,6 +30,21 @@ executable="$name"
 web_app="${name}WebApp"
 app="$output/$name.app"
 
+# rcodesign signs Malum with its own key file, so Malum never needs the keychain. A pinned
+# release, checked against its SHA-256, goes in Contents/Helpers with its licence.
+rcodesign_version="0.29.0"
+rcodesign_sha256="d98372d5524226ccf9dc0eda03d4e4f5826182dabb2fc3f2bd303ed9113a748d"
+rcodesign_name="apple-codesign-$rcodesign_version-macos-universal"
+rcodesign_url="https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign%2F$rcodesign_version/$rcodesign_name.tar.gz"
+downloads="$output/downloads"
+rcodesign_archive="$downloads/$rcodesign_name.tar.gz"
+mkdir -p "$downloads"
+if ! printf '%s  %s\n' "$rcodesign_sha256" "$rcodesign_archive" | shasum -a 256 -c -s 2>/dev/null; then
+    curl -fsSL -o "$rcodesign_archive" "$rcodesign_url"
+    printf '%s  %s\n' "$rcodesign_sha256" "$rcodesign_archive" | shasum -a 256 -c -s
+fi
+tar -xzf "$rcodesign_archive" -C "$downloads"
+
 swift build -c release --arch arm64 --product "$executable"
 swift build -c release --arch arm64 --product "$web_app"
 bin="$(swift build -c release --arch arm64 --show-bin-path)"
@@ -40,6 +55,10 @@ cp "$bin/$executable" "$app/Contents/MacOS/$executable"
 # The web app every site in webapps.toml becomes a copy of. Nested code is signed before the app.
 cp "$bin/$web_app" "$app/Contents/Helpers/$web_app"
 codesign --force --sign - "$app/Contents/Helpers/$web_app"
+cp "$downloads/$rcodesign_name/rcodesign" "$app/Contents/Helpers/rcodesign"
+# Its release signature doesn't pass codesign's strict check as nested code, so it's signed again here.
+codesign --force --sign - "$app/Contents/Helpers/rcodesign"
+cp "$downloads/$rcodesign_name/COPYING" "$app/Contents/Resources/rcodesign-COPYING"
 cp Resources/Bundle/* "$app/Contents/Resources/"
 
 plist="$app/Contents/Info.plist"

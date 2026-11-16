@@ -31,3 +31,5 @@ jobs:
           executable="$(plutil -extract CFBundleExecutable raw "$app/Contents/Info.plist")"
           codesign --verify --strict --verbose=2 "$app"
           "$app/Contents/MacOS/$executable" --version
+      - name: Check signing with a key file
+        run: scripts/check-signing.sh
