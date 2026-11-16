@@ -51,8 +51,10 @@ extension TokenStoreError: ReportableError {
     /// The problem as the user sees it.
     public var text: MessageText {
         switch self {
-        case .keychain(let status, let reason):
-            "the login keychain answered \(reason ?? "error \(status)")"
+        case .keychain(let reason):
+            "the login keychain answered \(reason)"
+        case .unsaved:
+            "the login keychain didn't keep it"
         }
     }
 }

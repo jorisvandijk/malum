@@ -41,7 +41,7 @@ Password for joris@nas.local:
 [info] saved the password for joris@nas.local in the login keychain
 ```
 
-Running it again replaces the password. Malum uses the new one the next time it looks at the shares: on the next network change, the next change to `samba.toml`, or within five minutes. It's kept as a generic password called `com.jorisvandijk.malum.samba` with the account `joris@nas.local`, so **Keychain Access** shows it too.
+Running it again replaces the password. Malum uses the new one the next time it looks at the shares: on the next network change, the next change to `samba.toml`, or within five minutes. It's kept as a generic password called `com.jorisvandijk.malum.samba-password` with the account `joris@nas.local`, so **Keychain Access** shows it too. Malum keeps and reads it through macOS's `security` tool, so the keychain never asks, not even after an update. A password saved by Malum 0.11 or older is called `com.jorisvandijk.malum.samba` and isn't used anymore: run `malum samba password <server>` once more, then delete the old one in **Keychain Access**.
 
 ## Mounting
 
@@ -53,7 +53,7 @@ When the module starts, on every network change and every five minutes, Malum lo
 
 Stopping the module, or quitting Malum, leaves mounted shares as they are.
 
-The first time Malum mounts a share, macOS asks whether Malum may use network volumes; choose **Allow**. When Malum first reads a password it didn't save itself, macOS may ask too; choose **Always Allow**.
+The first time Malum mounts a share, macOS asks whether Malum may use network volumes; choose **Allow**.
 
 A share that can't be mounted shows in the menu bar's menu, with what's wrong:
 

@@ -20,7 +20,7 @@ public struct TokenCommand: Sendable {
         guard !token.isEmpty else { return .noTokenEntered }
         do {
             try await github.check(token, canRead: Project.repository)
-            try store.save(token)
+            try await store.save(token)
         } catch {
             return .failed(.saveToken, error)
         }
@@ -28,9 +28,9 @@ public struct TokenCommand: Sendable {
     }
 
     /// Removes the stored token.
-    public func remove() -> Message {
+    public func remove() async -> Message {
         do {
-            guard try store.remove() else { return .noTokenStored }
+            guard try await store.remove() else { return .noTokenStored }
         } catch {
             return .failed(.removeToken, error)
         }
@@ -38,9 +38,9 @@ public struct TokenCommand: Sendable {
     }
 
     /// Whether a token is stored, as `malum status` shows it.
-    public func status() -> Message {
+    public func status() async -> Message {
         do {
-            return .tokenStatus(stored: try store.isStored())
+            return .tokenStatus(stored: try await store.isStored())
         } catch {
             return .tokenUnreadable(error)
         }

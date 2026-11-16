@@ -16,21 +16,21 @@ final class FakeTokenStore: TokenStore {
 
     var current: String? { stored.withLock { $0 } }
 
-    func token() throws(TokenStoreError) -> String? {
+    func token() async throws(TokenStoreError) -> String? {
         if let failure { throw failure }
         return current
     }
 
-    func isStored() throws(TokenStoreError) -> Bool {
-        try token() != nil
+    func isStored() async throws(TokenStoreError) -> Bool {
+        try await token() != nil
     }
 
-    func save(_ token: String) throws(TokenStoreError) {
+    func save(_ token: String) async throws(TokenStoreError) {
         if let failure { throw failure }
         stored.withLock { $0 = token }
     }
 
-    func remove() throws(TokenStoreError) -> Bool {
+    func remove() async throws(TokenStoreError) -> Bool {
         if let failure { throw failure }
         return stored.withLock { old in
             defer { old = nil }

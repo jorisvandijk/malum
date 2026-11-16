@@ -39,10 +39,10 @@ public struct SambaPasswordCommand {
 
     /// Stores `entered` as `server`'s password, replacing the one before. Nothing is stored when
     /// it's empty.
-    public func save(_ entered: String?, for server: SambaServer) -> Message {
+    public func save(_ entered: String?, for server: SambaServer) async -> Message {
         guard let password = entered, !password.isEmpty else { return .noPasswordEntered }
         do {
-            try store(server).save(password)
+            try await store(server).save(password)
         } catch {
             return .failed(.savePassword(server.account), error)
         }

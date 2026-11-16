@@ -17,7 +17,7 @@ let state = StateFolder(files: files, locks: locks, paths: paths)
 /// Runs the outside tools.
 let runner = ProcessRunner(home: paths.home)
 /// The GitHub token, in the login keychain.
-let tokens = KeychainTokenStore()
+let tokens = SecurityTokenStore(runner: runner)
 /// Malum's executable inside Malum.app, or nil when it runs from elsewhere, such as a build folder.
 let executable = Bundle.main.executableURL.flatMap { AppBundle.executable(at: $0.resolvingSymlinksInPath().path) }
 
@@ -90,7 +90,7 @@ func applySystemConfig(force: Bool) -> Never {
         let canAsk = isatty(STDIN_FILENO) == 1
         await SigningKeyAccess(runner: runner, state: state, paths: paths, certificate: signingCertificate())
             .allow(canAsk: canAsk) { issues.add($0) }
-        let github = gitHub()
+        let github = await gitHub()
         let applied = await systemConfig(canAsk: canAsk, github: github).run { issues.add($0) }
         let updated = await selfUpdate(github: github).run(force: force) { issues.add($0) }
         issues.finish()
@@ -111,9 +111,9 @@ func systemConfig(canAsk: Bool, github: GitHubAPI) -> RunCommand {
 /// GitHub, with the token from the keychain when one is stored. A token that can't be read is
 /// reported, and GitHub is asked without it.
 @MainActor
-func gitHub() -> GitHubAPI {
+func gitHub() async -> GitHubAPI {
     do {
-        return GitHubAPI(token: try tokens.token())
+        return GitHubAPI(token: try await tokens.token())
     } catch {
         announce(.tokenUnreadable(error))
         return GitHubAPI(token: nil)
@@ -132,15 +132,10 @@ func tokenCommand() -> TokenCommand {
 func keepToken(remove: Bool) -> Never {
     let command = tokenCommand()
     guard !remove else {
-        finish([command.remove()])
-        exit(EXIT_SUCCESS)
+        reporting { await command.remove() }
     }
     let entered = terminal.readSecret(prompt: TokenCommand.prompt)
-    finishing {
-        let message = await command.save(entered)
-        terminal.report(message)
-        return message.level != .error
-    }
+    reporting { await command.save(entered) }
 }
 
 /// Runs `malum token`, or `malum samba password` when `invocation` is that.
@@ -155,11 +150,11 @@ func keepSecret(_ invocation: Invocation) -> Never {
 @MainActor
 func keepSambaPassword(server name: String) -> Never {
     let command = SambaPasswordCommand(files: files, paths: paths) {
-        KeychainTokenStore(service: Project.sambaService, account: $0.account)
+        SecurityTokenStore(runner: runner, service: Project.sambaService, account: $0.account)
     }
     guard let server = command.server(named: name, report: terminal.report) else { exit(EXIT_FAILURE) }
-    finish([command.save(terminal.readSecret(prompt: SambaPasswordCommand.prompt(for: server)), for: server)])
-    exit(EXIT_SUCCESS)
+    let entered = terminal.readSecret(prompt: SambaPasswordCommand.prompt(for: server))
+    reporting { await command.save(entered, for: server) }
 }
 
 /// Malum's own signing certificate, in the login keychain.
@@ -178,10 +173,10 @@ func selfUpdate(github: any GitHub) -> SelfUpdate {
 /// Runs `malum status`, which only reports to the terminal, and exits once it's done.
 @MainActor
 func showStatus() -> Never {
-    terminal.report(tokenCommand().status())
-    ModuleOverview(files: files, paths: paths, state: state).report { terminal.report($0) }
     finishing {
-        await StatusCommand(files: files, paths: paths, runner: runner, state: state).run { terminal.report($0) }
+        terminal.report(await tokenCommand().status())
+        ModuleOverview(files: files, paths: paths, state: state).report { terminal.report($0) }
+        return await StatusCommand(files: files, paths: paths, runner: runner, state: state).run { terminal.report($0) }
     }
 }
 
@@ -209,6 +204,16 @@ func finishing(_ work: @escaping @MainActor () async -> Bool) -> Never {
         exit(succeeded ? EXIT_SUCCESS : EXIT_FAILURE)
     }
     dispatchMain()
+}
+
+/// Runs `work`, shows the one message it gives, and exits, with an error when the message is one.
+@MainActor
+func reporting(_ work: @escaping @MainActor () async -> Message) -> Never {
+    finishing {
+        let message = await work()
+        terminal.report(message)
+        return message.level != .error
+    }
 }
 
 /// Says what's wrong with the arguments, shows how to use the command, and exits with an error.

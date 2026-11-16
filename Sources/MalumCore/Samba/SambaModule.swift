@@ -168,7 +168,7 @@ final class SambaModule: Module {
     private func mount(_ share: String, from server: SambaServer, at volume: String) async -> ShareState {
         let password: String?
         do {
-            password = try system.passwords(server).token()
+            password = try await system.passwords(server).token()
         } catch {
             return .unreadablePassword(error)
         }
