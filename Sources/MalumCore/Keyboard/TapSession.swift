@@ -14,6 +14,8 @@ public final class TapSession: Sendable {
     /// What is held down, shared by the tap's thread and whoever ends the session. Nil once the
     /// session has ended.
     private let keyTap: Mutex<KeyTap?>
+    /// How often macOS switched the tap off since `takeSwitchOffs` last asked.
+    private let switchOffs = Atomic<Int>(0)
 
     /// Starts with nothing held, sending shortcuts to `registry`, with `hyperKey` from `keyboard.toml`.
     init(registry: HotkeyRegistry, hyperKey: Key?) {
@@ -25,11 +27,19 @@ public final class TapSession: Sendable {
     /// ended, every event passes, so a callback that was already running holds nothing down that
     /// no one lets go of.
     public func decide(_ event: TapEvent) -> TapDecision {
+        if event == .switchedOff {
+            switchOffs.add(1, ordering: .relaxed)
+        }
         let decision = keyTap.withLock { $0?.decide(event) ?? .pass }
         if case .run(let target) = decision {
             continuation.yield(target)
         }
         return decision
+    }
+
+    /// How often macOS switched the tap off since the last time this was asked.
+    func takeSwitchOffs() -> Int {
+        switchOffs.exchange(0, ordering: .relaxed)
     }
 
     /// Lets go of whatever the tap held and finishes `actions`. The decision says whether the app
