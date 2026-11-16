@@ -176,7 +176,7 @@ func showStatus() -> Never {
     finishing {
         terminal.report(await tokenCommand().status())
         ModuleOverview(files: files, paths: paths, state: state).report { terminal.report($0) }
-        await StatusCommand(files: files, paths: paths, runner: runner, state: state).run { terminal.report($0) }
+        return await StatusCommand(files: files, paths: paths, runner: runner, state: state).run { terminal.report($0) }
     }
 }
 
@@ -207,6 +207,7 @@ func finishing(_ work: @escaping @MainActor () async -> Bool) -> Never {
 }
 
 /// Runs `work`, shows the one message it gives, and exits, with an error when the message is one.
+@MainActor
 func reporting(_ work: @escaping @MainActor () async -> Message) -> Never {
     finishing {
         let message = await work()
