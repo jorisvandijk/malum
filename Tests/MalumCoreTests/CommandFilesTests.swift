@@ -71,6 +71,15 @@ struct CommandFilesTests {
                     ["import", "/t/id.p12", "-k", "/k", "-f", "pkcs12", "-P", "pw", "-T", "/usr/bin/codesign"]))
     }
 
+    @Test func securityLetsAppleToolsUseTheKeyOnTheTerminal() {
+        #expect(
+            Security.allowAppleTools(key: "Key", keychain: "/k")
+                == Command(
+                    "/usr/bin/security",
+                    ["set-key-partition-list", "-S", "apple-tool:,apple:", "-s", "-l", "Key", "/k"],
+                    timeoutSeconds: 300, onTerminal: true))
+    }
+
     @Test func identityIsFoundByName() {
         let output = """
             Policy: Code Signing

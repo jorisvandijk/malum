@@ -19,7 +19,17 @@ When any step fails, the app that was there stays, and the reason shows in the m
 
 ### The keychain dialog
 
-The first time Malum signs itself with a new certificate, macOS asks whether `codesign` may use the key in your login keychain. Type your Mac's login password and click **Always Allow**. From then on, Malum signs every update without asking.
+The first time Malum signs itself with a new certificate, macOS asks whether `codesign` may use the key in your login keychain. Type your Mac's login password and click **Always Allow**.
+
+That answer doesn't always stick, so the next `malum run` in a terminal settles it for good. It asks for your login password once more:
+
+```
+[info] asking for your login password once, so codesign can use the "Malum code signing" key without asking again
+password to unlock /Users/you/Library/Keychains/login.keychain-db:
+[info] codesign uses the "Malum code signing" key without asking from now on
+```
+
+From then on, Malum signs every update and every web app without asking. A new certificate asks once more. When `malum run` runs without a terminal, it skips this step and warns.
 
 - **Allow** works for this one signing only, so the dialog comes back with the next update.
 - **Deny**, or leaving the dialog for 5 minutes, makes signing fail. The app stays as it was, the modules stay off, and the next start asks again.
