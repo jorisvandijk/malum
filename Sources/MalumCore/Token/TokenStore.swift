@@ -1,5 +1,5 @@
 /// Where Malum keeps a secret, such as the GitHub token, behind a protocol so tests never touch the
-/// keychain.
+/// disk.
 public protocol TokenStore: Sendable {
     /// The stored token, or nil when there's none.
     func token() async throws(TokenStoreError) -> String?

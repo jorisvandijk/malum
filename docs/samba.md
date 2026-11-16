@@ -28,7 +28,7 @@ The servers can also go in a `[[samba.server]]` table in `malum.toml`, but not i
 
 ## Passwords
 
-A server's password lives in your login keychain and nowhere else: not in dots and not in your shell's history. Store it with the server's name:
+A server's password lives in `~/.config/malum/secrets/samba/<user>@<host>`, a file only you can read, and nowhere else: not in dots and not in your shell's history. Store it with the server's name:
 
 ```sh
 malum samba password nas
@@ -38,10 +38,10 @@ Malum asks for the password and hides what you type:
 
 ```
 Password for joris@nas.local:
-[info] saved the password for joris@nas.local in the login keychain
+[info] saved the password for joris@nas.local in Malum's secrets
 ```
 
-Running it again replaces the password. Malum uses the new one the next time it looks at the shares: on the next network change, the next change to `samba.toml`, or within five minutes. It's kept as a generic password called `com.jorisvandijk.malum.samba-password` with the account `joris@nas.local`, so **Keychain Access** shows it too. Malum keeps and reads it through macOS's `security` tool, so the keychain never asks, not even after an update. A password saved by Malum 0.11 or older is called `com.jorisvandijk.malum.samba` and isn't used anymore: run `malum samba password <server>` once more, then delete the old one in **Keychain Access**.
+Running it again replaces the password. Malum uses the new one the next time it looks at the shares: on the next network change, the next change to `samba.toml`, or within five minutes. Malum doesn't use the keychain, so nothing ever asks for your password to read it. A password saved by Malum 0.12 or older is in the login keychain (`com.jorisvandijk.malum.samba` or `.samba-password`) and isn't used anymore: run `malum samba password <server>` once more, then delete the old one in **Keychain Access**.
 
 ## Mounting
 

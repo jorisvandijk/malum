@@ -9,6 +9,6 @@ public struct SambaServer: Equatable, Sendable {
     /// The shares to mount under `/Volumes`.
     public let shares: [String]
 
-    /// Who logs in where, as the keychain item's account: `user@host`.
+    /// Who logs in where, as the secret's account: `user@host`.
     public var account: String { "\(user)@\(host)" }
 }

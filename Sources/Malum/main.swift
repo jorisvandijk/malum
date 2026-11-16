@@ -16,8 +16,8 @@ let paths = Paths(home: FileManager.default.homeDirectoryForCurrentUser.path)
 let state = StateFolder(files: files, locks: locks, paths: paths)
 /// Runs the outside tools.
 let runner = ProcessRunner(home: paths.home)
-/// The GitHub token, in the login keychain.
-let tokens = SecurityTokenStore(runner: runner)
+/// The GitHub token, in the secrets folder.
+let tokens = FileTokenStore(files: files, paths: paths)
 /// Malum's executable inside Malum.app, or nil when it runs from elsewhere, such as a build folder.
 let executable = Bundle.main.executableURL.flatMap { AppBundle.executable(at: $0.resolvingSymlinksInPath().path) }
 
@@ -151,7 +151,7 @@ func keepSecret(_ invocation: Invocation) -> Never {
 @MainActor
 func keepSambaPassword(server name: String) -> Never {
     let command = SambaPasswordCommand(files: files, paths: paths) {
-        SecurityTokenStore(runner: runner, service: Project.sambaService, account: $0.account)
+        FileTokenStore(files: files, paths: paths, service: Project.sambaService, account: $0.account)
     }
     guard let server = command.server(named: name, report: terminal.report) else { exit(EXIT_FAILURE) }
     let entered = terminal.readSecret(prompt: SambaPasswordCommand.prompt(for: server))

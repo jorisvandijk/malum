@@ -82,7 +82,7 @@ func makeModules(routes: ModuleRoutes, popup: PopupCenter) -> [any Module] {
             files: files, paths: paths, state: state, apps: apps, folders: FolderWatcher(), popup: popup),
         clipboard: ClipboardSystem(files: files, state: state, clipboard: PasteboardClipboard(), popup: popup),
         samba: SambaSystem(shares: SambaVolumes(), network: NetworkWatcher(), runner: runner, files: files) {
-            SecurityTokenStore(runner: runner, service: Project.sambaService, account: $0.account)
+            FileTokenStore(files: files, paths: paths, service: Project.sambaService, account: $0.account)
         },
         screenshots: ScreenshotsSystem(
             files: files, paths: paths, capture: ScreenFreezer(), overlay: FullScreenOverlay(),

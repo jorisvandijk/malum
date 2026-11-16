@@ -1,6 +1,6 @@
 # GitHub token
 
-Malum's repository is private, so Malum needs a token to see its own releases. The token lives in your login keychain and nowhere else: not in dots, not in a file and not in your shell's history.
+Malum's repository is private, so Malum needs a token to see its own releases. The token lives in `~/.config/malum/secrets/github/malum`, a file only you can read, and nowhere else: not in dots and not in your shell's history.
 
 ## Make the token
 
@@ -22,7 +22,7 @@ Malum asks for the token and hides what you type, the way `sudo` hides a passwor
 
 ```
 GitHub token:
-[info] saved the GitHub token in the login keychain
+[info] saved the GitHub token in Malum's secrets
 ```
 
 The token isn't an argument, so it never shows up in your history or in the list of running processes. Piping it in works too, for example straight from the clipboard:
@@ -37,9 +37,9 @@ Before it stores the token, Malum asks GitHub whether the token can read its rep
 [error] couldn't save the GitHub token: GitHub refused the token, run malum token with a new one
 ```
 
-Running `malum token` again replaces the stored token. It's kept as a generic password called `com.jorisvandijk.malum.github-token` in the login keychain, so **Keychain Access** shows it too. Malum keeps and reads it through macOS's `security` tool, so the keychain never asks, not even after an update.
+Running `malum token` again replaces the stored token. Malum doesn't use the keychain, so nothing ever asks for your password to read the token, not even after an update. The secrets folder and its files can only be opened by you, though any app you run can read them, as it could read most of your home folder.
 
-A token saved by Malum 0.11 or older is called `com.jorisvandijk.malum.github` and isn't used anymore: run `malum token` once more, then delete the old one in **Keychain Access**.
+A token saved by Malum 0.12 or older is in the login keychain (`com.jorisvandijk.malum.github` or `.github-token`) and isn't used anymore: run `malum token` once more, then delete the old one in **Keychain Access**.
 
 ## Use
 
@@ -54,7 +54,7 @@ When GitHub refuses the stored token, for example because it was deleted on GitH
 `malum status` says whether a token is stored, never the token itself:
 
 ```
-[info] GitHub token: stored in the login keychain
+[info] GitHub token: stored in Malum's secrets
 ```
 
 ## Remove it
@@ -64,5 +64,5 @@ malum token --remove
 ```
 
 ```
-[info] removed the GitHub token from the login keychain
+[info] removed the GitHub token from Malum's secrets
 ```

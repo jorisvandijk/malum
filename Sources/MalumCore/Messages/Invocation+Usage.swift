@@ -24,9 +24,9 @@ extension Invocation {
                        (--force installs it even when it's older)
           rollback     put back the version of \(Project.name) the last update replaced
           status       show what \(Project.name) manages and what doesn't match dots
-          token        ask for the GitHub token and keep it in the login keychain
+          token        ask for the GitHub token and keep it in \(Project.name)'s secrets
                        (--remove deletes it)
-          samba        password <server> asks for a Samba server's password and keeps it in the login keychain
+          samba        password <server> asks for a Samba server's password and keeps it with the token
           log          show \(Project.name)'s log as it comes in
                        (--last 1h shows the last hour instead: s, m, h or d)
           --version    show the version

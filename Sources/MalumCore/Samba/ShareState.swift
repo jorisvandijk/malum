@@ -6,11 +6,11 @@ enum ShareState: Equatable, Sendable {
     case unmounted(path: String)
     /// Not mounted, because its server doesn't answer, such as away from home.
     case unreachable
-    /// Not mounted, because the login keychain has no password for it.
+    /// Not mounted, because there is no password kept for it.
     case noPassword
     /// Not mounted, because something else is at `path`.
     case taken(path: String)
-    /// The password couldn't be read from the keychain.
+    /// The password couldn't be read.
     case unreadablePassword(TokenStoreError)
     /// macOS didn't mount it.
     case failed(SambaMountError)
