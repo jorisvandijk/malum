@@ -23,8 +23,12 @@ public struct Paths: Equatable, Sendable {
     private static let applicationsRoot = "Applications"
     /// The folder of the user's login agents, relative to home.
     private static let launchAgentsRoot = "Library/LaunchAgents"
-    /// The user's login keychain, relative to home.
-    private static let loginKeychainPath = "Library/Keychains/login.keychain-db"
+    /// The file in the config folder that holds Malum's signing key and certificate.
+    private static let signingKeyName = "signing.pem"
+    /// The file in the config folder that holds the compiled designated requirement.
+    private static let signingRequirementName = "signing.req"
+    /// The tool in the app bundle's helpers that signs with the key file.
+    private static let signingToolName = "rcodesign"
     /// The folder inside an app bundle that holds its executable.
     private static let executableFolder = "Contents/MacOS"
     /// An app bundle's `Info.plist`.
@@ -81,8 +85,12 @@ public struct Paths: Equatable, Sendable {
     static func executableFolder(of bundle: String) -> String { "\(bundle)/\(executableFolder)" }
     /// `bundle`'s `Contents/Resources`, where its icon goes.
     static func resources(of bundle: String) -> String { "\(bundle)/\(resourcesFolder)" }
-    /// `~/Library/Keychains/login.keychain-db`, where Malum's signing certificate goes.
-    public var loginKeychain: String { "\(home)/\(Self.loginKeychainPath)" }
+    /// `~/.config/malum/signing.pem`, Malum's signing key and certificate, readable only by the user.
+    public var signingKey: String { "\(configDirectory)/\(Self.signingKeyName)" }
+    /// `~/.config/malum/signing.req`, the designated requirement every signature carries.
+    public var signingRequirement: String { "\(configDirectory)/\(Self.signingRequirementName)" }
+    /// The installed app's `rcodesign`, which signs with the key file instead of the keychain.
+    public var signingTool: String { "\(installedBundle)/\(Self.helpersFolder)/\(Self.signingToolName)" }
     /// `~/Library/LaunchAgents`, where the login agent goes.
     public var launchAgentsDirectory: String { "\(home)/\(Self.launchAgentsRoot)" }
     /// `~/Library/LaunchAgents/<bundle ID>.plist`, the agent that starts Malum at login.

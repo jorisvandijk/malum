@@ -16,7 +16,7 @@ public enum UpdateError: Error, Equatable, Sendable {
     case otherApp(bundleID: String?)
     /// The downloaded app says it's another version than its tag.
     case wrongVersion(expected: String, found: String)
-    /// The login keychain doesn't have Malum's certificate.
+    /// There's no signing certificate yet.
     case noCertificate
     /// No previous version is kept to roll back to.
     case nothingKept

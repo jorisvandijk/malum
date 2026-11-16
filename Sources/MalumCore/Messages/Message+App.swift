@@ -31,38 +31,6 @@ extension Message {
         Message(.info, "signed \(Project.name) with the \"\(SigningCertificate.name)\" certificate, restarting")
     }
 
-    /// The terminal is about to ask for the login password, so codesign can use the signing key.
-    static var askingForLoginPassword: Message {
-        Message(.info, "asking for your login password once, so codesign can use \(signingKey) without asking again")
-    }
-
-    /// codesign may use the signing key without asking from now on.
-    static var signingKeyAllowed: Message {
-        Message(.info, "codesign uses \(signingKey) without asking from now on")
-    }
-
-    /// The signing key still asks, because there's no terminal for the login password.
-    static var signingKeyNeedsTerminal: Message {
-        couldnt(
-            allowSigningKey, "it needs your login password, so run \(Project.command) run from a terminal", level: .warn
-        )
-    }
-
-    /// The signing key still asks, because `security` failed for `reason`.
-    static func signingKeyStillAsks(reason: String) -> Message {
-        couldnt(allowSigningKey, "\(reason)", level: .warn)
-    }
-
-    /// What letting codesign use the key is called in a failure.
-    private static var allowSigningKey: MessageText {
-        "let codesign use \(signingKey) without asking"
-    }
-
-    /// The signing key, by its certificate's name.
-    private static var signingKey: MessageText {
-        "the \"\(SigningCertificate.name)\" key"
-    }
-
     /// The modules stay off, because the app doesn't run from `installed`.
     public static func modulesOff(installed: String) -> Message {
         Message(.warn, "modules stay off: \(Project.name) isn't running from \(private: installed)")
@@ -109,7 +77,7 @@ extension SigningError: ReportableError {
         case .uncreatable(let step, let reason):
             .couldnt("\(step) for \(certificate)", "\(reason)")
         case .unlisted:
-            "added \(certificate) to the login keychain, but codesign doesn't list it"
+            "made \(certificate), but openssl can't read it back"
         case .files(let error):
             error.text
         case .unsigned(let reason):
@@ -125,8 +93,6 @@ extension SigningError: ReportableError {
 extension SigningCertificate {
     /// The step that makes the key and the certificate.
     static let makeStep = "make the certificate"
-    /// The step that bundles them into one file.
-    static let bundleStep = "bundle it"
-    /// The step that adds the bundle to the login keychain.
-    static let keychainStep = "add it to the login keychain"
+    /// The step that compiles the designated requirement.
+    static let requirementStep = "make the signing requirement"
 }

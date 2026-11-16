@@ -31,9 +31,10 @@ extension Message {
         couldnt(.makeWebApps, "\(private: path) is missing, install \(Project.name) from a release")
     }
 
-    /// The keychain has no signing certificate for the web apps.
+    /// There's no signing certificate for the web apps yet.
     static let noCertificateForWebApps = couldnt(
-        .makeWebApps, "the login keychain doesn't have the \"\(SigningCertificate.name)\" certificate")
+        .makeWebApps, "there's no \"\(SigningCertificate.name)\" certificate yet, start \(Project.name) once to make it"
+    )
 }
 
 // MARK: - ReportableError

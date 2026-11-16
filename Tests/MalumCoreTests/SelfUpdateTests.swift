@@ -6,7 +6,7 @@ import Testing
 @MainActor
 struct SelfUpdateTests {
     private let paths = Paths(home: "/Users/test")
-    private let listed = "  1) \(SigningCertificateTests.hash) \"Malum code signing\"\n"
+    private let fingerprint = SigningCertificateTests.fingerprint
     private let zip = "Malum-macos-arm64.zip"
 
     private var installedInfo: String { "\(paths.installedBundle)/Contents/Info.plist" }
@@ -17,7 +17,9 @@ struct SelfUpdateTests {
     private func disk(installed version: String = "0.2.0", kept: String? = nil) -> FakeFileSystem {
         var texts = [installedInfo: AppBundleTests.info(version: version)]
         if let kept { texts[keptInfo] = AppBundleTests.info(version: kept) }
-        return FakeFileSystem(texts: texts)
+        let files = FakeFileSystem(texts: texts)
+        SigningCertificateTests.keep(in: files)
+        return files
     }
 
     /// GitHub whose latest release of Malum is `tag`, with a checksum file that says `sum`.
@@ -39,7 +41,7 @@ struct SelfUpdateTests {
         _ files: FakeFileSystem, version: String = "0.3.0", bundleID: String = Project.bundleID,
         says: String = "0.3.0"
     ) -> FakeRunner {
-        let listed = listed
+        let fingerprint = fingerprint
         return FakeRunner { command in
             switch command.executable {
             case Shasum.path:
@@ -51,7 +53,7 @@ struct SelfUpdateTests {
             case let path where path.hasSuffix("/Contents/MacOS/Malum"):
                 return CommandResult(status: 0, output: "\(says)\n")
             default:
-                return CommandResult(status: 0, output: listed)
+                return CommandResult(status: 0, output: fingerprint)
             }
         }
     }
@@ -131,10 +133,10 @@ struct SelfUpdateTests {
         let app = "\(scratch)/unpacked/Malum.app"
         #expect(
             runner.commands.map(\.executable) == [
-                Shasum.path, Ditto.path, "/usr/bin/security", Codesign.path, Codesign.path,
+                Shasum.path, Ditto.path, "/usr/bin/openssl", paths.signingTool, "/usr/bin/codesign",
                 "\(app)/Contents/MacOS/Malum", "/bin/launchctl", "/bin/launchctl",
             ])
-        #expect(runner.commands.first { $0.arguments.first == "--force" }?.arguments.last == "\(app).staged")
+        #expect(runner.commands.first { $0.arguments.first == "sign" }?.arguments.last == "\(app).staged")
     }
 
     @Test func forceInstallsAnOlderRelease() async {

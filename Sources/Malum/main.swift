@@ -89,8 +89,6 @@ func applySystemConfig(force: Bool) -> Never {
     finishing {
         let issues = IssueList { announce($0) }
         let canAsk = isatty(STDIN_FILENO) == 1
-        await SigningKeyAccess(runner: runner, state: state, paths: paths, certificate: signingCertificate())
-            .allow(canAsk: canAsk) { issues.add($0) }
         let github = await gitHub()
         let applied = await systemConfig(canAsk: canAsk, github: github).run { issues.add($0) }
         let updated = await selfUpdate(github: github).run(force: force) { issues.add($0) }
@@ -158,7 +156,7 @@ func keepSambaPassword(server name: String) -> Never {
     reporting { await command.save(entered, for: server) }
 }
 
-/// Malum's own signing certificate, in the login keychain.
+/// Malum's own signing certificate, in its key file.
 func signingCertificate() -> SigningCertificate {
     SigningCertificate(runner: runner, files: files, paths: paths, temporaryDirectory: NSTemporaryDirectory())
 }

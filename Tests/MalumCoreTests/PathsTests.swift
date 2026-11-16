@@ -28,7 +28,9 @@ struct PathsTests {
 
     @Test func installedBundleAndKeychainAreInHome() {
         #expect(paths.installedBundle == "/Users/test/Applications/Malum.app")
-        #expect(paths.loginKeychain == "/Users/test/Library/Keychains/login.keychain-db")
+        #expect(paths.signingKey == "/Users/test/.config/malum/signing.pem")
+        #expect(paths.signingRequirement == "/Users/test/.config/malum/signing.req")
+        #expect(paths.signingTool == "/Users/test/Applications/Malum.app/Contents/Helpers/rcodesign")
     }
 
     @Test func loginAgentIsNamedAfterBundleID() {

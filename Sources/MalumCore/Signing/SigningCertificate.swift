@@ -1,24 +1,24 @@
 import Foundation
 
-/// Malum's own code signing certificate, in the login keychain.
+/// Malum's own code signing certificate and key, in a file only the user can read.
 ///
 /// macOS ties each permission it grants to the app's signature. Releases are signed ad hoc, which
 /// gives every build a new one, so Malum signs itself with a certificate of its own that stays the
-/// same for good.
+/// same for good. The key lives in a file, not the keychain, so signing never asks for anything.
 public struct SigningCertificate: Sendable {
-    /// The certificate's name in the keychain.
+    /// The certificate's name.
     public static let name = "\(Project.name) code signing"
 
-    /// Runs `security` and `openssl`.
+    /// Runs `openssl` and `csreq`.
     private let runner: any CommandRunner
-    /// Where the files that make the certificate are written for a moment.
+    /// Holds the key file and the files that make it.
     private let files: any FileSystem
-    /// Where Malum's own files go, including the login keychain.
+    /// Where the key file and the requirement go.
     private let paths: Paths
-    /// A folder only the user can read, for the key on its way into the keychain.
+    /// A folder only the user can read, for the key while it's made.
     private let temporaryDirectory: String
 
-    /// Creates access to the certificate. The key is written to `temporaryDirectory` for a moment.
+    /// Creates access to the certificate. The key is made in `temporaryDirectory`.
     public init(runner: any CommandRunner, files: any FileSystem, paths: Paths, temporaryDirectory: String) {
         self.runner = runner
         self.files = files
@@ -26,53 +26,55 @@ public struct SigningCertificate: Sendable {
         self.temporaryDirectory = temporaryDirectory
     }
 
-    /// The certificate's SHA-1, or nil when the keychain doesn't have it.
-    public func find() async -> String? {
-        let result = await runner.run(Security.findIdentities())
-        guard result.succeeded else { return nil }
-        return Security.identity(named: Self.name, in: result.output)
+    /// The identity in the key file, or nil when there's no key file or requirement yet.
+    public func find() async -> SigningIdentity? {
+        guard files.item(at: paths.signingKey) != nil, files.item(at: paths.signingRequirement) != nil else {
+            return nil
+        }
+        guard let hash = await fingerprint() else { return nil }
+        return SigningIdentity(hash: hash, keyFile: paths.signingKey, requirement: paths.signingRequirement)
     }
 
-    /// Makes the certificate, adds it to the login keychain and returns its SHA-1. The files it
-    /// takes are removed again, whatever happens.
-    public func create() async throws(SigningError) -> String {
+    /// Makes the certificate and its key, keeps them in the key file, compiles the designated
+    /// requirement that pins the certificate, and returns the identity. The files it takes on the
+    /// way are removed again, whatever happens.
+    public func create() async throws(SigningError) -> SigningIdentity {
         let folder = "\(temporaryDirectory)/\(Project.command)-signing-\(UUID().uuidString)"
+        let key = "\(folder)/key.pem"
+        let certificate = "\(folder)/certificate.pem"
         do {
-            try files.createDirectory(folder)
+            try files.createPrivateDirectory(folder)
             try files.write(Self.config, to: "\(folder)/openssl.cnf")
         } catch {
             throw .files(error)
         }
         defer { try? files.remove(folder) }  // A leftover folder in the temporary folder is harmless.
-        for (step, command) in steps(in: folder) {
-            let result = await runner.run(command)
-            guard result.succeeded else { throw .uncreatable(step: step, reason: result.reason) }
-        }
-        guard let identity = await find() else { throw .unlisted }
-        return identity
+        let made = await runner.run(
+            OpenSSL.makeCertificate(key: key, certificate: certificate, config: "\(folder)/openssl.cnf"))
+        guard made.succeeded else { throw .uncreatable(step: Self.makeStep, reason: made.reason) }
+        try keep(certificate: certificate, key: key)
+        guard let hash = await fingerprint() else { throw .unlisted }
+        let compiled = await runner.run(Csreq.designated(certificate: hash, output: paths.signingRequirement))
+        guard compiled.succeeded else { throw .uncreatable(step: Self.requirementStep, reason: compiled.reason) }
+        return SigningIdentity(hash: hash, keyFile: paths.signingKey, requirement: paths.signingRequirement)
     }
 
-    /// The steps that make the certificate from the files in `folder`, with what each one does.
-    private func steps(in folder: String) -> [(String, Command)] {
-        let key = "\(folder)/key.pem"
-        let certificate = "\(folder)/certificate.pem"
-        let bundle = "\(folder)/identity.p12"
-        // The password only protects the file on its way into the keychain.
-        let password = UUID().uuidString
-        return [
-            (
-                Self.makeStep,
-                OpenSSL.makeCertificate(key: key, certificate: certificate, config: "\(folder)/openssl.cnf")
-            ),
-            (
-                Self.bundleStep,
-                OpenSSL.bundle(key: key, certificate: certificate, name: Self.name, password: password, output: bundle)
-            ),
-            (
-                Self.keychainStep,
-                Security.importIdentity(bundle, password: password, keychain: paths.loginKeychain)
-            ),
-        ]
+    /// Puts the certificate, then its key, in the key file, readable only by the user.
+    private func keep(certificate: String, key: String) throws(SigningError) {
+        do {
+            let identity = try files.read(certificate) + files.read(key)
+            try files.createDirectory(paths.configDirectory)
+            try files.writePrivate(Data(identity.utf8), to: paths.signingKey)
+        } catch {
+            throw .files(error)
+        }
+    }
+
+    /// The SHA-1 of the certificate in the key file.
+    private func fingerprint() async -> String? {
+        let result = await runner.run(OpenSSL.fingerprint(paths.signingKey))
+        guard result.succeeded else { return nil }
+        return OpenSSL.sha1(in: result.output)
     }
 
     /// What `openssl` puts in the certificate: a code signing certificate that isn't a CA.

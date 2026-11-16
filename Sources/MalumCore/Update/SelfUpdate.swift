@@ -25,7 +25,7 @@ public struct SelfUpdate {
     private let paths: Paths
     /// Where the download is unpacked.
     private let state: StateFolder
-    /// Malum's certificate in the login keychain.
+    /// Malum's signing certificate.
     private let certificate: SigningCertificate
     /// The running executable with its links resolved, or nil outside an app bundle.
     private let executable: String?
@@ -100,7 +100,8 @@ public struct SelfUpdate {
         do {
             guard files.item(at: kept) != nil else { throw UpdateError.nothingKept }
             guard let identity = await certificate.find() else { throw UpdateError.noCertificate }
-            guard await BundleSigner(runner: runner, files: files).isSigned(kept, by: identity) else {
+            guard await BundleSigner(runner: runner, files: files, tool: paths.signingTool).isSigned(kept, by: identity)
+            else {
                 throw UpdateError.keptUnsigned
             }
             let from = version(of: installed)
@@ -157,7 +158,8 @@ public struct SelfUpdate {
         let bundleID = AppBundle.bundleID(of: app, files: files)
         guard bundleID == Project.bundleID else { throw UpdateError.otherApp(bundleID: bundleID) }
         guard let identity = await certificate.find() else { throw UpdateError.noCertificate }
-        try await BundleSigner(runner: runner, files: files).install(app, at: app, identity: identity)
+        try await BundleSigner(runner: runner, files: files, tool: paths.signingTool).install(
+            app, at: app, identity: identity)
         let answer = await runner.run(AppVersion.ask(Paths.executable(in: app)))
         let said = answer.output.trimmingCharacters(in: .whitespacesAndNewlines)
         guard answer.succeeded, said == version.description else {
