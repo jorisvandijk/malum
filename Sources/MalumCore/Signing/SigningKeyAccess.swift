@@ -4,7 +4,8 @@
 /// Which tools may use a key without asking is the key's partition list, and changing it takes the
 /// login password once, on the terminal. A note in the state folder says which certificate it was
 /// done for, so a new certificate gets it again.
-public struct SigningKeyAccess: Sendable {
+@MainActor
+public struct SigningKeyAccess {
     /// The note in the state folder, holding the certificate's SHA-1.
     static let noteName = "signing-key-access"
 

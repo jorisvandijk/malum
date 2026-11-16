@@ -2,6 +2,7 @@ import Testing
 
 @testable import MalumCore
 
+@MainActor
 @Suite(.timeLimit(.minutes(1)))
 struct SigningKeyAccessTests {
     static let hash = SigningCertificateTests.hash
