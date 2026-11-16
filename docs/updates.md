@@ -30,7 +30,7 @@ Only then does it swap the new app in for `~/Applications/Malum.app`, in one ste
 [info] updated Malum to 0.3.0; malum rollback puts 0.2.0 back
 ```
 
-The first update may bring up the keychain dialog the signing page explains.
+The update to 0.13 is still signed by the version before it, so it may bring up a keychain dialog one last time. From 0.13 on, [signing](signing.md) uses a key file and nothing asks.
 
 When any check fails, the app that was there stays as it is, the download is removed, and the run ends with an error:
 

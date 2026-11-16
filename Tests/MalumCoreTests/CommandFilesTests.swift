@@ -47,14 +47,6 @@ struct CommandFilesTests {
         #expect(Sudo.refresh == Command("/usr/bin/sudo", ["-n", "-v"], onTerminal: true))
     }
 
-    @Test func codesignSignsWithoutTimestamp() {
-        #expect(
-            Codesign.sign("/A.app", identity: hash)
-                == Command(
-                    "/usr/bin/codesign", ["--force", "--sign", hash, "--timestamp=none", "/A.app"], timeoutSeconds: 300)
-        )
-    }
-
     @Test func codesignVerifiesAgainstTheCertificate() {
         #expect(
             Codesign.verify("/A.app", identity: hash)
@@ -63,40 +55,31 @@ struct CommandFilesTests {
                     ["--verify", "--strict", "--test-requirement", "=certificate leaf = H\"\(hash)\"", "/A.app"]))
     }
 
-    @Test func securityImportLetsCodesignUseTheKey() {
+    @Test func opensslReadsTheFingerprintAsPlainHex() {
         #expect(
-            Security.importIdentity("/t/id.p12", password: "pw", keychain: "/k")
-                == Command(
-                    "/usr/bin/security",
-                    ["import", "/t/id.p12", "-k", "/k", "-f", "pkcs12", "-P", "pw", "-T", "/usr/bin/codesign"]))
+            OpenSSL.fingerprint("/k.pem").arguments == ["x509", "-in", "/k.pem", "-noout", "-fingerprint", "-sha1"])
+        #expect(OpenSSL.sha1(in: SigningCertificateTests.fingerprint) == SigningCertificateTests.hash)
+        #expect(OpenSSL.sha1(in: "sha1 Fingerprint=3f:2a\n") == nil)
+        #expect(OpenSSL.sha1(in: "unable to load certificate\n") == nil)
     }
 
-    @Test func securityLetsAppleToolsUseTheKeyOnTheTerminal() {
+    @Test func rcodesignSignsWithTheKeyFileAndRequirement() {
+        let identity = SigningIdentity(hash: hash, keyFile: "/k.pem", requirement: "/k.req")
         #expect(
-            Security.allowAppleTools(key: "Key", keychain: "/k")
+            Rcodesign.sign("/A.app", identity: identity, tool: "/r")
                 == Command(
-                    "/usr/bin/security",
-                    ["set-key-partition-list", "-S", "apple-tool:,apple:", "-s", "-l", "Key", "/k"],
-                    timeoutSeconds: 300, onTerminal: true))
+                    "/r",
+                    [
+                        "sign", "--pem-file", "/k.pem", "--code-requirements-path", "/k.req", "--timestamp-url", "none",
+                        "/A.app",
+                    ],
+                    timeoutSeconds: 120))
     }
 
-    @Test func identityIsFoundByName() {
-        let output = """
-            Policy: Code Signing
-              Matching identities
-              1) 1111111111111111111111111111111111111111 "Other"
-              2) \(hash) "Malum code signing" (CSSMERR_TP_NOT_TRUSTED)
-                 2 identities found
-            """
-        #expect(Security.identity(named: "Malum code signing", in: output) == hash)
-        #expect(Security.identity(named: "Hopper", in: output) == nil)
-    }
-
-    @Test func opensslBundlesWithKeychainCiphers() {
-        let command = OpenSSL.bundle(key: "/k", certificate: "/c", name: "N", password: "pw", output: "/o")
-        #expect(command.executable == "/usr/bin/openssl")
-        #expect(command.arguments.contains("PBE-SHA1-3DES"))
-        #expect(command.arguments.last == "pass:pw")
+    @Test func csreqPinsTheLeafCertificate() {
+        #expect(
+            Csreq.designated(certificate: hash, output: "/k.req")
+                == Command("/usr/bin/csreq", ["-r=certificate leaf = H\"\(hash)\"", "-b", "/k.req"]))
     }
 
     @Test func launchctlNamesTheUsersSession() {

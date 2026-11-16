@@ -86,7 +86,7 @@ extension UpdateError: ReportableError {
         case .wrongVersion(let expected, let found):
             "the downloaded app says it's \(found), not \(expected)"
         case .noCertificate:
-            "the login keychain doesn't have the \"\(SigningCertificate.name)\" certificate"
+            "there's no \"\(SigningCertificate.name)\" certificate yet, start \(Project.name) once to make it"
         case .nothingKept:
             "no previous version is kept"
         case .keptUnsigned:

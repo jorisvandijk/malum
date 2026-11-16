@@ -70,7 +70,7 @@ struct WebAppInstaller {
     }
 
     /// Makes `app`, or builds it again when what it's built from changed. Says whether it worked.
-    private func make(_ app: WebApp, dots: String, identity: String, report: (Message) -> Void) async -> Bool {
+    private func make(_ app: WebApp, dots: String, identity: SigningIdentity, report: (Message) -> Void) async -> Bool {
         let bundle = app.bundle(paths)
         do throws(WebAppError) {
             let icon = app.icon.map { "\(dots)/\($0)" }
@@ -91,12 +91,12 @@ struct WebAppInstaller {
     /// Whether the bundle at `bundle` is `app` as `plist` describes it, signed with `identity`. A
     /// bundle whose signing failed part way isn't, so it's built again. Throws when another app is there.
     private func isCurrent(
-        _ app: WebApp, at bundle: String, plist: String, identity: String
+        _ app: WebApp, at bundle: String, plist: String, identity: SigningIdentity
     ) async throws(WebAppError) -> Bool {
         guard AppBundle.bundleID(of: bundle, files: files) == app.bundleID else { throw .inTheWay(path: bundle) }
         let current = try onDisk { () throws(FileSystemError) in try files.text(ifFileAt: Paths.info(of: bundle)) }
         guard current == plist else { return false }
-        return await BundleSigner(runner: runner, files: files).isSigned(bundle, by: identity)
+        return await BundleSigner(runner: runner, files: files, tool: paths.signingTool).isSigned(bundle, by: identity)
     }
 
     /// `app`'s `Info.plist`, with a fingerprint of the executable and of the `icon` file.
@@ -133,12 +133,13 @@ struct WebAppInstaller {
     }
 
     /// Signs `staged` and puts it at `bundle`, then removes the staged copy.
-    private func install(_ staged: String, at bundle: String, identity: String) async throws(WebAppError) {
+    private func install(_ staged: String, at bundle: String, identity: SigningIdentity) async throws(WebAppError) {
         try onDisk { () throws(FileSystemError) in
             if files.item(at: bundle) == nil { try files.copy(staged, to: bundle) }
         }
         do {
-            try await BundleSigner(runner: runner, files: files).install(staged, at: bundle, identity: identity)
+            try await BundleSigner(runner: runner, files: files, tool: paths.signingTool).install(
+                staged, at: bundle, identity: identity)
         } catch {
             throw .signing(error)
         }

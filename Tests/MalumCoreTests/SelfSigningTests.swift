@@ -6,7 +6,14 @@ import Testing
 struct SelfSigningTests {
     let paths = Paths(home: "/Users/test")
     let plist = "/Users/test/Applications/Malum.app/Contents/Info.plist"
-    let listed = "  1) \(SigningCertificateTests.hash) \"Malum code signing\"\n"
+    let fingerprint = SigningCertificateTests.fingerprint
+
+    /// The installed app, with the key file the first start made.
+    private func installed() -> FakeFileSystem {
+        let files = FakeFileSystem(texts: [plist: "app"])
+        SigningCertificateTests.keep(in: files)
+        return files
+    }
 
     private func signing(_ runner: FakeRunner, files: FakeFileSystem) -> SelfSigning {
         let certificate = SigningCertificate(runner: runner, files: files, paths: paths, temporaryDirectory: "/tmp")
@@ -22,34 +29,35 @@ struct SelfSigningTests {
     }
 
     @Test func signedAppIsLeftAlone() async {
-        let output = listed
+        let output = fingerprint
         let runner = FakeRunner { _ in CommandResult(status: 0, output: output) }
-        let outcome = await signing(runner, files: FakeFileSystem(texts: [plist: "app"]))
-            .check(executable: paths.installedExecutable)
+        let outcome = await signing(runner, files: installed()).check(executable: paths.installedExecutable)
         #expect(outcome == .signed)
-        #expect(runner.commands.map { $0.arguments.first } == ["find-identity", "--verify"])
+        #expect(runner.commands.map { $0.arguments.first } == ["x509", "--verify"])
     }
 
     @Test func unsignedAppIsSignedWithTheCertificate() async {
-        let output = listed
+        let output = fingerprint
         let bundle = paths.installedBundle
         let runner = FakeRunner { command in
             let unsigned = command.arguments.first == "--verify" && command.arguments.last == bundle
             return unsigned ? CommandResult(status: 1) : CommandResult(status: 0, output: output)
         }
-        let outcome = await signing(runner, files: FakeFileSystem(texts: [plist: "app"]))
-            .check(executable: paths.installedExecutable)
+        let outcome = await signing(runner, files: installed()).check(executable: paths.installedExecutable)
         #expect(outcome == .resigned)
-        #expect(runner.commands.map { $0.arguments.first } == ["find-identity", "--verify", "--force", "--verify"])
+        #expect(runner.commands.map { $0.arguments.first } == ["x509", "--verify", "sign", "--verify"])
+        #expect(runner.commands[2].executable == paths.signingTool)
     }
 
     @Test func missingCertificateIsMadeFirst() async {
         let runner = FakeRunner { _ in CommandResult(status: 0) }
         let outcome = await signing(runner, files: FakeFileSystem(texts: [plist: "app"]))
             .check(executable: paths.installedExecutable)
-        #expect(outcome == .failed(.unlisted))
-        #expect(
-            runner.commands.map { $0.arguments.first } == ["find-identity", "req", "pkcs12", "import", "find-identity"])
+        guard case .failed(.files) = outcome else {
+            Issue.record("expected the missing certificate files, got \(outcome)")
+            return
+        }
+        #expect(runner.commands.map { $0.arguments.first } == ["req"])
     }
 
     @Test func loadedAgentIsRestarted() async throws {

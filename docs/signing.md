@@ -4,46 +4,37 @@ macOS ties every permission it grants, such as Accessibility, to the app's code 
 
 ## The certificate
 
-The first time the installed app starts, Malum makes a self-signed code signing certificate called **Malum code signing** and adds it to your login keychain. It lasts twenty years, never leaves your Mac, and is only used to sign Malum. Keychain Access lists it as not trusted, which is expected for a self-signed certificate and doesn't stop it from signing.
+The first time the installed app starts, Malum makes a self-signed code signing certificate called **Malum code signing**. It and its key go in `~/.config/malum/signing.pem`, a file only you can read. It lasts twenty years, never leaves your Mac, and is only used to sign Malum and its web apps.
+
+Malum doesn't use the keychain for it, so signing never asks for your password, not after an update and not for a new web app. Next to it, `~/.config/malum/signing.req` holds the rule every signature carries: "signed with this certificate". That rule is what macOS checks a permission against, so it stays the same from one update to the next.
 
 ## Signing the app
 
 At every start, the installed app at `~/Applications/Malum.app` checks that it's signed with that certificate. When it isn't, as on the first start after installing:
 
 1. Malum copies the app to `~/Applications/Malum.app.staged`. The running app is never touched.
-2. It signs the copy with the certificate, and checks the signature.
+2. It signs the copy with the key file, using the `rcodesign` that comes inside Malum.app, and checks the signature with macOS's own `codesign`.
 3. It swaps the copy into place in one step.
 4. It starts again through its login agent, as the signed app.
 
 When any step fails, the app that was there stays, and the reason shows in the menu bar.
 
-### The keychain dialog
-
-The first time Malum signs itself with a new certificate, macOS asks whether `codesign` may use the key in your login keychain. Type your Mac's login password and click **Always Allow**.
-
-That answer doesn't always stick, so the next `malum run` in a terminal settles it for good. It asks for your login password once more:
-
-```
-[info] asking for your login password once, so codesign can use the "Malum code signing" key without asking again
-password to unlock /Users/you/Library/Keychains/login.keychain-db:
-[info] codesign uses the "Malum code signing" key without asking from now on
-```
-
-From then on, Malum signs every update and every web app without asking. A new certificate asks once more. When `malum run` runs without a terminal, it skips this step and warns.
-
-- **Allow** works for this one signing only, so the dialog comes back with the next update.
-- **Deny**, or leaving the dialog for 5 minutes, makes signing fail. The app stays as it was, the modules stay off, and the next start asks again.
-
 No module starts until Malum is signed with its certificate. A copy of Malum that runs from anywhere else, such as a build folder, never signs itself, and keeps every module off. Its menu says so.
 
 ## A new Mac
 
-The certificate lives in the login keychain, so a new Mac, or a new keychain, gets a new certificate. Malum makes it by itself, and every permission is granted once more.
+The key file lives in `~/.config/malum`, so a new Mac gets a new certificate unless you copy `signing.pem` and `signing.req` over. Malum makes it by itself, and every permission is granted once more: run `malum permissions`.
 
-To remove the certificate, quit Malum and run:
+To start over with a new certificate, quit Malum and run:
 
 ```sh
-security delete-identity -c "Malum code signing" ~/Library/Keychains/login.keychain-db
+command rm ~/.config/malum/signing.pem ~/.config/malum/signing.req
 ```
 
 The next start makes a new one and signs the app with it.
+
+## Before 0.13
+
+Malum 0.12 and older kept the certificate in the login keychain. It isn't used anymore; you can delete **Malum code signing** in **Keychain Access**.
+
+`rcodesign` is [apple-codesign](https://github.com/indygreg/apple-platform-rs), under the Mozilla Public License 2.0, which comes with it as `Contents/Resources/rcodesign-COPYING`.

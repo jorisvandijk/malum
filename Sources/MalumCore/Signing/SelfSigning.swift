@@ -20,7 +20,7 @@ public struct SelfSigning: Sendable {
         self.files = files
         self.paths = paths
         self.certificate = certificate
-        signer = BundleSigner(runner: runner, files: files)
+        signer = BundleSigner(runner: runner, files: files, tool: paths.signingTool)
     }
 
     /// Checks the app that runs `executable`, which has its links resolved and is nil outside an
@@ -34,7 +34,7 @@ public struct SelfSigning: Sendable {
             return .signed
         }
         do {
-            let identity: String
+            let identity: SigningIdentity
             if let found {
                 identity = found
             } else {

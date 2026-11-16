@@ -1,4 +1,5 @@
-/// Signs an app bundle with Malum's certificate without ever touching the one that runs.
+/// Signs an app bundle with Malum's key file, through `rcodesign`, without ever touching the one
+/// that runs.
 ///
 /// The bundle is copied to a staging path next to its destination, the copy is signed and checked,
 /// and only then swapped into place in one step. When any step fails, the app that was there stays.
@@ -6,25 +7,30 @@ public struct BundleSigner: Sendable {
     /// What's added to the destination's path to stage the copy.
     private static let stagingSuffix = ".staged"
 
-    /// Runs `codesign`.
+    /// Runs `rcodesign` and `codesign`.
     private let runner: any CommandRunner
     /// Copies, swaps and removes the bundles.
     private let files: any FileSystem
+    /// The `rcodesign` to sign with.
+    private let tool: String
 
-    /// Creates the signer.
-    public init(runner: any CommandRunner, files: any FileSystem) {
+    /// Creates the signer, which signs with the `rcodesign` at `tool`.
+    public init(runner: any CommandRunner, files: any FileSystem, tool: String) {
         self.runner = runner
         self.files = files
+        self.tool = tool
     }
 
-    /// Whether the bundle at `bundle` is intact and signed with the certificate `identity`.
-    public func isSigned(_ bundle: String, by identity: String) async -> Bool {
-        await runner.run(Codesign.verify(bundle, identity: identity)).succeeded
+    /// Whether the bundle at `bundle` is intact and signed with `identity`'s certificate.
+    public func isSigned(_ bundle: String, by identity: SigningIdentity) async -> Bool {
+        await runner.run(Codesign.verify(bundle, identity: identity.hash)).succeeded
     }
 
-    /// Puts a copy of the bundle `source`, signed with the certificate `identity`, at
-    /// `destination`. `source` may be `destination` itself.
-    public func install(_ source: String, at destination: String, identity: String) async throws(SigningError) {
+    /// Puts a copy of the bundle `source`, signed with `identity`, at `destination`. `source` may
+    /// be `destination` itself.
+    public func install(
+        _ source: String, at destination: String, identity: SigningIdentity
+    ) async throws(SigningError) {
         let staged = destination + Self.stagingSuffix
         do {
             try removeLeftover(staged)
@@ -42,10 +48,10 @@ public struct BundleSigner: Sendable {
     }
 
     /// Signs the copy at `staged` and checks the result.
-    private func sign(_ staged: String, identity: String) async throws(SigningError) {
-        let signed = await runner.run(Codesign.sign(staged, identity: identity))
+    private func sign(_ staged: String, identity: SigningIdentity) async throws(SigningError) {
+        let signed = await runner.run(Rcodesign.sign(staged, identity: identity, tool: tool))
         guard signed.succeeded else { throw .unsigned(reason: signed.reason) }
-        let verified = await runner.run(Codesign.verify(staged, identity: identity))
+        let verified = await runner.run(Codesign.verify(staged, identity: identity.hash))
         guard verified.succeeded else { throw .unverified(reason: verified.reason) }
     }
 
