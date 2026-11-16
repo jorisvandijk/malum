@@ -8,26 +8,27 @@ struct KeyboardModuleTests {
     private let paths = Paths(home: "/Users/test")
     private let files = FakeFileSystem()
     private let runner = FakeRunner()
-    private let catcher = FakeKeyCatcher()
-    private let keyboardState = FakeKeyboardState()
+    let catcher = FakeKeyCatcher()
+    let keyboardState = FakeKeyboardState()
     private let routes = ModuleRoutes()
     private let launcher = RecordingModule(id: "launcher")
+    let logWriter = RecordingLogWriter()
     /// caps lock as the hyper key, and the launcher on hyper+space.
     private let launcherKey = "[settings]\nhyper_key = \"caps_lock\"\n\n[hyper]\nspace = \"launcher\"\n"
     private var marker: String { "\(paths.stateDirectory)/\(KeyRemapper.markerName)" }
 
     /// The module, off, running its commands through `runner`.
-    private func module(runner: FakeRunner? = nil) -> KeyboardModule {
+    func module(runner: FakeRunner? = nil) -> KeyboardModule {
         let state = StateFolder(files: files, locks: FakeFileLocks(), paths: paths)
         return KeyboardModule(
             system: KeyboardSystem(
                 remapper: KeyRemapper(runner: runner ?? self.runner, state: state), keyCatcher: catcher,
                 state: keyboardState),
-            routes: routes, log: Log(writer: RecordingLogWriter()))
+            routes: routes, log: Log(writer: logWriter))
     }
 
     /// Settings with `text` as the checked `keyboard.toml`, or no file when it's nil.
-    private func settings(_ text: String?) -> ModuleSettings {
+    func settings(_ text: String?) -> ModuleSettings {
         ModuleSettings(file: text)
     }
 

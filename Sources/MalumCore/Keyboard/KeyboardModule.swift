@@ -46,6 +46,11 @@ final class KeyboardModule: Module {
     @ObservationIgnored private var restart: Task<Void, Never>?
     /// Hands the shortcuts the running tap catches to `routes`.
     @ObservationIgnored private var listener: Task<Void, Never>?
+    /// The running tap's session, which counts how often macOS switched the tap off.
+    @ObservationIgnored private var session: TapSession?
+    /// What kept keys from reaching Malum when that was last logged, so the log shows when it starts
+    /// and ends even with the menu bar hidden.
+    @ObservationIgnored private var loggedBlocker: MessageText?
 
     /// Creates the module, off, working through `system`, sending shortcuts through `routes` and
     /// logging to `log`.
@@ -101,6 +106,8 @@ final class KeyboardModule: Module {
         keyCatcher.stop()
         listener?.cancel()
         listener = nil
+        session = nil
+        loggedBlocker = nil
         await clearRemaps()
         status = .off
     }
@@ -115,6 +122,7 @@ final class KeyboardModule: Module {
             queueRestart()
             return
         }
+        logSwitchOffs()
         showStatus()
     }
 
@@ -133,6 +141,7 @@ final class KeyboardModule: Module {
         guard keyCatcher.start(session) else {
             throw KeyboardError.tapRefused
         }
+        self.session = session
         listen(to: session)
         try await setRemaps()
     }
@@ -152,10 +161,27 @@ final class KeyboardModule: Module {
     /// Shows what keeps keys from working, worst first: secure input, a Modifier Keys swap of the hyper
     /// key, then the first problem in the bindings.
     private func showStatus() {
+        let blocker = self.blocker
+        logChange(to: blocker)
         let reason = blocker ?? registry.problems.first?.message.text
         let shown = reason.map { ModuleStatus.degraded(reason: $0.description) } ?? .running
         guard shown != status else { return }
         status = shown
+    }
+
+    /// Logs it when `blocker`, what keeps keys from reaching Malum, starts or ends.
+    private func logChange(to blocker: MessageText?) {
+        guard blocker != loggedBlocker else { return }
+        loggedBlocker = blocker
+        log.report(blocker.map(Message.keysBlocked) ?? .keysReachMalumAgain)
+    }
+
+    /// Logs how often macOS switched the tap off since the last check. It's switched straight back
+    /// on, but a hyper key held at that moment is let go.
+    private func logSwitchOffs() {
+        let times = session?.takeSwitchOffs() ?? 0
+        guard times > 0 else { return }
+        log.report(.tapSwitchedOffByMacOS(times: times))
     }
 
     /// What keeps keys from reaching Malum now, or nil when nothing does.

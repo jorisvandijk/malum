@@ -21,4 +21,20 @@ extension Message {
     static var remapsSetAgain: Message {
         Message(.info, "set the key remaps again")
     }
+
+    /// `reason`, such as secure input, keeps keys from reaching Malum.
+    static func keysBlocked(_ reason: MessageText) -> Message {
+        Message(.warn, reason)
+    }
+
+    /// What kept keys from reaching Malum has ended.
+    static var keysReachMalumAgain: Message {
+        Message(.info, "keys reach \(Project.name) again")
+    }
+
+    /// macOS switched the event tap off `times` times since the last check, and it was switched
+    /// straight back on.
+    static func tapSwitchedOffByMacOS(times: Int) -> Message {
+        Message(.info, "macOS switched the event tap off (\(times) since the last check), switched it back on")
+    }
 }
