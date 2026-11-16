@@ -209,7 +209,11 @@ struct WindowManagerModuleTests {
         watcher.send(.launched(finder))
         #expect(access.apps[finder.pid] == nil)
     }
+}
 
+// MARK: - Inspector and floating
+
+extension WindowManagerModuleTests {
     /// The value of the inspector's line `label`, or nil when nothing was shown.
     private func shown(_ label: String) -> String? {
         panel.shown?.first { $0.label == label }?.value
