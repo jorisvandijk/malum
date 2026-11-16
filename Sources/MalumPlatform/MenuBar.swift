@@ -46,6 +46,7 @@ public final class MenuBar: NSObject {
         fixes = []
         let built = NSMenu()
         built.autoenablesItems = false
+        built.delegate = self
         for line in menu.items {
             built.addItem(menuItem(for: line))
         }
@@ -109,5 +110,24 @@ public final class MenuBar: NSObject {
         let url = URL(fileURLWithPath: path)
         guard !NSWorkspace.shared.open(url) else { return }
         NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+}
+
+// MARK: - NSMenuDelegate
+
+extension MenuBar: NSMenuDelegate {
+    /// Makes Malum the active app while its menu is open, so the app underneath, such as a terminal
+    /// that sets its own cursor, doesn't turn the pointer into a text cursor over the items.
+    public func menuWillOpen(_ menu: NSMenu) {
+        NSApplication.shared.activate()
+    }
+
+    /// Hands the front back to the app before, unless the picked item opened a Malum window. The
+    /// picked item runs after the menu closes, so this waits for it.
+    public func menuDidClose(_ menu: NSMenu) {
+        Task { @MainActor in
+            guard NSApplication.shared.keyWindow == nil else { return }
+            NSApplication.shared.deactivate()
+        }
     }
 }
