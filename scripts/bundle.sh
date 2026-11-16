@@ -56,6 +56,8 @@ cp "$bin/$executable" "$app/Contents/MacOS/$executable"
 cp "$bin/$web_app" "$app/Contents/Helpers/$web_app"
 codesign --force --sign - "$app/Contents/Helpers/$web_app"
 cp "$downloads/$rcodesign_name/rcodesign" "$app/Contents/Helpers/rcodesign"
+# Its release signature doesn't pass codesign's strict check as nested code, so it's signed again here.
+codesign --force --sign - "$app/Contents/Helpers/rcodesign"
 cp "$downloads/$rcodesign_name/COPYING" "$app/Contents/Resources/rcodesign-COPYING"
 cp Resources/Bundle/* "$app/Contents/Resources/"
 
