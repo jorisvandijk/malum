@@ -75,6 +75,14 @@ extension AccessibilityApp: WatchedApp {
         return elements.map { AccessibilityWindow($0, of: app) }
     }
 
+    /// The window that has the app's focus.
+    func focusedWindow() -> (any AppWindow)? {
+        guard let element = AccessibilityElement(element: app).element(AccessibilityName.focusedWindow) else {
+            return nil
+        }
+        return AccessibilityWindow(element, of: app)
+    }
+
     /// Whether the app is hidden, through Accessibility.
     var isHidden: Bool {
         AccessibilityElement(element: app).bool(AccessibilityName.hidden) ?? false

@@ -66,6 +66,17 @@ title = "^Picture-in-Picture$"
 
 `app` is a bundle ID, and `title` is a regular expression. A title that isn't a valid expression is a config error at its line, and only that rule is left out.
 
+### Floating a window by hand
+
+The action `toggle_float` floats the focused window of the app in front: it's centred at a little over half the size of the area, and the app's other windows fill the space it left. The same key puts it back in the place it came from. Windows that float anyway, such as dialogs, are left as they are. Bind it in `keyboard.toml`:
+
+```toml
+[hyper]
+t = "toggle_float"
+```
+
+A window floated this way stays floating until it's toggled back or closed, also when Malum lays the windows out again.
+
 ## Inspecting a window
 
 The window manager's action `inspect_window` shows what Malum sees in a window, which helps when writing a float rule. Bind it to a key in `keyboard.toml`:

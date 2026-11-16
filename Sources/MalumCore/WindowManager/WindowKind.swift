@@ -22,4 +22,6 @@ enum FloatReason: Equatable, Sendable {
     case modal
     /// It can't be resized.
     case fixedSize
+    /// The user floated it with `toggle_float`, until they toggle it back.
+    case toggled
 }

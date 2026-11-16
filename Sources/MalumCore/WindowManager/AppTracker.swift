@@ -91,6 +91,30 @@ final class AppTracker {
         retryLater()
     }
 
+    /// Floats the app's focused window, centred and smaller, or puts one floated this way back in
+    /// its place. Its place is kept meanwhile, so it goes back where it came from. A window that
+    /// floats for another reason is left as it is.
+    func toggleFloat() {
+        guard let focused = watched.focusedWindow(),
+            let tracked = windows.first(where: { $0.window.isSame(as: focused) })
+        else { return }
+        switch tracked.kind {
+        case .managed:
+            tracked.kind = .float(.toggled)
+            tracked.forgetPlace()
+            log.report(.window(tracked.window.facts.title, of: app.name, is: tracked.kind))
+            if let area {
+                tracked.window.setFrame(WindowLayout.floated(in: area))
+            }
+        case .float(.toggled):
+            tracked.kind = .notReady
+            classify(tracked)
+        case .float, .notReady:
+            return
+        }
+        layout()
+    }
+
     /// Stops tracking the app.
     func stop() {
         watched.stop()
@@ -111,8 +135,10 @@ final class AppTracker {
         }
     }
 
-    /// Sorts out what to do with `tracked`. A window that briefly stops answering keeps what it was.
+    /// Sorts out what to do with `tracked`. A window that briefly stops answering keeps what it was,
+    /// and one the user floated stays floating.
     private func classify(_ tracked: TrackedWindow) {
+        guard tracked.kind != .float(.toggled) else { return }
         let facts = tracked.window.facts
         let kind = WindowLayout.classify(facts, app: app.bundleID, floats: config.floats)
         guard kind != tracked.kind, kind != .notReady || tracked.kind == .notReady else { return }

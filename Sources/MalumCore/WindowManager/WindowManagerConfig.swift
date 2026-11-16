@@ -9,6 +9,8 @@ struct WindowManagerConfig: Equatable, Sendable {
     static let module = "window_manager"
     /// The action that lets the user click a window and shows what it is.
     static let inspectAction = "inspect_window"
+    /// The action that floats the focused window, or puts it back in its place.
+    static let toggleFloatAction = "toggle_float"
     /// The key of the part of the screen windows fill.
     private static let frameKey = "frame"
     /// The key that blocks cmd+H, cmd+M and cmd+option+M.
