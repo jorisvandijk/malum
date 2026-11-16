@@ -11,7 +11,6 @@ app="${1:-$(ls -d build/*.app)}"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
-bundle_id="$(plutil -extract CFBundleIdentifier raw "$app/Contents/Info.plist")"
 cat > "$work/openssl.cnf" <<CONFIG
 [req]
 distinguished_name = dn
@@ -29,12 +28,13 @@ openssl req -x509 -newkey rsa:2048 -sha256 -days 1 -nodes -keyout "$work/key.pem
     -config "$work/openssl.cnf" -extensions ext 2>/dev/null
 cat "$work/key.pem" "$work/certificate.pem" > "$work/identity.pem"
 leaf="$(openssl x509 -in "$work/certificate.pem" -noout -fingerprint -sha1 | sed 's/.*=//; s/://g')"
-requirement="designated => identifier \"$bundle_id\" and certificate leaf = H\"$leaf\""
-csreq -r="$requirement" -b "$work/requirements.bin"
+# rcodesign takes a single compiled requirement, which becomes the designated one.
+csreq -r="certificate leaf = H\"$leaf\"" -b "$work/requirement.bin"
 
 cp -R "$app" "$work/Check.app"
 "$app/Contents/Helpers/rcodesign" sign --pem-file "$work/identity.pem" \
-    --code-requirements-path "$work/requirements.bin" "$work/Check.app"
+    --code-requirements-path "$work/requirement.bin" \
+    --timestamp-url none "$work/Check.app"
 codesign --verify --strict --verbose=2 "$work/Check.app"
 codesign --verify --strict --test-requirement="=certificate leaf = H\"$leaf\"" "$work/Check.app"
 codesign -d -r- "$work/Check.app" 2>&1 | tee "$work/requirement.txt"
