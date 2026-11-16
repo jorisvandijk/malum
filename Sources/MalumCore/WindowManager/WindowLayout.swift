@@ -17,6 +17,8 @@ enum WindowLayout {
     static let tolerance: CGFloat = 1
     /// The left slot takes half the area when there's more than one window.
     private static let halves: CGFloat = 2
+    /// The share of the area's width and height a window floated with `toggle_float` takes.
+    private static let floatShare: CGFloat = 0.6
 
     /// What to do with the window `facts` describes, of the app `app`, with `floats` from the settings.
     /// Ordinary windows are managed. Dialogs, panels, modals, fixed-size and fullscreen windows, and
@@ -49,6 +51,12 @@ enum WindowLayout {
             return CGRect(x: right, y: rows[row], width: area.maxX - right, height: bottom - rows[row])
         }
         return [CGRect(x: area.minX, y: area.minY, width: leftWidth, height: area.height)] + rightSlots
+    }
+
+    /// Where a window floated with `toggle_float` goes: centred in `area`, `floatShare` of its size.
+    static func floated(in area: CGRect) -> CGRect {
+        let margin = (1 - floatShare) / halves
+        return area.insetBy(dx: area.width * margin, dy: area.height * margin).integral
     }
 
     /// Where a window that settled at `size` goes in `slot`: one that won't grow to fill it is

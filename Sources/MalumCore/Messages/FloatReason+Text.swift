@@ -17,6 +17,8 @@ extension FloatReason: CustomStringConvertible {
             "it's modal"
         case .fixedSize:
             "it can't be resized"
+        case .toggled:
+            "it was floated with toggle_float"
         }
     }
 }

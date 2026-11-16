@@ -209,7 +209,11 @@ struct WindowManagerModuleTests {
         watcher.send(.launched(finder))
         #expect(access.apps[finder.pid] == nil)
     }
+}
 
+// MARK: - Inspector and floating
+
+extension WindowManagerModuleTests {
     /// The value of the inspector's line `label`, or nil when nothing was shown.
     private func shown(_ label: String) -> String? {
         panel.shown?.first { $0.label == label }?.value
@@ -221,8 +225,9 @@ struct WindowManagerModuleTests {
         await module.raising?.value
     }
 
-    @Test func offersTheInspectAction() {
-        #expect(module().hotkeys.actions == [WindowManagerModule.inspectAction])
+    @Test func offersTheInspectAndToggleFloatActions() {
+        #expect(
+            module().hotkeys.actions == [WindowManagerModule.inspectAction, WindowManagerModule.toggleFloatAction])
     }
 
     @Test func inspectShowsTheClickedWindow() async throws {
@@ -295,5 +300,19 @@ struct WindowManagerModuleTests {
         panel.clickCopy()
         let text = try #require(clipboard.put.first?.0.text)
         #expect(text.hasPrefix("app: kitty\nbundle id: net.kovidgoyal.kitty\ntitle: none\n"))
+    }
+
+    @Test func toggleFloatFloatsTheFocusedWindowOfTheAppInFront() async throws {
+        let active = RunningApp(
+            pid: kitty.pid, bundleID: kitty.bundleID, name: kitty.name, isActive: true, isHidden: false,
+            isRegular: true)
+        apps.running = [kitty.bundleID ?? "": active]
+        watcher.apps = [kitty]
+        let window = window(of: kitty.pid)
+        access.apps[kitty.pid]?.focused = window
+        let module = module()
+        try await module.start()
+        module.perform(.module(WindowManagerModule.toggleFloatAction))
+        #expect(window.frame == WindowLayout.floated(in: visibleArea))
     }
 }

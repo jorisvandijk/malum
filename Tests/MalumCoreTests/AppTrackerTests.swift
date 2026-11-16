@@ -195,4 +195,47 @@ struct AppTrackerTests {
         tracker().stop()
         #expect(watched.isStopped)
     }
+
+    @Test func toggleFloatCentresTheFocusedWindowAndGivesItsPlaceAway() {
+        let first = FakeAppWindow()
+        let second = FakeAppWindow()
+        watched.current = [first, second]
+        let tracker = tracker()
+        tracker.reconcile()
+        watched.focused = first
+        tracker.toggleFloat()
+        #expect(tracker.kind(of: first) == .float(.toggled))
+        #expect(first.frame == WindowLayout.floated(in: area))
+        #expect(second.frame == area)
+    }
+
+    @Test func toggleFloatAgainPutsTheWindowBackWhereItCameFrom() {
+        let first = FakeAppWindow()
+        let second = FakeAppWindow()
+        watched.current = [first, second]
+        let tracker = tracker()
+        tracker.reconcile()
+        watched.focused = first
+        tracker.toggleFloat()
+        tracker.reconcile()
+        #expect(tracker.kind(of: first) == .float(.toggled))
+        tracker.toggleFloat()
+        let slots = WindowLayout.slots(count: 2, in: area)
+        #expect(tracker.kind(of: first) == .managed)
+        #expect(first.frame == slots.first)
+        #expect(second.frame == slots.last)
+    }
+
+    @Test func toggleFloatLeavesADialogAlone() {
+        let dialog = FakeAppWindow()
+        dialog.facts = WindowFacts(role: "AXWindow", subrole: "AXDialog", title: "Save")
+        let before = dialog.frame
+        watched.current = [dialog]
+        watched.focused = dialog
+        let tracker = tracker()
+        tracker.reconcile()
+        tracker.toggleFloat()
+        #expect(tracker.kind(of: dialog) == .float(.subrole("AXDialog")))
+        #expect(dialog.frame == before)
+    }
 }

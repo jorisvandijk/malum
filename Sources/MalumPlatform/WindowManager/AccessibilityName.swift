@@ -21,6 +21,8 @@ enum AccessibilityName {
     static let fullScreen = "AXFullScreen"
     /// Set on an app by assistive tools; while it's on, the app animates every resize.
     static let enhancedUserInterface = "AXEnhancedUserInterface"
+    /// The window that has an app's focus.
+    static let focusedWindow = "AXFocusedWindow"
     /// An app's windows, front to back.
     static let windows = "AXWindows"
     /// Whether an app is the frontmost one.

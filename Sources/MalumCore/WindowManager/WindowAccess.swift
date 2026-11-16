@@ -36,6 +36,8 @@ public protocol WatchedApp: AnyObject {
     /// The app's windows, front to back, each also watched from now on, or nil when the app
     /// doesn't answer.
     func windows() -> [any AppWindow]?
+    /// The window that has the app's focus, or nil when it has none or doesn't answer.
+    func focusedWindow() -> (any AppWindow)?
     /// Whether the app is hidden.
     var isHidden: Bool { get }
     /// Stops watching the app.

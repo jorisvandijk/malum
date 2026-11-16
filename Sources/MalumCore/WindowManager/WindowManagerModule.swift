@@ -22,6 +22,8 @@ final class WindowManagerModule: Module {
     /// The action that lets the user click a window and shows what it is, for `keyboard.toml` and
     /// the menu.
     public static let inspectAction = WindowManagerConfig.inspectAction
+    /// The action that floats the focused window, or puts it back in its place, for `keyboard.toml`.
+    public static let toggleFloatAction = WindowManagerConfig.toggleFloatAction
     /// The action of the keys it swallows, which isn't offered to `keyboard.toml`.
     private static let blockAction = "block"
     /// cmd+H, cmd+M and cmd+option+M, which hide the app or minimise windows, for
@@ -42,8 +44,8 @@ final class WindowManagerModule: Module {
     /// minimise when `block_hide_minimize` is on.
     var hotkeys: HotkeyOffer {
         HotkeyOffer(
-            actions: [Self.inspectAction], fixedKeys: config.blocksHideMinimize ? Self.blockedKeys : [:],
-            opensApps: true)
+            actions: [Self.inspectAction, Self.toggleFloatAction],
+            fixedKeys: config.blocksHideMinimize ? Self.blockedKeys : [:], opensApps: true)
     }
     /// Where the module is now.
     private(set) var status = ModuleStatus.off
@@ -121,14 +123,16 @@ final class WindowManagerModule: Module {
         layOutAgain()
     }
 
-    /// Starts the app a shortcut names, or brings it into view, or inspects a window. A swallowed
-    /// key does nothing.
+    /// Starts the app a shortcut names, or brings it into view, inspects a window, or floats the
+    /// focused one or puts it back. A swallowed key does nothing.
     func perform(_ action: KeyAction) {
         switch action {
         case .app(let bundleID):
             raising = Task { [runRaise] in await runRaise.raise(bundleID) }
         case .module(Self.inspectAction):
             raising = Task { [weak self] in await self?.inspect() }
+        case .module(Self.toggleFloatAction):
+            toggleFloat()
         case .module:
             return
         }
@@ -137,6 +141,14 @@ final class WindowManagerModule: Module {
     /// Lets the user click a window and shows what it is.
     private func inspect() async {
         await inspector.inspect(keys: routes.appKeys, handling: handling(of:app:))
+    }
+
+    /// Floats the focused window of the app in front, or puts it back in its place when it was
+    /// floated this way.
+    private func toggleFloat() {
+        guard let front = system.apps.visibleApps().first(where: \.isActive), let tracker = trackers[front.pid]
+        else { return }
+        tracker.toggleFloat()
     }
 
     /// What the module does with `pointed`, a window of `app`: what its tracker decided, or what it
