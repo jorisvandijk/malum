@@ -80,6 +80,19 @@ struct CommandFilesTests {
                     timeoutSeconds: 300, onTerminal: true))
     }
 
+    @Test func securityKeepsPasswordsOutOfTheArguments() {
+        #expect(
+            Security.savePassword("hé", service: "svc", account: "me@host")
+                == Command(
+                    "/usr/bin/security", ["-i"], input: "add-generic-password -U -s svc -a me@host -X 68c3a9\n"))
+        #expect(
+            Security.findPassword(service: "svc", account: "me@host")
+                == Command("/usr/bin/security", ["find-generic-password", "-s", "svc", "-a", "me@host", "-w"]))
+        #expect(
+            Security.deletePassword(service: "svc", account: "me@host")
+                == Command("/usr/bin/security", ["delete-generic-password", "-s", "svc", "-a", "me@host"]))
+    }
+
     @Test func identityIsFoundByName() {
         let output = """
             Policy: Code Signing

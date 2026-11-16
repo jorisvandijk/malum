@@ -37,7 +37,9 @@ Before it stores the token, Malum asks GitHub whether the token can read its rep
 [error] couldn't save the GitHub token: GitHub refused the token, run malum token with a new one
 ```
 
-Running `malum token` again replaces the stored token. It's kept as a generic password called `com.jorisvandijk.malum.github` in the login keychain, so **Keychain Access** shows it too. When a new copy of Malum reads it for the first time, macOS may ask whether to allow that; choose **Always Allow**.
+Running `malum token` again replaces the stored token. It's kept as a generic password called `com.jorisvandijk.malum.github-token` in the login keychain, so **Keychain Access** shows it too. Malum keeps and reads it through macOS's `security` tool, so the keychain never asks, not even after an update.
+
+A token saved by Malum 0.11 or older is called `com.jorisvandijk.malum.github` and isn't used anymore: run `malum token` once more, then delete the old one in **Keychain Access**.
 
 ## Use
 

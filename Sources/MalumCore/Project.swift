@@ -18,9 +18,11 @@ public enum Project {
     /// Malum's website, which the About window links to.
     public static let website = "https://malum.jorisvandijk.com"
     /// The keychain service of the GitHub token that lets Malum see its repository while it's private.
-    public static let tokenService = "\(bundleID).github"
-    /// The keychain service of the Samba passwords, whose account is `user@host`.
-    public static let sambaService = "\(bundleID).samba"
+    /// Not `.github`, which Malum made itself before `security` kept its secrets, and asks.
+    public static let tokenService = "\(bundleID).github-token"
+    /// The keychain service of the Samba passwords, whose account is `user@host`. Not `.samba`, for
+    /// the same reason.
+    public static let sambaService = "\(bundleID).samba-password"
     /// What the release's zip file adds to the app's name.
     public static let assetSuffix = "-macos-arm64.zip"
     /// The version. The release workflow writes the tag's version here before it builds.

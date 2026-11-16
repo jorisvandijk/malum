@@ -164,7 +164,7 @@ final class MenuFeed {
 /// writing what it reports to `write` and to the log.
 @MainActor
 private func runSystemConfig(_ write: @MainActor (String) -> Void) async {
-    _ = await systemConfig(canAsk: false, github: gitHub()).run { message in
+    _ = await systemConfig(canAsk: false, github: await gitHub()).run { message in
         announce(message)
         write(message.description)
     }

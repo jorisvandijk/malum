@@ -4,7 +4,7 @@ import Testing
 
 @Suite(.timeLimit(.minutes(1)))
 struct TokenCommandTests {
-    private let denied = TokenStoreError.keychain(status: -128, reason: "User canceled the operation.")
+    private let denied = TokenStoreError.keychain(reason: "User canceled the operation.")
 
     private func command(_ store: FakeTokenStore) -> TokenCommand {
         TokenCommand(store: store, github: FakeGitHub([:], files: FakeFileSystem()))
@@ -45,25 +45,27 @@ struct TokenCommandTests {
         #expect(message == Message(.error, "couldn't save the GitHub token: \(reason)"))
     }
 
-    @Test func removeDeletesTheToken() {
+    @Test func removeDeletesTheToken() async {
         let store = FakeTokenStore("good")
-        #expect(command(store).remove() == Message(.info, "removed the GitHub token from the login keychain"))
+        #expect(await command(store).remove() == Message(.info, "removed the GitHub token from the login keychain"))
         #expect(store.current == nil)
     }
 
-    @Test func removeWithoutTokenSaysSo() {
-        #expect(command(FakeTokenStore()).remove() == Message(.info, "the login keychain holds no GitHub token"))
+    @Test func removeWithoutTokenSaysSo() async {
+        #expect(await command(FakeTokenStore()).remove() == Message(.info, "the login keychain holds no GitHub token"))
     }
 
-    @Test func statusSaysWhetherATokenIsStored() {
+    @Test func statusSaysWhetherATokenIsStored() async {
         #expect(
-            command(FakeTokenStore("good")).status() == Message(.info, "GitHub token: stored in the login keychain"))
+            await command(FakeTokenStore("good")).status()
+                == Message(.info, "GitHub token: stored in the login keychain"))
         #expect(
-            command(FakeTokenStore()).status() == Message(.info, "GitHub token: none, run malum token to add one"))
+            await command(FakeTokenStore()).status() == Message(.info, "GitHub token: none, run malum token to add one")
+        )
     }
 
-    @Test func unreadableKeychainIsAWarning() {
-        let message = command(FakeTokenStore(failure: .keychain(status: -25293, reason: nil))).status()
-        #expect(message == Message(.warn, "couldn't read the GitHub token: the login keychain answered error -25293"))
+    @Test func unreadableKeychainIsAWarning() async {
+        let message = await command(FakeTokenStore(failure: .keychain(reason: "exited with 51"))).status()
+        #expect(message == Message(.warn, "couldn't read the GitHub token: the login keychain answered exited with 51"))
     }
 }

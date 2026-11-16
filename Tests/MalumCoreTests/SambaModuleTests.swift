@@ -56,7 +56,7 @@ struct SambaModuleTests {
 
     @Test func missingPasswordShowsInTheMenuBar() async throws {
         shares.reachable.withLock { $0 = ["nas.local"] }
-        _ = try password.remove()
+        _ = try await password.remove()
         let module = try await started([nas])
         #expect(module.status == .degraded(reason: "nas/media: no password, run malum samba password nas"))
     }

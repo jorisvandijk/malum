@@ -65,23 +65,23 @@ struct SambaPasswordCommandTests {
             ])
     }
 
-    @Test func passwordIsSavedForTheServer() {
+    @Test func passwordIsSavedForTheServer() async {
         let store = FakeTokenStore()
-        let message = command([:], store: store).save("hunter2", for: nas)
+        let message = await command([:], store: store).save("hunter2", for: nas)
         #expect(message == Message(.info, "saved the password for joris@nas.local in the login keychain"))
         #expect(store.current == "hunter2")
     }
 
-    @Test func emptyPasswordIsNotSaved() {
+    @Test func emptyPasswordIsNotSaved() async {
         let store = FakeTokenStore("old")
-        #expect(command([:], store: store).save("", for: nas) == .noPasswordEntered)
-        #expect(command([:], store: store).save(nil, for: nas) == .noPasswordEntered)
+        #expect(await command([:], store: store).save("", for: nas) == .noPasswordEntered)
+        #expect(await command([:], store: store).save(nil, for: nas) == .noPasswordEntered)
         #expect(store.current == "old")
     }
 
-    @Test func keychainFailureIsReported() {
-        let store = FakeTokenStore(failure: .keychain(status: -25_308, reason: "denied"))
-        let message = command([:], store: store).save("hunter2", for: nas)
+    @Test func keychainFailureIsReported() async {
+        let store = FakeTokenStore(failure: .keychain(reason: "denied"))
+        let message = await command([:], store: store).save("hunter2", for: nas)
         #expect(
             message
                 == Message(

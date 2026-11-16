@@ -1,3 +1,5 @@
+import Foundation
+
 /// Every way Malum runs `security`.
 public enum Security {
     /// The tool.
@@ -27,6 +29,33 @@ public enum Security {
         Command(
             path, ["set-key-partition-list", "-S", appleTools, "-s", "-l", label, keychain],
             timeoutSeconds: passwordTimeoutSeconds, onTerminal: true)
+    }
+
+    /// What `security` exits with when the keychain has no such item.
+    public static let notFoundStatus: Int32 = 44
+
+    /// Prints the generic password with `service` and `account`. An item `security` made itself
+    /// reads without the keychain asking, whichever build of Malum runs this.
+    public static func findPassword(service: String, account: String) -> Command {
+        Command(path, ["find-generic-password", "-s", service, "-a", account, "-w"])
+    }
+
+    /// Looks the generic password with `service` and `account` up, without its data.
+    public static func findItem(service: String, account: String) -> Command {
+        Command(path, ["find-generic-password", "-s", service, "-a", account])
+    }
+
+    /// Deletes the generic password with `service` and `account`.
+    public static func deletePassword(service: String, account: String) -> Command {
+        Command(path, ["delete-generic-password", "-s", service, "-a", account])
+    }
+
+    /// Adds the generic password `password` with `service` and `account`, or replaces its data.
+    /// The password goes in on stdin, in hex, so it never shows up in the arguments.
+    public static func savePassword(_ password: String, service: String, account: String) -> Command {
+        let hex = Data(password.utf8).map { String(format: "%02x", $0) }.joined()
+        let line = "add-generic-password -U -s \(service) -a \(account) -X \(hex)\n"
+        return Command(path, ["-i"], input: line)
     }
 
     /// The SHA-1 of the certificate called `name` in the output of `findIdentities`, whose lines
