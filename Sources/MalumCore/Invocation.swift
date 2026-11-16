@@ -21,9 +21,9 @@ public enum Invocation: Equatable, Sendable {
     case rollback
     /// Show what Malum manages and what doesn't match dots.
     case status
-    /// Ask for the GitHub token and keep it in the keychain, or remove it when `remove` is set.
+    /// Ask for the GitHub token and keep it in the secrets folder, or remove it when `remove` is set.
     case token(remove: Bool)
-    /// Ask for the password of the Samba server called `server` and keep it in the keychain.
+    /// Ask for the password of the Samba server called `server` and keep it in the secrets folder.
     case sambaPassword(server: String)
     /// Show Malum's log as it comes in, or the `last` stretch of it, such as `1h`.
     case log(last: String?)

@@ -9,6 +9,8 @@ public struct Paths: Equatable, Sendable {
     private static let configRoot = ".config"
     /// The name of the file that records where dots is.
     private static let configName = "config"
+    /// The name of the folder in the config folder that holds the secrets.
+    private static let secretsName = "secrets"
     /// The folder for the user's commands, relative to home. Getting it on `PATH` is dots' job.
     static let binRoot = ".local/bin"
     /// The extension of Malum's config files in dots.
@@ -43,6 +45,10 @@ public struct Paths: Equatable, Sendable {
     public var configDirectory: String { "\(home)/\(Self.configRoot)/\(Project.command)" }
     /// `~/.config/malum/config`, which records where dots is.
     public var configFile: String { "\(configDirectory)/\(Self.configName)" }
+    /// `~/.config/malum/secrets`, where the GitHub token and Samba passwords are kept.
+    public var secretsDirectory: String { "\(configDirectory)/\(Self.secretsName)" }
+    /// `~/.config/malum/secrets/<service>/<account>`, the file of one secret.
+    public func secret(service: String, account: String) -> String { "\(secretsDirectory)/\(service)/\(account)" }
     /// `~/.local/bin`.
     public var binDirectory: String { "\(home)/\(Self.binRoot)" }
     /// `~/.local/bin/malum`, the link to Malum's executable.

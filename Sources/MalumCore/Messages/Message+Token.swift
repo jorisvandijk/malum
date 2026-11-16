@@ -1,4 +1,4 @@
-/// The words of `malum token`, which keeps the GitHub token in the login keychain.
+/// The words of `malum token`, which keeps the GitHub token in the secrets folder.
 extension MessageText {
     /// Storing the token, as in "couldn't save the GitHub token".
     static let saveToken: MessageText = "save the GitHub token"
@@ -6,6 +6,8 @@ extension MessageText {
     static let removeToken: MessageText = "remove the GitHub token"
     /// Reading the token, as in "couldn't read the GitHub token".
     static let readToken: MessageText = "read the GitHub token"
+    /// Where secrets are kept, as in "saved the GitHub token in Malum's secrets".
+    static let secrets: MessageText = "\(Project.name)'s secrets"
 }
 
 extension TokenCommand {
@@ -14,19 +16,19 @@ extension TokenCommand {
 }
 
 extension Message {
-    /// The token is in the keychain now.
+    /// The token is kept now.
     static var tokenSaved: Message {
-        Message(.info, "saved the GitHub token in the login keychain")
+        Message(.info, "saved the GitHub token in \(MessageText.secrets)")
     }
 
-    /// The token is gone from the keychain.
+    /// The token is gone.
     static var tokenRemoved: Message {
-        Message(.info, "removed the GitHub token from the login keychain")
+        Message(.info, "removed the GitHub token from \(MessageText.secrets)")
     }
 
     /// There was no token to remove.
     static var noTokenStored: Message {
-        Message(.info, "the login keychain holds no GitHub token")
+        Message(.info, "\(MessageText.secrets) hold no GitHub token")
     }
 
     /// Nothing was typed or piped in.
@@ -37,7 +39,7 @@ extension Message {
     /// Whether a token is `stored`, for `malum status`.
     static func tokenStatus(stored: Bool) -> Message {
         let state: MessageText =
-            stored ? "stored in the login keychain" : "none, run \(Project.command) token to add one"
+            stored ? "stored in \(MessageText.secrets)" : "none, run \(Project.command) token to add one"
         return Message(.info, "GitHub token: \(state)")
     }
 
@@ -51,10 +53,8 @@ extension TokenStoreError: ReportableError {
     /// The problem as the user sees it.
     public var text: MessageText {
         switch self {
-        case .keychain(let reason):
-            "the login keychain answered \(reason)"
-        case .unsaved:
-            "the login keychain didn't keep it"
+        case .file(let error):
+            error.text
         }
     }
 }

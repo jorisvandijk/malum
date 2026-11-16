@@ -68,7 +68,7 @@ struct SambaPasswordCommandTests {
     @Test func passwordIsSavedForTheServer() async {
         let store = FakeTokenStore()
         let message = await command([:], store: store).save("hunter2", for: nas)
-        #expect(message == Message(.info, "saved the password for joris@nas.local in the login keychain"))
+        #expect(message == Message(.info, "saved the password for joris@nas.local in Malum's secrets"))
         #expect(store.current == "hunter2")
     }
 
@@ -79,13 +79,13 @@ struct SambaPasswordCommandTests {
         #expect(store.current == "old")
     }
 
-    @Test func keychainFailureIsReported() async {
-        let store = FakeTokenStore(failure: .keychain(reason: "denied"))
+    @Test func storeFailureIsReported() async {
+        let store = FakeTokenStore(failure: .file(.unreadable(path: "/s", reason: "denied")))
         let message = await command([:], store: store).save("hunter2", for: nas)
         #expect(
             message
                 == Message(
-                    .error, "couldn't save the password for joris@nas.local: the login keychain answered denied"))
+                    .error, "couldn't save the password for joris@nas.local: couldn't read /s: denied"))
     }
 
     @Test func promptNamesTheAccount() {

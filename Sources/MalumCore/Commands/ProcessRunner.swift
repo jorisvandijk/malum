@@ -93,23 +93,18 @@ private final class RunningProcess: @unchecked Sendable {  // SAFETY: see above;
     private let outputPipe = Pipe()
     /// The pipe for stderr.
     private let errorPipe = Pipe()
-    /// The pipe for stdin, when the command has input.
-    private let inputPipe = Pipe()
-    /// What the tool reads on stdin.
-    private let input: String?
     /// The path of the tool.
     private let executable: String
     /// Why the process couldn't start, once start has returned nil.
     private(set) var failure: String?
 
-    /// Sets up `command` to run with `environment`, reading the command's input or nothing.
+    /// Sets up `command` to run with `environment` and no input.
     init(_ command: Command, environment: [String: String]) {
         executable = command.executable
-        input = command.input
         process.executableURL = URL(fileURLWithPath: command.executable)
         process.arguments = command.arguments
         process.environment = environment
-        process.standardInput = command.input == nil ? FileHandle.nullDevice : inputPipe
+        process.standardInput = FileHandle.nullDevice
         process.standardOutput = outputPipe
         process.standardError = errorPipe
     }
@@ -127,7 +122,6 @@ private final class RunningProcess: @unchecked Sendable {  // SAFETY: see above;
                 let stopped = process.terminationReason == .uncaughtSignal
                 continuation.resume(returning: stopped ? nil : process.terminationStatus)
             }
-            writeInput()
             do {
                 try process.run()
             } catch {
@@ -138,17 +132,6 @@ private final class RunningProcess: @unchecked Sendable {  // SAFETY: see above;
                 continuation.resume(returning: nil)
             }
         }
-    }
-
-    /// Puts the input in stdin's pipe before the tool starts, and closes it, so the tool reads it
-    /// all and then sees where it ends. Input is a line or two, which the pipe holds without
-    /// blocking, and Malum still holds the reading end, so the write never meets a closed pipe. A
-    /// write that fails leaves the tool without its input, so the tool fails and says why.
-    private func writeInput() {
-        guard let input else { return }
-        let handle = inputPipe.fileHandleForWriting
-        try? handle.write(contentsOf: Data(input.utf8))  // The tool's own result reports it.
-        try? handle.close()  // Closing a pipe the tool already left can't matter.
     }
 
     /// Stops the process when it's still running.

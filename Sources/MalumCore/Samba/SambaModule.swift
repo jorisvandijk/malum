@@ -164,7 +164,7 @@ final class SambaModule: Module {
         return await mount(share, from: server, at: volume)
     }
 
-    /// Mounts `share` from `server` at `volume` with the password in the keychain.
+    /// Mounts `share` from `server` at `volume` with the password in the secrets folder.
     private func mount(_ share: String, from server: SambaServer, at volume: String) async -> ShareState {
         let password: String?
         do {

@@ -1,5 +1,5 @@
-/// `malum samba password <server>`: keeps the password of a server in `samba.toml` in the login
-/// keychain, so it never shows up in dots or on a command line.
+/// `malum samba password <server>`: keeps the password of a server in `samba.toml` in Malum's
+/// secrets folder, so it never shows up in dots or on a command line.
 @MainActor
 public struct SambaPasswordCommand {
     /// The disk, to read dots.

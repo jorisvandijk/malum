@@ -1,4 +1,4 @@
-/// The words of `malum samba password`, which keeps a Samba server's password in the login keychain.
+/// The words of `malum samba password`, which keeps a Samba server's password in the secrets folder.
 extension MessageText {
     /// Storing the password of `account`, as in "couldn't save the password for joris@nas.local".
     static func savePassword(_ account: String) -> MessageText {
@@ -17,9 +17,9 @@ extension Message {
     /// The Samba module's own file in dots.
     private static var sambaFile: String { Paths.moduleTOMLName(SambaConfig.module) }
 
-    /// The password of `account` is in the keychain now.
+    /// The password of `account` is kept now.
     static func passwordSaved(_ account: String) -> Message {
-        Message(.info, "saved the password for \(account) in the login keychain")
+        Message(.info, "saved the password for \(account) in \(MessageText.secrets)")
     }
 
     /// Nothing was typed or piped in.
