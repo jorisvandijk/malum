@@ -3,8 +3,8 @@ import MalumCore
 
 /// The About window: Malum's logo beside its name and version, who makes it, and a link to its
 /// website.
-/// It opens from the menu, while Malum is the active app, and esc or its close button shuts it and
-/// hands the front back to the app before.
+/// Malum becomes the active app while it shows, so its link gets the pointing hand, and esc or its
+/// close button shuts it and hands the front back to the app before.
 @MainActor
 public final class AboutWindow: NSPanel {
     /// The room between the logo and the text.
@@ -46,8 +46,9 @@ public final class AboutWindow: NSPanel {
         close()
     }
 
-    /// Shows the window near the middle of the screen.
+    /// Makes Malum the active app and shows the window near the middle of the screen.
     public func present() {
+        NSApplication.shared.activate()
         center()
         makeKeyAndOrderFront(nil)
     }

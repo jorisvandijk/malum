@@ -42,13 +42,6 @@ public final class InspectorWindow: NSPanel {
         close()
     }
 
-    /// Closes the panel and hands the front back to the app that had it, when Malum took it for the
-    /// menu's Inspect window.
-    override public func close() {
-        super.close()
-        NSApplication.shared.deactivate()
-    }
-
     /// Puts the report on the clipboard.
     @objc private func copyReport() {
         onCopy()
