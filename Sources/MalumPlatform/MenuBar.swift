@@ -12,6 +12,8 @@ public final class MenuBar: NSObject {
     private static let calmSymbol = "leaf"
     /// The SF Symbol shown while something needs attention.
     private static let alertSymbol = "exclamationmark.triangle"
+    /// How often the arrow is put back while the menu is open: about once a frame.
+    private static let arrowRefreshSeconds = 0.016
 
     /// The icon and its menu.
     private let item: NSStatusItem
@@ -24,6 +26,8 @@ public final class MenuBar: NSObject {
     private let logo: NSImage?
     /// The About window, built the first time it's asked for.
     private lazy var about = AboutWindow()
+    /// Puts the arrow back while the menu is open, or nil while it's closed.
+    private var arrowKeeper: Timer?
 
     /// Puts the icon in the menu bar. `onPick` runs when the user picks an item the app handles:
     /// run, show the log, reload, leave safe mode, enable a module, or quit.
@@ -105,6 +109,18 @@ public final class MenuBar: NSObject {
         }
     }
 
+    /// Puts the arrow back about once a frame while the menu tracks the pointer, since the app
+    /// underneath, such as a terminal, keeps setting its own cursor as the pointer moves even while
+    /// Malum is in front.
+    private func keepArrow() {
+        let timer = Timer(timeInterval: Self.arrowRefreshSeconds, repeats: true) { _ in
+            MainActor.assumeIsolated { NSCursor.arrow.set() }
+        }
+        RunLoop.main.add(timer, forMode: .eventTracking)
+        arrowKeeper = timer
+        NSCursor.arrow.set()
+    }
+
     /// Opens `path` in its default app, or shows it in Finder when no app takes it.
     private static func open(file path: String) {
         let url = URL(fileURLWithPath: path)
@@ -116,15 +132,23 @@ public final class MenuBar: NSObject {
 // MARK: - NSMenuDelegate
 
 extension MenuBar: NSMenuDelegate {
-    /// Makes Malum the active app while its menu is open, so the app underneath, such as a terminal
-    /// that sets its own cursor, doesn't turn the pointer into a text cursor over the items.
+    /// Makes Malum the active app while its menu is open and keeps the arrow over every part of it,
+    /// so the app underneath doesn't turn the pointer into a text cursor.
     public func menuWillOpen(_ menu: NSMenu) {
         NSApplication.shared.activate()
+        keepArrow()
     }
 
-    /// Hands the front back to the app before, unless the picked item opened a Malum window. The
-    /// picked item runs after the menu closes, so this waits for it.
+    /// Puts the arrow back as soon as the pointer moves to another item.
+    public func menu(_ menu: NSMenu, willHighlight item: NSMenuItem?) {
+        NSCursor.arrow.set()
+    }
+
+    /// Stops keeping the arrow, and hands the front back to the app before unless the picked item
+    /// opened a Malum window. The picked item runs after the menu closes, so this waits for it.
     public func menuDidClose(_ menu: NSMenu) {
+        arrowKeeper?.invalidate()
+        arrowKeeper = nil
         Task { @MainActor in
             guard NSApplication.shared.keyWindow == nil else { return }
             NSApplication.shared.deactivate()
