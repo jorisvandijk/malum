@@ -5,12 +5,12 @@ import MalumCore
 /// Copy button. It shows without making Malum the active app, and esc or its close button shuts it.
 @MainActor
 public final class InspectorWindow: NSPanel {
-    /// The room round the rows and between the rows and the button.
-    private static let margin = 16.0
+    /// The room between the rows and the button.
+    private static let buttonGap = 24.0
     /// The room between a row's label and its value.
-    private static let columnGap = 12.0
+    private static let columnGap = 16.0
     /// The room between rows.
-    private static let rowGap = 6.0
+    private static let rowGap = 8.0
     /// The widest a value gets before it wraps.
     private static let valueWidth = 420.0
 
@@ -76,8 +76,9 @@ extension InspectorWindow: InspectorPanel {
         let stack = NSStackView(views: [Self.grid(of: lines), button])
         stack.orientation = .vertical
         stack.alignment = .trailing
-        stack.spacing = Self.margin
-        stack.edgeInsets = NSEdgeInsets(top: Self.margin, left: Self.margin, bottom: Self.margin, right: Self.margin)
+        stack.spacing = Self.buttonGap
+        let margin = PanelLayout.margin
+        stack.edgeInsets = NSEdgeInsets(top: margin, left: margin, bottom: margin, right: margin)
         contentView = stack
         setContentSize(stack.fittingSize)
         center()
