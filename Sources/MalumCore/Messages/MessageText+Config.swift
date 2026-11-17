@@ -142,7 +142,7 @@ extension MessageText {
     static var plistValue: MessageText { "text, a number, true or false, or a list or table of them" }
 
     /// What a value in a JSON file has to be.
-    static var jsonValue: MessageText { "text, a number, true or false, or a list of them" }
+    static var jsonValue: MessageText { "text, a number, true or false, or a list or table of them" }
 
     /// What a value in a file of calls, such as `user_pref`, has to be.
     static var callValue: MessageText { "text, a number, or true or false" }

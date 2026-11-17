@@ -22,19 +22,34 @@ struct AppConfig: Sendable {
     let files: [AppConfigFile]
     /// Whether the app lists extensions to install, as VSCodium does.
     let extensions: Bool
+    /// Whether the app keeps each preference as JSON in a data value, as apps that store them with
+    /// Swift's `Codable` do.
+    let jsonPreferences: Bool
+    /// Whether the app is sandboxed: its files and preferences live in its container in
+    /// `Library/Containers/<domain>`, which macOS makes when the app first opens.
+    let sandboxed: Bool
 
     /// Creates the app called `name`, which gets `files`, its preferences in `domain` and its
     /// system-wide ones in `policies` when those are set, and the extensions it lists when it has
-    /// `extensions`.
+    /// `extensions`. Its preferences are written as JSON when it has `jsonPreferences`, and only
+    /// once its container is there when it's `sandboxed`.
     init(
         name: String, domain: String? = nil, policies: String? = nil, files: [AppConfigFile] = [],
-        extensions: Bool = false
+        extensions: Bool = false, jsonPreferences: Bool = false, sandboxed: Bool = false
     ) {
         self.name = name
         self.domain = domain
         self.policies = policies
         self.files = files
         self.extensions = extensions
+        self.jsonPreferences = jsonPreferences
+        self.sandboxed = sandboxed
+    }
+
+    /// The app's container, relative to the home folder, or nil when it isn't sandboxed.
+    var container: String? {
+        guard sandboxed, let domain else { return nil }
+        return Paths.container(of: domain)
     }
 
     /// What the app gets from its file in `apps/`, which `reader` holds, adding each problem found
@@ -59,7 +74,9 @@ struct AppConfig: Sendable {
         var preferences: [AppPreference] = []
         for (name, domain) in preferenceTables {
             let table = reader.table(reader.document, name, at: [])
-            let entries = reader.entries(table, at: [name], expected: MessageText.plistValue, write: PlistText.document)
+            let entries = reader.entries(
+                table, at: [name], expected: MessageText.plistValue,
+                write: jsonPreferences ? PlistText.jsonData : PlistText.document)
             preferences += entries.map { AppPreference(domain: domain, key: $0.key, value: $0.value) }
         }
         return preferences

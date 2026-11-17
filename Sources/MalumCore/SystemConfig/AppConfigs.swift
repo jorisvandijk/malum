@@ -31,6 +31,12 @@ enum AppConfigs {
 
         """
 
+    /// MarkEdit's bundle ID, which names its preferences and its container.
+    private static let markEdit = "app.cyan.markedit"
+
+    /// Where MarkEdit reads its settings file and the CSS it adds to the editor.
+    private static let markEditDocuments = Paths.containerDocuments(of: markEdit)
+
     /// The apps, each read from `apps/<name>.toml`.
     static let all = [
         AppConfig(name: "amphetamine", domain: "com.if.Amphetamine"),
@@ -64,6 +70,15 @@ enum AppConfigs {
                     "\(libreWolf)/Profiles/default/user.js", .calls(table: "settings", function: "user_pref")),
                 AppConfigFile("\(libreWolf)/Profiles/default/chrome/userChrome.css", .css(table: "user_chrome")),
             ]),
+        AppConfig(
+            name: "markedit",
+            domain: markEdit,
+            files: [
+                AppConfigFile("\(markEditDocuments)/settings.json", .json(table: "settings")),
+                AppConfigFile("\(markEditDocuments)/editor.css", .css(table: "css")),
+            ],
+            jsonPreferences: true,
+            sandboxed: true),
         AppConfig(
             name: "micro",
             files: [

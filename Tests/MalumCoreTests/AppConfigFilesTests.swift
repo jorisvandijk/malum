@@ -132,6 +132,23 @@ struct AppConfigFilesTests {
             messages == [Message(.error, "couldn't write git's config file: couldn't write \(config): it's a folder")])
     }
 
+    @Test func sandboxedAppIsSkippedUntilItsContainerIsThere() async throws {
+        let markEdit = "/Users/test/dots/apps/markedit.toml"
+        let settings = "/Users/test/Library/Containers/app.cyan.markedit/Data/Documents/settings.json"
+        let files = FakeFileSystem(texts: [markEdit: "[settings]\n\"editor.autoSaveWhenIdle\" = true\n"])
+        let (succeeded, messages) = await run(files)
+        #expect(succeeded)
+        #expect(
+            messages == [
+                Message(
+                    .warn, "skipped apps/markedit.toml: open markedit once first, so macOS makes its settings folder")
+            ])
+        #expect(files.text(at: settings) == nil)
+        try files.createDirectory("/Users/test/Library/Containers/app.cyan.markedit")
+        _ = await run(files)
+        #expect(files.text(at: settings) == "{\n    \"editor.autoSaveWhenIdle\": true\n}\n")
+    }
+
     @Test func droppedFileIsRemoved() async {
         let files = FakeFileSystem(texts: [toml: "[ignore]\npatterns = [\"*.swp\"]\n"])
         _ = await run(files)

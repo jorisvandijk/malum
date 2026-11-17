@@ -244,7 +244,7 @@ struct AppConfigsTests {
             """
             [settings]
             when = 2026-11-05
-            nested = [[1]]
+            nested = [{ at = 2026-11-05 }]
 
             [colorschemes]
             plain = 1
@@ -254,8 +254,8 @@ struct AppConfigsTests {
             """, app: "micro")
         #expect(
             problems == [
-                Message(.error, "settings.nested should be text, a number, true or false, or a list of them"),
-                Message(.error, "settings.when should be text, a number, true or false, or a list of them"),
+                Message(.error, "settings.nested should be text, a number, true or false, or a list or table of them"),
+                Message(.error, "settings.when should be text, a number, true or false, or a list or table of them"),
                 Message(.error, "colorschemes.\".hidden\": the name can't be empty, start with a dot or hold /"),
                 Message(.error, "colorschemes.plain should be a table"),
             ])

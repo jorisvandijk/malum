@@ -36,22 +36,21 @@ public struct AppConfigFiles {
             report(.noAppsFolder(missing: folder))
             return true
         }
-        let names: [String]
-        do {
-            names = try files.contents(of: folder).filter { ($0 as NSString).pathExtension == Paths.tomlExtension }
-                .sorted()
-        } catch {
-            report(.failed(.writeAppFiles, error))
-            return false
-        }
+        guard let names = tomlFiles(in: folder, report: report) else { return false }
         var wanted: [(app: String, file: AppFile)] = []
         var preferences: [(app: String, preference: AppPreference)] = []
         var extensions: [String] = []
         var broken: Set<String> = []
+        var waiting: Set<String> = []
         for fileName in names {
             let name = (fileName as NSString).deletingPathExtension
             guard let app = AppConfigs.app(named: name) else {
                 report(.unknownApp(name))
+                continue
+            }
+            if let container = app.container, files.item(at: "\(paths.home)/\(container)") == nil {
+                report(.notOpenedYet(app: name))
+                waiting.insert(name)
                 continue
             }
             guard let settings = read(app, from: "\(folder)/\(fileName)", report: report) else {
@@ -62,10 +61,11 @@ public struct AppConfigFiles {
             preferences += settings.preferences.map { (name, $0) }
             extensions += settings.extensions
         }
+        let keeping = broken.union(waiting)
         let wrote = AppFileWriter(files: files, state: state, paths: paths).write(
-            wanted, keeping: broken, report: report)
+            wanted, keeping: keeping, report: report)
         let set = await AppPreferenceWriter(runner: runner, files: files, sudo: sudo, state: state).write(
-            preferences, keeping: broken, report: report)
+            preferences, keeping: keeping, report: report)
         let installed = await install(extensions, keeping: broken, report: report)
         return wrote && set && installed && broken.isEmpty
     }
@@ -75,6 +75,17 @@ public struct AppConfigFiles {
     private func install(_ ids: [String], keeping broken: Set<String>, report: (Message) -> Void) async -> Bool {
         guard !AppConfigs.all.contains(where: { $0.extensions && broken.contains($0.name) }) else { return true }
         return await VSCodiumExtensions(runner: runner, files: files, state: state).run(ids, report: report)
+    }
+
+    /// The names of the TOML files in `folder`, sorted, or nil after reporting why they can't be listed.
+    private func tomlFiles(in folder: String, report: (Message) -> Void) -> [String]? {
+        do {
+            return try files.contents(of: folder).filter { ($0 as NSString).pathExtension == Paths.tomlExtension }
+                .sorted()
+        } catch {
+            report(.failed(.writeAppFiles, error))
+            return nil
+        }
     }
 
     /// What `app` asks for in its file at `path`, or nil when an error in it stops it.

@@ -17,6 +17,10 @@ public struct Paths: Equatable, Sendable {
     static let tomlExtension = "toml"
     /// The folder for apps' own data, relative to home.
     static let applicationSupportRoot = "Library/Application Support"
+    /// The folder of sandboxed apps' containers, relative to home.
+    private static let containersRoot = "Library/Containers"
+    /// Where a sandboxed app's own files are inside its container.
+    private static let containerDocuments = "Data/Documents"
     /// The folder of the apps every user has, where casks and the App Store put them.
     static let systemApplications = "/Applications"
     /// The folder Malum is installed in, relative to home.
@@ -146,6 +150,15 @@ public struct Paths: Equatable, Sendable {
     /// holds no `/`, so it can't reach outside the folder it's put in.
     public static func isPlainName(_ name: String) -> Bool {
         !name.isEmpty && !name.hasPrefix(".") && !name.contains("/")
+    }
+
+    /// The container of the sandboxed app with the bundle ID `bundleID`, relative to home.
+    static func container(of bundleID: String) -> String { "\(containersRoot)/\(bundleID)" }
+
+    /// The folder a sandboxed app with the bundle ID `bundleID` keeps its own files in, relative to
+    /// home.
+    static func containerDocuments(of bundleID: String) -> String {
+        "\(container(of: bundleID))/\(containerDocuments)"
     }
 
     /// The folder `path` is in.

@@ -44,6 +44,13 @@ extension Message {
         Message(.warn, "\(Paths.appFile(named: name)): \(Project.name) has no app called \(name)")
     }
 
+    /// `app` is sandboxed and hasn't been opened yet, so macOS hasn't made the folder its settings
+    /// go in.
+    static func notOpenedYet(app: String) -> Message {
+        Message(
+            .warn, "skipped \(Paths.appFile(named: app)): open \(app) once first, so macOS makes its settings folder")
+    }
+
     /// Writing one of `app`'s config files failed.
     static func writeFailed(app: String, _ error: any Error) -> Message {
         failed("write \(app)'s config file", error)
