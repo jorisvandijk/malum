@@ -282,7 +282,7 @@ The profile is always called `default`. When `~/Library/Application Support/Libr
 
 ### MarkEdit
 
-`apps/markedit.toml` sets MarkEdit's preferences, writes its settings file, `settings.json`, and adds CSS to its editor, `editor.css`. MarkEdit is sandboxed, so both files go in its own folder, `~/Library/Containers/app.cyan.markedit/Data/Documents`, which macOS makes the first time MarkEdit opens. Until then Malum skips the file with a warning: open MarkEdit once, then run again. MarkEdit reads all of it when it starts: quit and reopen it after a run. Install MarkEdit itself with the `markedit` cask.
+`apps/markedit.toml` sets MarkEdit's preferences, writes its settings file, `settings.json`, adds CSS to its editor, `editor.css`, and installs its extensions. MarkEdit is sandboxed, so both files go in its own folder, `~/Library/Containers/app.cyan.markedit/Data/Documents`, which macOS makes the first time MarkEdit opens. Until then Malum skips the file with a warning: open MarkEdit once, then run again. MarkEdit reads all of it when it starts: quit and reopen it after a run. Install MarkEdit itself with the `markedit` cask.
 
 ```toml
 [preferences]
@@ -296,6 +296,9 @@ The profile is always called `default`. When `~/Library/Application Support/Libr
 "general.updateBehavior" = "never"
 "extension.markeditPreview" = { syncScroll = true, themeName = "github" }
 
+[extensions]
+ids = ["markedit-preview", "markedit-theme-one-dark"]
+
 [css]
 text = '''
 .cm-md-codeBlock, .cm-md-codeBlock * { font-family: Menlo !important; }
@@ -305,6 +308,7 @@ text = '''
 - `[preferences]`: what MarkEdit's Settings window sets, by the names in [its source](https://github.com/MarkEdit-app/MarkEdit/blob/main/MarkEditMac/Sources/Main/AppPreferences.swift), such as `editor.light-theme`, `editor.dark-theme`, `editor.font-size`, `editor.show-line-numbers` and `editor.line-wrapping`. MarkEdit keeps each one as JSON, so Malum writes it that way: text, numbers and `true` or `false` as they are, and a choice with details as a table, such as the font above. Themes go by their id, such as `github-light`, `dracula` or `solarized-dark`. Like [app preferences](#app-preferences), Malum owns each one it sets.
 - `[settings]`: the [advanced settings](https://github.com/MarkEdit-app/MarkEdit/wiki/Customization#advanced-settings) and each extension's own settings, as `"name" = value`, written to `settings.json`. A value can be a table or a list of tables. MarkEdit ignores the whole file when one value in it is wrong.
 - `[css]`: `text` is written to `editor.css` as it is, for what the settings don't cover, such as the font of code blocks.
+- `[extensions]`: `ids` lists extensions and themes by their id in [MarkEdit's registry](https://github.com/MarkEdit-app/extensions/blob/main/index.json), the list its Extensions window shows. Malum downloads each one's script into `scripts/` in the same folder, checks it against the registry's checksum, and updates it when the registry has a newer version. MarkEdit runs every script there, so a listed extension is also switched on. One you take out of the list is removed; ones you installed yourself from the Extensions window are left alone, unless you list them, then Malum takes them over.
 
 ### micro
 

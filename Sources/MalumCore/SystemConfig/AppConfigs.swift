@@ -1,5 +1,5 @@
 /// Every app system config writes config files or preferences for, each described by its files
-/// and their formats, its preferences domain, or whether it lists extensions.
+/// and their formats, its preferences domain, or where its extensions come from.
 enum AppConfigs {
     /// LibreWolf's folder, which holds its profiles.
     private static let libreWolf = "\(Paths.applicationSupportRoot)/LibreWolf"
@@ -77,6 +77,7 @@ enum AppConfigs {
                 AppConfigFile("\(markEditDocuments)/settings.json", .json(table: "settings")),
                 AppConfigFile("\(markEditDocuments)/editor.css", .css(table: "css")),
             ],
+            extensions: .markEdit(scripts: "\(markEditDocuments)/scripts"),
             jsonPreferences: true,
             sandboxed: true),
         AppConfig(
@@ -111,7 +112,7 @@ enum AppConfigs {
                     always: true),
                 AppConfigFile(".vscode-oss/argv.json", .json(table: "argv")),
             ],
-            extensions: true),
+            extensions: .vscodium),
         AppConfig(
             name: "zsh",
             files: [

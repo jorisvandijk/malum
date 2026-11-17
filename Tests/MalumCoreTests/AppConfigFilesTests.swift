@@ -22,8 +22,8 @@ struct AppConfigFilesTests {
     private func run(_ files: FakeFileSystem) async -> (Bool, [Message]) {
         var messages: [Message] = []
         let succeeded = await AppConfigFiles(
-            files: files, runner: FakeRunner(), sudo: SudoSession(runner: FakeRunner(), canAsk: false),
-            state: state(files),
+            files: files, runner: FakeRunner(), github: FakeGitHub([:], files: files),
+            sudo: SudoSession(runner: FakeRunner(), canAsk: false), state: state(files),
             paths: Paths(home: home)
         ).run(
             dots: "/Users/test/dots"
@@ -213,7 +213,8 @@ struct AppConfigFilesTests {
         try InstalledRecord.change(in: state(files)) { $0.extensions = ["a.b"] }
         let runner = FakeRunner()
         _ = await AppConfigFiles(
-            files: files, runner: runner, sudo: SudoSession(runner: runner, canAsk: false), state: state(files),
+            files: files, runner: runner, github: FakeGitHub([:], files: files),
+            sudo: SudoSession(runner: runner, canAsk: false), state: state(files),
             paths: Paths(home: home)
         ).run(
             dots: "/Users/test/dots"
@@ -236,7 +237,8 @@ struct AppConfigFilesTests {
         let files = FakeFileSystem(texts: [toml: settings, "/Users/jo ris/.config/git/config": "old\n"])
         var messages: [Message] = []
         _ = await AppConfigFiles(
-            files: files, runner: FakeRunner(), sudo: SudoSession(runner: FakeRunner(), canAsk: false),
+            files: files, runner: FakeRunner(), github: FakeGitHub([:], files: files),
+            sudo: SudoSession(runner: FakeRunner(), canAsk: false),
             state: StateFolder(files: files, locks: FakeFileLocks(), paths: Paths(home: "/Users/jo ris")),
             paths: Paths(home: "/Users/jo ris")
         ).run(dots: "/Users/test/dots") { messages.append($0) }

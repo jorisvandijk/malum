@@ -68,8 +68,9 @@ public struct RunCommand {
             let sudo = SudoSession(runner: runner, canAsk: canAsk)
             defer { sudo.end() }
             let packages = await installPackages(dots: dots, folders: folders, sudo: sudo, state: state, report: report)
-            let apps = await AppConfigFiles(files: files, runner: runner, sudo: sudo, state: state, paths: paths).run(
-                dots: dots, report: report)
+            let apps = await AppConfigFiles(
+                files: files, runner: runner, github: github, sudo: sudo, state: state, paths: paths
+            ).run(dots: dots, report: report)
             let macOS = await MacOSSettings(
                 files: files, runner: runner, sudo: sudo, state: state, paths: paths, handlers: handlers,
                 display: display

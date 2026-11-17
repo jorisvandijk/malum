@@ -2,8 +2,8 @@ import Foundation
 
 /// What Malum installed or took over, kept in the state folder and shaped like `packages.toml`,
 /// plus the app config files it wrote, the app preferences and macOS settings it set, the files in
-/// `/etc` it wrote, the power settings it set and the VSCodium extensions it installed. Only what's in here is ever
-/// uninstalled or removed.
+/// `/etc` it wrote, the power settings it set and the VSCodium and MarkEdit extensions it installed.
+/// Only what's in here is ever uninstalled or removed.
 public struct InstalledRecord: Codable, Equatable, Sendable {
     /// The record's file in the state folder.
     static let fileName = "installed.json"
@@ -29,6 +29,8 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
     public var power: [String: [String: ManagedPower]] = [:]
     /// The VSCodium extensions, as `apps/vscodium.toml` lists them.
     public var extensions: Set<String> = []
+    /// The MarkEdit extensions, by their id in `apps/markedit.toml`, with the version installed.
+    public var markEditExtensions: [String: String] = [:]
 
     /// Creates an empty record.
     public init() {}
@@ -44,6 +46,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         case systemFiles = "system_files"
         case power
         case extensions = "vscodium_extensions"
+        case markEditExtensions = "markedit_extensions"
     }
 
     /// The Homebrew packages' keys, named like the values in `packages.toml`.
@@ -68,6 +71,8 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         systemFiles = try container.decodeIfPresent([String: String].self, forKey: .systemFiles) ?? [:]
         power = try container.decodeIfPresent([String: [String: ManagedPower]].self, forKey: .power) ?? [:]
         extensions = Set(try container.decodeIfPresent([String].self, forKey: .extensions) ?? [])
+        markEditExtensions =
+            try container.decodeIfPresent([String: String].self, forKey: .markEditExtensions) ?? [:]
     }
 
     /// Writes the record, sorted, so the file only changes when the record does.
@@ -84,6 +89,7 @@ public struct InstalledRecord: Codable, Equatable, Sendable {
         try container.encode(systemFiles, forKey: .systemFiles)
         try container.encode(power, forKey: .power)
         try container.encode(extensions.sorted(), forKey: .extensions)
+        try container.encode(markEditExtensions, forKey: .markEditExtensions)
     }
 
     /// The Homebrew packages of `kind`.
