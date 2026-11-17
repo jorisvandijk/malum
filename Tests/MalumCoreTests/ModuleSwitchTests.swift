@@ -108,9 +108,10 @@ struct ModuleSwitchTests {
 
     @Test func updateWaitsForCleanUp() async {
         let modules = moduleSwitch()
-        async let cleanedUp = modules.cleanUp()
-        async let updated = modules.update(enabled: ["launcher"], settings: [:], changed: [])
-        _ = await (cleanedUp, updated)
+        // The update can only start once this test suspends, which is after the cleanup is queued.
+        let updated = Task { await modules.update(enabled: ["launcher"], settings: [:], changed: []) }
+        _ = await modules.cleanUp()
+        _ = await updated.value
         #expect(launcher.calls == ["clean up", "apply ", "start"])
     }
 
