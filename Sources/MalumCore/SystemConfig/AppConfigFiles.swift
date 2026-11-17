@@ -48,10 +48,16 @@ public struct AppConfigFiles {
         var preferences: [(app: String, preference: AppPreference)] = []
         var extensions: [String] = []
         var broken: Set<String> = []
+        var waiting: Set<String> = []
         for fileName in names {
             let name = (fileName as NSString).deletingPathExtension
             guard let app = AppConfigs.app(named: name) else {
                 report(.unknownApp(name))
+                continue
+            }
+            if let container = app.container, files.item(at: "\(paths.home)/\(container)") == nil {
+                report(.notOpenedYet(app: name))
+                waiting.insert(name)
                 continue
             }
             guard let settings = read(app, from: "\(folder)/\(fileName)", report: report) else {
@@ -62,10 +68,11 @@ public struct AppConfigFiles {
             preferences += settings.preferences.map { (name, $0) }
             extensions += settings.extensions
         }
+        let keeping = broken.union(waiting)
         let wrote = AppFileWriter(files: files, state: state, paths: paths).write(
-            wanted, keeping: broken, report: report)
+            wanted, keeping: keeping, report: report)
         let set = await AppPreferenceWriter(runner: runner, files: files, sudo: sudo, state: state).write(
-            preferences, keeping: broken, report: report)
+            preferences, keeping: keeping, report: report)
         let installed = await install(extensions, keeping: broken, report: report)
         return wrote && set && installed && broken.isEmpty
     }

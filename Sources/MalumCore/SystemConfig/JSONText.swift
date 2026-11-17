@@ -11,10 +11,20 @@ enum JSONText {
         return "{\n" + lines.joined(separator: ",\n") + "\n}\n"
     }
 
-    /// One value as JSON, or nil when it isn't text, a number, true or false, or a list of them.
-    private static func value(_ value: ConfigValue) -> String? {
-        guard case .array(let items) = value else { return scalar(value) }
-        return list(items)
+    /// One value as JSON on one line, or nil when it isn't text, a number, true or false, or a
+    /// list or table of them.
+    static func value(_ value: ConfigValue) -> String? {
+        switch value {
+        case .array(let items):
+            items.map(Self.value).allPresent().map { "[" + $0.joined(separator: ", ") + "]" }
+        case .table(let table):
+            table.keys.sorted().map { key in
+                table[key].flatMap(Self.value).map { Escaping.quoted(key, controls: .all) + ": " + $0 }
+            }
+            .allPresent().map { "{" + $0.joined(separator: ", ") + "}" }
+        case .string, .integer, .float, .boolean, .date:
+            scalar(value)
+        }
     }
 
     /// One value as JSON, or nil when it isn't text, a number, or true or false.
@@ -31,13 +41,5 @@ enum JSONText {
         case .array, .date, .table:
             nil
         }
-    }
-
-    /// `items` as a JSON list on one line, or nil when one of them isn't text, a number, or true
-    /// or false.
-    private static func list(_ items: [ConfigValue]) -> String? {
-        let written = items.compactMap(scalar)
-        guard written.count == items.count else { return nil }
-        return "[" + written.joined(separator: ", ") + "]"
     }
 }
