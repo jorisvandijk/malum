@@ -6,6 +6,11 @@ extension MessageText {
         return "secure input is on\(holder), so no shortcut works until it's off"
     }
 
+    /// Why Malum asks macOS not to nap it, which `pmset -g assertions` and Activity Monitor show.
+    public static var catchingKeys: MessageText {
+        "catching keys for the hyper key and shortcuts"
+    }
+
     /// Modifier Keys in System Settings turns `key`, the hyper key, into another key on a keyboard.
     static func hyperKeySwapped(_ key: Key) -> MessageText {
         """
