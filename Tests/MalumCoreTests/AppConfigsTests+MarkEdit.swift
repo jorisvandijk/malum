@@ -62,6 +62,6 @@ extension AppConfigsTests {
     private func json(in document: String) throws -> String {
         let value = try PropertyListSerialization.propertyList(from: Data(document.utf8), format: nil)
         let data = try #require(value as? Data)
-        return String(decoding: data, as: UTF8.self)
+        return try #require(String(bytes: data, encoding: .utf8))
     }
 }

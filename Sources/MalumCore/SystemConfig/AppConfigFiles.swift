@@ -36,14 +36,7 @@ public struct AppConfigFiles {
             report(.noAppsFolder(missing: folder))
             return true
         }
-        let names: [String]
-        do {
-            names = try files.contents(of: folder).filter { ($0 as NSString).pathExtension == Paths.tomlExtension }
-                .sorted()
-        } catch {
-            report(.failed(.writeAppFiles, error))
-            return false
-        }
+        guard let names = tomlFiles(in: folder, report: report) else { return false }
         var wanted: [(app: String, file: AppFile)] = []
         var preferences: [(app: String, preference: AppPreference)] = []
         var extensions: [String] = []
@@ -82,6 +75,17 @@ public struct AppConfigFiles {
     private func install(_ ids: [String], keeping broken: Set<String>, report: (Message) -> Void) async -> Bool {
         guard !AppConfigs.all.contains(where: { $0.extensions && broken.contains($0.name) }) else { return true }
         return await VSCodiumExtensions(runner: runner, files: files, state: state).run(ids, report: report)
+    }
+
+    /// The names of the TOML files in `folder`, sorted, or nil after reporting why they can't be listed.
+    private func tomlFiles(in folder: String, report: (Message) -> Void) -> [String]? {
+        do {
+            return try files.contents(of: folder).filter { ($0 as NSString).pathExtension == Paths.tomlExtension }
+                .sorted()
+        } catch {
+            report(.failed(.writeAppFiles, error))
+            return nil
+        }
     }
 
     /// What `app` asks for in its file at `path`, or nil when an error in it stops it.
