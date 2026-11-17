@@ -53,6 +53,20 @@ extension AppConfigsTests {
             ])
     }
 
+    @Test func markEditListsExtensionsByRegistryID() throws {
+        let config = try #require(AppConfigs.app(named: "markedit"))
+        var reader = try TableReader(
+            "[extensions]\nids = [\"markedit-preview\", \"markedit-theme-one-dark\"]\n", file: "apps/markedit.toml")
+        #expect(config.read(&reader).extensions == ["markedit-preview", "markedit-theme-one-dark"])
+        var wrong = try TableReader("[extensions]\nids = [\"a.b\"]\n", file: "apps/markedit.toml")
+        _ = config.read(&wrong)
+        #expect(
+            wrong.problems.map { Message($0.level, $0.text) } == [
+                Message(
+                    .error, "extensions.ids should be a list of MarkEdit extension ids, such as \"markedit-preview\"")
+            ])
+    }
+
     @Test func markEditLivesInItsContainer() throws {
         let config = try #require(AppConfigs.app(named: "markedit"))
         #expect(config.container == "Library/Containers/app.cyan.markedit")

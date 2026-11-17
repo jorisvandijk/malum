@@ -20,8 +20,8 @@ struct AppConfig: Sendable {
     let policies: String?
     /// The files the app gets.
     let files: [AppConfigFile]
-    /// Whether the app lists extensions to install, as VSCodium does.
-    let extensions: Bool
+    /// Where the extensions the app lists come from, or nil when it lists none.
+    let extensions: AppExtensions?
     /// Whether the app keeps each preference as JSON in a data value, as apps that store them with
     /// Swift's `Codable` do.
     let jsonPreferences: Bool
@@ -30,12 +30,12 @@ struct AppConfig: Sendable {
     let sandboxed: Bool
 
     /// Creates the app called `name`, which gets `files`, its preferences in `domain` and its
-    /// system-wide ones in `policies` when those are set, and the extensions it lists when it has
-    /// `extensions`. Its preferences are written as JSON when it has `jsonPreferences`, and only
-    /// once its container is there when it's `sandboxed`.
+    /// system-wide ones in `policies` when those are set, and the extensions it lists from
+    /// `extensions` when that's set. Its preferences are written as JSON when it has
+    /// `jsonPreferences`, and only once its container is there when it's `sandboxed`.
     init(
         name: String, domain: String? = nil, policies: String? = nil, files: [AppConfigFile] = [],
-        extensions: Bool = false, jsonPreferences: Bool = false, sandboxed: Bool = false
+        extensions: AppExtensions? = nil, jsonPreferences: Bool = false, sandboxed: Bool = false
     ) {
         self.name = name
         self.domain = domain
@@ -56,7 +56,7 @@ struct AppConfig: Sendable {
     /// to `reader`.
     func read(_ reader: inout TableReader) -> AppSettings {
         let tables =
-            files.flatMap(\.tables) + preferenceTables.map(\.table) + (extensions ? [Self.extensionsTable] : [])
+            files.flatMap(\.tables) + preferenceTables.map(\.table) + (extensions == nil ? [] : [Self.extensionsTable])
         reader.unknownKeys(reader.document, at: [], known: tables)
         let appFiles = files.flatMap { $0.read(reader.document, app: name, reader: &reader) }
         return AppSettings(files: appFiles, preferences: preferences(&reader), extensions: extensionIDs(&reader))
@@ -82,16 +82,15 @@ struct AppConfig: Sendable {
         return preferences
     }
 
-    /// The extensions in `ids` of the table `extensions`, as `publisher.name`, none when the app
-    /// has no extensions.
+    /// The extensions in `ids` of the table `extensions`, none when the app has no extensions.
     private func extensionIDs(_ reader: inout TableReader) -> [String] {
-        guard extensions else { return [] }
+        guard let extensions else { return [] }
         let table = reader.table(reader.document, Self.extensionsTable, at: [])
         reader.unknownKeys(table, at: [Self.extensionsTable], known: [Self.extensionsKey])
         let path = [Self.extensionsTable, Self.extensionsKey]
         guard let value = table[Self.extensionsKey] else { return [] }
-        guard let ids = TableReader.texts(value), ids.allSatisfy(Codium.isExtensionID) else {
-            reader.expect(path, MessageText.extensionList)
+        guard let ids = TableReader.texts(value), ids.allSatisfy(extensions.isID) else {
+            reader.expect(path, extensions.expected)
             return []
         }
         return ids
@@ -104,6 +103,6 @@ struct AppSettings: Sendable {
     let files: [AppFile]
     /// The preferences to set.
     let preferences: [AppPreference]
-    /// The extensions to install, as `publisher.name`.
+    /// The extensions to install, by their ids.
     let extensions: [String]
 }
