@@ -160,8 +160,24 @@ final class SambaModule: Module {
         }
         guard reachable else { return .unreachable }
         let volume = "\(Self.volumes)/\(share)"
-        guard system.files.item(at: volume) == nil else { return .taken(path: volume) }
+        guard isFree(volume) else { return .taken(path: volume) }
         return await mount(share, from: server, at: volume)
+    }
+
+    /// Whether `volume` is free to mount at. An empty folder there is what an earlier mount left
+    /// behind, such as when the unmount finished after `diskutil` gave up on a sleeping Mac, so it's
+    /// removed.
+    private func isFree(_ volume: String) -> Bool {
+        guard system.files.item(at: volume) != nil else { return true }
+        guard (try? system.files.contents(of: volume))?.isEmpty == true else { return false }  // Unlistable is taken.
+        do {
+            try system.files.remove(volume)
+        } catch {
+            log.report(.failed(.removeLeftover(volume), error))
+            return false
+        }
+        log.report(.removedLeftover(volume))
+        return true
     }
 
     /// Mounts `share` from `server` at `volume` with the password in the secrets folder.
