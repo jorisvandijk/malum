@@ -99,6 +99,13 @@ The folder screenshots are saved in.
 
 Makes the Mac match dots when you run `malum run`, installing what `packages.toml` lists, writing the app config files and preferences in `apps/` and setting the macOS settings in `macos.toml`. At the end of the run, Malum updates itself. Nothing happens in the background: the app only reads the switch, and `malum run` does the work.
 
+### `system_config.apple_account_picture`
+
+Makes your user picture your Apple Account's picture, the middle square of it, instead of the one picked when the Mac was set up. It follows the Apple Account's picture when that changes.
+
+- Value: true or false
+- Default: `false`
+
 ### `system_config.enabled`
 
 Switches the module on. The module stays off until this is set to true.

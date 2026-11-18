@@ -103,7 +103,7 @@ func systemConfig(canAsk: Bool, github: GitHubAPI) -> RunCommand {
     RunCommand(
         files: files, paths: paths, runner: runner, github: github, state: state, canAsk: canAsk,
         handlers: WorkspaceAppHandlers(), desktop: WorkspaceDesktop(), display: BuiltInDisplay(),
-        certificate: signingCertificate(),
+        pictures: ImageIOSquarePictures(), user: NSUserName(), certificate: signingCertificate(),
         appBundle: executable.flatMap(AppBundle.bundle(ofExecutable:)) ?? Bundle.main.bundlePath)
 }
 

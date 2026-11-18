@@ -13,6 +13,13 @@ public enum SystemConfig {
             Nothing happens in the background: the app only reads the switch, and `malum run` does the work.
             """,
         settings: [
+            AccountPicture.key: Setting(
+                .boolean,
+                """
+                Makes your user picture your Apple Account's picture, the middle square of it, instead of \
+                the one picked when the Mac was set up. It follows the Apple Account's picture when that changes.
+                """,
+                default: .boolean(false)),
             ReleaseFolders.appsKey: Setting(
                 .string, "The folder apps from GitHub releases are installed in.",
                 default: .string(ReleaseFolders.defaultApps)),

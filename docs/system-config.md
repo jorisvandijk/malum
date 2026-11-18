@@ -35,6 +35,22 @@ wallpaper = "dunes"
 [info] set the wallpaper to dunes.jpg from wallpapers in dots
 ```
 
+## User picture
+
+To make your user picture, the one on the login screen and in System Settings, your Apple Account's picture instead of the one picked when the Mac was set up:
+
+```toml
+[system_config]
+enabled = true
+apple_account_picture = true
+```
+
+`malum run` takes the middle square of the Apple Account's picture, keeps it in Malum's state folder and makes it your user picture. It asks for your password the first time, and again only when the Apple Account's picture changes or the user picture was changed by hand. With no Apple Account signed in, it warns and leaves the picture as it is.
+
+```
+[info] your user picture is your Apple Account's picture now
+```
+
 ## packages.toml
 
 What gets installed is listed in `packages.toml`, at the top of your dots folder, next to `malum.toml`. Each way of installing has its own table: `[homebrew]`, `[app_store]` and `[release.<name>]`.

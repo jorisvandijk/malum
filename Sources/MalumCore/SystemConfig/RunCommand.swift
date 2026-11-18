@@ -21,16 +21,20 @@ public struct RunCommand {
     private let display: any Display
     /// Signs the web apps.
     private let certificate: SigningCertificate
+    /// Cuts the user's picture out of the Apple Account's picture.
+    private let pictures: any SquarePictures
+    /// The user running Malum.
+    private let user: String
     /// The running app's bundle, whose web app executable the web apps are copies of.
     private let appBundle: String
 
     /// Creates the command, which asks for the password only when `canAsk` is set, sets the
     /// default apps through `handlers`, the wallpaper through `desktop` and the screen's size
-    /// through `display`.
+    /// through `display`, and the picture of `user` through `pictures`.
     public init(
         files: any FileSystem, paths: Paths, runner: any CommandRunner, github: any GitHub, state: StateFolder,
         canAsk: Bool, handlers: any AppHandlers, desktop: any Desktop, display: any Display,
-        certificate: SigningCertificate, appBundle: String
+        pictures: any SquarePictures, user: String, certificate: SigningCertificate, appBundle: String
     ) {
         self.files = files
         self.paths = paths
@@ -41,6 +45,8 @@ public struct RunCommand {
         self.handlers = handlers
         self.desktop = desktop
         self.display = display
+        self.pictures = pictures
+        self.user = user
         self.certificate = certificate
         self.appBundle = appBundle
     }
@@ -75,19 +81,31 @@ public struct RunCommand {
                 files: files, runner: runner, sudo: sudo, state: state, paths: paths, handlers: handlers,
                 display: display
             ).run(dots: dots, report: report)
-            let wallpaper = Wallpaper(files: files, paths: paths, desktop: desktop).set(
-                settings, dots: dots, report: report)
+            let looks = await setPictures(settings, dots: dots, sudo: sudo, report: report)
             let webApps = await WebAppInstaller(
                 files: files, runner: runner, paths: paths, state: state, certificate: certificate,
                 executable: Paths.webAppExecutable(in: appBundle)
             ).run(dots: dots, report: report)
-            succeeded = packages && apps && macOS && wallpaper && webApps
+            succeeded = packages && apps && macOS && looks && webApps
         } catch {
             report(.failed(error))
             return false
         }
         if succeeded { report(.systemConfigDone) }
         return succeeded
+    }
+
+    /// Sets the wallpaper from the dots folder `dots` and the user's picture, as `settings` says,
+    /// asking for the password through `sudo`. Says whether both worked.
+    private func setPictures(
+        _ settings: ConfigTable, dots: String, sudo: SudoSession, report: (Message) -> Void
+    ) async -> Bool {
+        let wallpaper = Wallpaper(files: files, paths: paths, desktop: desktop).set(
+            settings, dots: dots, report: report)
+        let picture = await AccountPicture(
+            files: files, paths: paths, runner: runner, sudo: sudo, state: state, pictures: pictures, user: user
+        ).set(settings, report: report)
+        return wallpaper && picture
     }
 
     /// Reads `packages.toml` from the dots folder `dots` and installs what it lists, asking for the
