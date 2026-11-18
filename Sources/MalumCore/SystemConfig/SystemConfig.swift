@@ -16,8 +16,9 @@ public enum SystemConfig {
             AccountPicture.key: Setting(
                 .boolean,
                 """
-                Makes your user picture your Apple Account's picture, the middle square of it, instead of \
-                the one picked when the Mac was set up. It follows the Apple Account's picture when that changes.
+                Makes your user picture your Apple Account's picture, cropped the way your Apple Account shows it, \
+                instead of the one picked when the Mac was set up. It follows the Apple Account's picture when that \
+                changes.
                 """,
                 default: .boolean(false)),
             ReleaseFolders.appsKey: Setting(

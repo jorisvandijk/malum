@@ -45,7 +45,7 @@ enabled = true
 apple_account_picture = true
 ```
 
-`malum run` takes the middle square of the Apple Account's picture, keeps it in Malum's state folder and makes it your user picture. It asks for your password the first time, and again only when the Apple Account's picture changes or the user picture was changed by hand. With no Apple Account signed in, it warns and leaves the picture as it is.
+`malum run` crops the Apple Account's picture the way your Apple Account shows it (the middle square when macOS doesn't say), keeps it in Malum's state folder and makes it your user picture. Log out and back in to see it in System Settings. It asks for your password the first time, and again only when the Apple Account's picture changes or the user picture was changed by hand. With no Apple Account signed in, it warns and leaves the picture as it is.
 
 ```
 [info] your user picture is your Apple Account's picture now

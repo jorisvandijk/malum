@@ -14,13 +14,19 @@ struct AccountPictureTests {
         <dict><key>AccountUUID</key><string>ABC</string></dict>
         </array></dict></plist>
         """
+    private static let cropList = "/Users/test/Library/Preferences/mbuseragent.plist"
+    private static let crop = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <plist version="1.0"><dict><key>kAOSUIProfilePictureCropRect</key>
+        <string>{{117, 190}, {827, 827}}</string></dict></plist>
+        """
     private static let switchedOn: ConfigTable = [AccountPicture.key: .boolean(true)]
     nonisolated private static let setFailure = "Cannot set the picture"
     private let paths = Paths(home: "/Users/test")
 
     /// Where Malum keeps the picture made from `data`.
     private func kept(_ data: Data = FakeSquarePictures.square) -> String {
-        "\(paths.stateDirectory)/account-picture-\(Fingerprint.of(data)).png"
+        "\(paths.stateDirectory)/account-picture-\(Fingerprint.of(data)).jpg"
     }
 
     /// The `dscl -read` answer naming `picture`.
@@ -28,14 +34,21 @@ struct AccountPictureTests {
         CommandResult(status: 0, output: "Picture:\n \(picture)\n")
     }
 
-    /// Answers `dscl -read` with `current`, and fails setting the picture when `failing` is set.
-    private func dscl(current: CommandResult = showing("/a.heic"), failing: Bool = false) -> FakeRunner {
+    /// Answers reading the picture with `current` and the account's copy with whether `hasPhoto`
+    /// is set, and fails setting the picture when `failing` is set.
+    private func dscl(
+        current: CommandResult = showing("/a.heic"), hasPhoto: Bool = true, failing: Bool = false
+    ) -> FakeRunner {
         FakeRunner { command in
-            guard command.arguments.contains("-read") else {
+            switch command {
+            case Dscl.readPicture(of: "test"):
+                return current
+            case Dscl.readPhoto(of: "test"):
+                return CommandResult(status: hasPhoto ? 0 : 1)
+            default:
                 let refused = failing && command.arguments.contains("-create")
                 return refused ? CommandResult(status: 1, errors: Self.setFailure) : CommandResult(status: 0)
             }
-            return current
         }
     }
 
@@ -58,6 +71,14 @@ struct AccountPictureTests {
         FakeFileSystem(texts: more.merging([Self.accounts: Self.list, Self.cached: "picture"]) { $1 })
     }
 
+    @Test func accountsCropIsUsed() async {
+        let files = signedIn(more: [Self.cropList: Self.crop])
+        let pictures = FakeSquarePictures()
+        let (succeeded, _) = await set(files: files, runner: dscl(), pictures: pictures)
+        #expect(succeeded)
+        #expect(pictures.crop == PictureCrop(left: 117, bottom: 190, width: 827, height: 827))
+    }
+
     @Test func switchedOffChangesNothing() async {
         let runner = dscl()
         let (succeeded, messages) = await set([:], files: signedIn(), runner: runner)
@@ -72,11 +93,14 @@ struct AccountPictureTests {
         let (succeeded, messages) = await set(files: files, runner: runner)
         #expect(succeeded)
         #expect(files.allPaths.contains(kept()))
+        let importFile = "\(paths.stateDirectory)/account-picture.import"
         #expect(
-            runner.commands.suffix(2).map(\.arguments) == [
+            runner.commands.suffix(3).map(\.arguments) == [
                 ["-n", Dscl.path, ".", "-create", "/Users/test", "Picture", kept()],
                 ["-n", Dscl.path, ".", "-delete", "/Users/test", "JPEGPhoto"],
+                ["-n", Dsimport.path, importFile, "/Local/Default", "M"],
             ])
+        #expect(!files.allPaths.contains(importFile))
         #expect(messages.last == Message(.info, "your user picture is your Apple Account's picture now"))
     }
 
@@ -92,11 +116,15 @@ struct AccountPictureTests {
     @Test func newAccountPictureReplacesTheOldOneOnly() async {
         let old = kept(Data("old".utf8))
         let files = signedIn(more: [old: "old"])
-        let runner = dscl(current: Self.showing(old))
+        let runner = dscl(current: Self.showing(old), hasPhoto: false)
         let (succeeded, _) = await set(files: files, runner: runner)
         #expect(succeeded)
         #expect(!files.allPaths.contains(old))
-        #expect(runner.commands.last?.arguments == ["-n", Dscl.path, ".", "-create", "/Users/test", "Picture", kept()])
+        #expect(
+            runner.commands.suffix(2).map(\.arguments) == [
+                ["-n", Dscl.path, ".", "-create", "/Users/test", "Picture", kept()],
+                ["-n", Dsimport.path, "\(paths.stateDirectory)/account-picture.import", "/Local/Default", "M"],
+            ])
     }
 
     @Test func noAppleAccountWarns() async {

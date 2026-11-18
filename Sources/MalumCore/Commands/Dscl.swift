@@ -16,12 +16,17 @@ public enum Dscl {
         Command(path, [localNode, "-read", record(of: user), pictureKey])
     }
 
+    /// Prints the copy of `user`'s picture the account keeps. Fails when there's none.
+    public static func readPhoto(of user: String) -> Command {
+        Command(path, [localNode, "-read", record(of: user), photoKey])
+    }
+
     /// Makes the picture at `picture` `user`'s picture. Only root can run it.
     public static func setPicture(of user: String, to picture: String) -> Command {
         Command(path, [localNode, "-create", record(of: user), pictureKey, picture])
     }
 
-    /// Removes the copy of `user`'s picture, so the one `setPicture` set shows. Only root can run it.
+    /// Removes the copy of `user`'s picture the account keeps. Only root can run it.
     public static func removePhoto(of user: String) -> Command {
         Command(path, [localNode, "-delete", record(of: user), photoKey])
     }
