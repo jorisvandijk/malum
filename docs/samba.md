@@ -59,6 +59,6 @@ A share that can't be mounted shows in the menu bar's menu, with what's wrong:
 
 - **no password:** run `malum samba password <server>`.
 - **the server refused the user or password:** run `malum samba password <server>` with the right one.
-- **already taken:** something else is mounted at `/Volumes/<share>`, such as the same share mounted from Finder.
+- **already taken:** something else is at `/Volumes/<share>`, such as the same share mounted from Finder. An empty folder there, left by an earlier mount, is removed and the share mounted in its place.
 
 What Malum does is in its log, as the [log page](log.md) shows.

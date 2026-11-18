@@ -26,9 +26,11 @@ struct SambaModuleTests {
         }
     }
 
-    private func started(_ servers: [ConfigValue], runner: FakeRunner? = nil) async throws -> SambaModule {
+    private func started(_ servers: [ConfigValue], runner: FakeRunner? = nil, files: FakeFileSystem? = nil)
+        async throws -> SambaModule
+    {
         let system = SambaSystem(
-            shares: shares, network: network, runner: runner ?? self.runner, files: files
+            shares: shares, network: network, runner: runner ?? self.runner, files: files ?? self.files
         ) { [password] _ in password }
         let module = SambaModule(system: system, log: Log(writer: writer)) { [clock] in clock.now }
         module.apply(["server": .array(servers)])
@@ -73,9 +75,27 @@ struct SambaModuleTests {
 
     @Test func takenVolumeIsLeftAlone() async throws {
         shares.reachable.withLock { $0 = ["nas.local"] }
-        try files.createDirectory("/Volumes/media")
+        try files.write("photos", to: "/Volumes/media/notes.txt")
         let module = try await started([nas])
         #expect(shares.asked.withLock { $0 } == ["joris@nas.local/backup secret"])
+        #expect(module.status == .degraded(reason: "nas/media: not mounted, /Volumes/media is already taken"))
+    }
+
+    @Test func emptyLeftoverFolderIsRemovedAndMountedOver() async throws {
+        shares.reachable.withLock { $0 = ["nas.local"] }
+        try files.createDirectory("/Volumes/media")
+        let module = try await started([nas])
+        #expect(files.item(at: "/Volumes/media") == nil)
+        #expect(shares.asked.withLock { $0 } == ["joris@nas.local/media secret", "joris@nas.local/backup secret"])
+        #expect(logged.first == "removed the empty folder /Volumes/media an earlier mount left behind")
+        #expect(module.status == .running)
+    }
+
+    @Test func leftoverFolderThatWontGoIsTaken() async throws {
+        shares.reachable.withLock { $0 = ["nas.local"] }
+        let stuck = FakeFileSystem(items: ["/Volumes/media": .directory], failing: ["/Volumes/media"])
+        let module = try await started([nas], files: stuck)
+        #expect(logged.first?.hasPrefix("couldn't remove the empty folder /Volumes/media") == true)
         #expect(module.status == .degraded(reason: "nas/media: not mounted, /Volumes/media is already taken"))
     }
 

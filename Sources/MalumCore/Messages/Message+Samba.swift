@@ -13,6 +13,13 @@ extension SambaPasswordCommand {
     }
 }
 
+extension MessageText {
+    /// Removing the empty folder at `path` that an earlier mount left behind.
+    static func removeLeftover(_ path: String) -> MessageText {
+        "remove the empty folder \(private: path) an earlier mount left behind"
+    }
+}
+
 extension Message {
     /// The Samba module's own file in dots.
     private static var sambaFile: String { Paths.moduleTOMLName(SambaConfig.module) }
@@ -42,6 +49,11 @@ extension Message {
     /// `path` was unmounted, because its share left the settings.
     static func unmountedDropped(_ path: String) -> Message {
         Message(.info, "unmounted \(private: path), its share is no longer in \(sambaFile)")
+    }
+
+    /// The empty folder at `path` that an earlier mount left behind was removed, to mount there again.
+    static func removedLeftover(_ path: String) -> Message {
+        Message(.info, "removed the empty folder \(private: path) an earlier mount left behind")
     }
 
     /// `diskutil` couldn't take the share off `path`, for `reason`.
