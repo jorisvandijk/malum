@@ -1,5 +1,3 @@
-import Foundation
-
 /// Shows the picture `wallpaper` in `malum.toml` names, from the `wallpapers` folder in dots, on
 /// every screen. Leaving the setting out leaves the wallpaper as it is.
 @MainActor
@@ -26,7 +24,7 @@ struct Wallpaper {
     func set(_ settings: ConfigTable, dots: String, report: (Message) -> Void) -> Bool {
         guard case .string(let name) = settings[Self.key] else { return true }
         let folder = paths.wallpapersFolder(in: dots)
-        guard Paths.isPlainName(name), let file = picture(named: name, in: folder) else {
+        guard let file = DotsPicture.file(named: name, in: folder, on: files) else {
             report(.noWallpaper(name, in: folder))
             return false
         }
@@ -40,13 +38,5 @@ struct Wallpaper {
         }
         report(.wallpaperSet(file))
         return true
-    }
-
-    /// The file in `folder` called `name`, or else the one whose name without its extension is
-    /// `name`, or nil when there's none.
-    private func picture(named name: String, in folder: String) -> String? {
-        let names = ((try? files.contents(of: folder)) ?? []).sorted()  // No folder: no pictures, reported.
-        guard !names.contains(name) else { return name }
-        return names.first { ($0 as NSString).deletingPathExtension == name }
     }
 }

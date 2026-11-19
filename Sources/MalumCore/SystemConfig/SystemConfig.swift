@@ -13,14 +13,6 @@ public enum SystemConfig {
             Nothing happens in the background: the app only reads the switch, and `malum run` does the work.
             """,
         settings: [
-            AccountPicture.key: Setting(
-                .boolean,
-                """
-                Makes your user picture your Apple Account's picture, cropped the way your Apple Account shows it, \
-                instead of the one picked when the Mac was set up. It follows the Apple Account's picture when that \
-                changes.
-                """,
-                default: .boolean(false)),
             ReleaseFolders.appsKey: Setting(
                 .string, "The folder apps from GitHub releases are installed in.",
                 default: .string(ReleaseFolders.defaultApps)),
@@ -40,6 +32,13 @@ public enum SystemConfig {
                 """
                 The picture every screen shows, by its file name in the `\(Paths.wallpapersFolderName)` folder \
                 in dots, with or without its extension. Left out, the wallpaper stays as it is.
+                """),
+            UserPicture.key: Setting(
+                .string,
+                """
+                Your user picture, on the login screen and in Users & Groups, by its file name in the \
+                `\(Paths.picturesFolderName)` folder in dots, with or without its extension. Its middle square is \
+                used. Left out, the user picture stays as it is.
                 """),
         ])
 }

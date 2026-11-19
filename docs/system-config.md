@@ -37,18 +37,18 @@ wallpaper = "dunes"
 
 ## User picture
 
-To make your user picture, the one on the login screen and in System Settings, your Apple Account's picture instead of the one picked when the Mac was set up:
+Put a picture in a `pictures` folder in dots, and pick it in `malum.toml` by its file name, with or without the extension:
 
 ```toml
 [system_config]
 enabled = true
-apple_account_picture = true
+user_picture = "me"
 ```
 
-`malum run` crops the Apple Account's picture the way your Apple Account shows it (the middle square when macOS doesn't say), keeps it in Malum's state folder and makes it your user picture. Log out and back in to see it in System Settings. It asks for your password the first time, and again only when the Apple Account's picture changes or the user picture was changed by hand. With no Apple Account signed in, it warns and leaves the picture as it is.
+`malum run` makes its middle square your user picture, the one on the login screen and in Users & Groups. It asks for your password the first time, and again only when the picture changes or was changed by hand. Leaving `user_picture` out leaves the picture as it is. The picture next to your name at the top of System Settings is your Apple Account's picture, which Malum doesn't change.
 
 ```
-[info] your user picture is your Apple Account's picture now
+[info] set your user picture to me.jpg from pictures in dots
 ```
 
 ## packages.toml

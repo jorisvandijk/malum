@@ -20,14 +20,14 @@ public struct ImageIOSquarePictures {
 // MARK: - SquarePictures
 
 extension ImageIOSquarePictures: SquarePictures {
-    /// The part `crop` of the picture at `path`, or its middle square, scaled to `side`, as a JPEG.
-    public func squareJPEG(of path: String, crop: PictureCrop?) throws(PictureError) -> Data {
+    /// The middle square of the picture at `path`, scaled to `side`, as a JPEG.
+    public func squareJPEG(of path: String) throws(PictureError) -> Data {
         guard
             let source = CGImageSourceCreateWithURL(URL(fileURLWithPath: path) as CFURL, nil),
             let picture = CGImageSourceCreateImageAtIndex(source, 0, nil)
         else { throw .unreadable(path: path) }
         guard
-            let square = picture.cropping(to: area(crop, of: picture)),
+            let square = picture.cropping(to: middleSquare(of: picture)),
             let colours = CGColorSpace(name: CGColorSpace.sRGB),
             let canvas = CGContext(
                 data: nil, width: Self.side, height: Self.side, bitsPerComponent: Self.bitsPerColour, bytesPerRow: 0,
@@ -46,16 +46,12 @@ extension ImageIOSquarePictures: SquarePictures {
         return jpeg as Data
     }
 
-    /// The area of `picture` to keep, measured from its top-left corner as CoreGraphics crops:
-    /// `crop`, which is measured from the bottom-left, or the middle square.
-    private func area(_ crop: PictureCrop?, of picture: CGImage) -> CGRect {
+    /// The middle square of `picture`.
+    private func middleSquare(of picture: CGImage) -> CGRect {
         let width = Double(picture.width)
         let height = Double(picture.height)
-        guard let crop else {
-            let length = min(width, height)
-            return CGRect(
-                x: (width - length) / Self.sides, y: (height - length) / Self.sides, width: length, height: length)
-        }
-        return CGRect(x: crop.left, y: height - crop.bottom - crop.height, width: crop.width, height: crop.height)
+        let length = min(width, height)
+        return CGRect(
+            x: (width - length) / Self.sides, y: (height - length) / Self.sides, width: length, height: length)
     }
 }

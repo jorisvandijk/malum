@@ -21,7 +21,7 @@ public struct RunCommand {
     private let display: any Display
     /// Signs the web apps.
     private let certificate: SigningCertificate
-    /// Cuts the user's picture out of the Apple Account's picture.
+    /// Cuts the square user picture out of a picture in dots.
     private let pictures: any SquarePictures
     /// The user running Malum.
     private let user: String
@@ -95,16 +95,16 @@ public struct RunCommand {
         return succeeded
     }
 
-    /// Sets the wallpaper from the dots folder `dots` and the user's picture, as `settings` says,
+    /// Sets the wallpaper and the user's picture from the dots folder `dots`, as `settings` says,
     /// asking for the password through `sudo`. Says whether both worked.
     private func setPictures(
         _ settings: ConfigTable, dots: String, sudo: SudoSession, report: (Message) -> Void
     ) async -> Bool {
         let wallpaper = Wallpaper(files: files, paths: paths, desktop: desktop).set(
             settings, dots: dots, report: report)
-        let picture = await AccountPicture(
+        let picture = await UserPicture(
             files: files, paths: paths, runner: runner, sudo: sudo, state: state, pictures: pictures, user: user
-        ).set(settings, report: report)
+        ).set(settings, dots: dots, report: report)
         return wallpaper && picture
     }
 

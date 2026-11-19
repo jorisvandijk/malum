@@ -5,29 +5,20 @@ import Testing
 
 @Suite(.timeLimit(.minutes(1)))
 @MainActor
-struct AccountPictureTests {
-    private static let accounts = "/Users/test/Library/Preferences/MobileMeAccounts.plist"
-    private static let cached = "/Users/test/Library/Caches/AAProfilePicture_ABC.png"
-    private static let list = """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <plist version="1.0"><dict><key>Accounts</key><array>
-        <dict><key>AccountUUID</key><string>ABC</string></dict>
-        </array></dict></plist>
-        """
-    private static let cropList = "/Users/test/Library/Preferences/mbuseragent.plist"
-    private static let crop = """
-        <?xml version="1.0" encoding="UTF-8"?>
-        <plist version="1.0"><dict><key>kAOSUIProfilePictureCropRect</key>
-        <string>{{117, 190}, {827, 827}}</string></dict></plist>
-        """
-    private static let switchedOn: ConfigTable = [AccountPicture.key: .boolean(true)]
+struct UserPictureTests {
+    private static let folder = "/Users/test/dots/pictures"
+    private static let source = "\(folder)/me.png"
+    private static let named: ConfigTable = [UserPicture.key: .string("me")]
     nonisolated private static let setFailure = "Cannot set the picture"
     private let paths = Paths(home: "/Users/test")
 
     /// Where Malum keeps the picture made from `data`.
     private func kept(_ data: Data = FakeSquarePictures.square) -> String {
-        "\(paths.stateDirectory)/account-picture-\(Fingerprint.of(data)).jpg"
+        "\(paths.stateDirectory)/user-picture-\(Fingerprint.of(data)).jpg"
     }
+
+    /// The import file `dsimport` reads.
+    private var importFile: String { "\(paths.stateDirectory)/user-picture.import" }
 
     /// The `dscl -read` answer naming `picture`.
     private static func showing(_ picture: String) -> CommandResult {
@@ -55,45 +46,36 @@ struct AccountPictureTests {
     /// Sets the picture with `settings` on `files` through `runner`, and gives back whether it
     /// worked and what it said.
     private func set(
-        _ settings: ConfigTable = Self.switchedOn, files: FakeFileSystem, runner: FakeRunner,
+        _ settings: ConfigTable = Self.named, files: FakeFileSystem, runner: FakeRunner,
         pictures: FakeSquarePictures = FakeSquarePictures()
     ) async -> (Bool, [Message]) {
         let state = StateFolder(files: files, locks: FakeFileLocks(), paths: paths)
         var messages: [Message] = []
-        let succeeded = await AccountPicture(
+        let succeeded = await UserPicture(
             files: files, paths: paths, runner: runner, sudo: SudoSession(runner: runner, canAsk: true),
             state: state, pictures: pictures, user: "test"
-        ).set(settings) { messages.append($0) }
+        ).set(settings, dots: "/Users/test/dots") { messages.append($0) }
         return (succeeded, messages)
     }
 
-    private func signedIn(more: [String: String] = [:]) -> FakeFileSystem {
-        FakeFileSystem(texts: more.merging([Self.accounts: Self.list, Self.cached: "picture"]) { $1 })
+    private func withPicture(more: [String: String] = [:]) -> FakeFileSystem {
+        FakeFileSystem(texts: more.merging([Self.source: "picture"]) { $1 })
     }
 
-    @Test func accountsCropIsUsed() async {
-        let files = signedIn(more: [Self.cropList: Self.crop])
-        let pictures = FakeSquarePictures()
-        let (succeeded, _) = await set(files: files, runner: dscl(), pictures: pictures)
-        #expect(succeeded)
-        #expect(pictures.crop == PictureCrop(left: 117, bottom: 190, width: 827, height: 827))
-    }
-
-    @Test func switchedOffChangesNothing() async {
+    @Test func noSettingChangesNothing() async {
         let runner = dscl()
-        let (succeeded, messages) = await set([:], files: signedIn(), runner: runner)
+        let (succeeded, messages) = await set([:], files: withPicture(), runner: runner)
         #expect(succeeded)
         #expect(messages.isEmpty)
         #expect(runner.commands.isEmpty)
     }
 
-    @Test func macOSPictureIsReplacedAndItsCopyRemoved() async {
-        let files = signedIn()
+    @Test func macOSPictureIsReplacedAndStoredInTheAccount() async {
+        let files = withPicture()
         let runner = dscl()
         let (succeeded, messages) = await set(files: files, runner: runner)
         #expect(succeeded)
         #expect(files.allPaths.contains(kept()))
-        let importFile = "\(paths.stateDirectory)/account-picture.import"
         #expect(
             runner.commands.suffix(3).map(\.arguments) == [
                 ["-n", Dscl.path, ".", "-create", "/Users/test", "Picture", kept()],
@@ -101,11 +83,11 @@ struct AccountPictureTests {
                 ["-n", Dsimport.path, importFile, "/Local/Default", "M"],
             ])
         #expect(!files.allPaths.contains(importFile))
-        #expect(messages.last == Message(.info, "your user picture is your Apple Account's picture now"))
+        #expect(messages.last == Message(.info, "set your user picture to me.png from pictures in dots"))
     }
 
     @Test func pictureAlreadySetChangesNothing() async {
-        let files = signedIn(more: [kept(): "square"])
+        let files = withPicture(more: [kept(): "square"])
         let runner = dscl(current: Self.showing(kept()))
         let (succeeded, messages) = await set(files: files, runner: runner)
         #expect(succeeded)
@@ -113,9 +95,9 @@ struct AccountPictureTests {
         #expect(runner.commands == [Dscl.readPicture(of: "test")])
     }
 
-    @Test func newAccountPictureReplacesTheOldOneOnly() async {
+    @Test func newPictureReplacesTheOldOne() async {
         let old = kept(Data("old".utf8))
-        let files = signedIn(more: [old: "old"])
+        let files = withPicture(more: [old: "old"])
         let runner = dscl(current: Self.showing(old), hasPhoto: false)
         let (succeeded, _) = await set(files: files, runner: runner)
         #expect(succeeded)
@@ -123,47 +105,34 @@ struct AccountPictureTests {
         #expect(
             runner.commands.suffix(2).map(\.arguments) == [
                 ["-n", Dscl.path, ".", "-create", "/Users/test", "Picture", kept()],
-                ["-n", Dsimport.path, "\(paths.stateDirectory)/account-picture.import", "/Local/Default", "M"],
+                ["-n", Dsimport.path, importFile, "/Local/Default", "M"],
             ])
     }
 
-    @Test func noAppleAccountWarns() async {
+    @Test func missingPictureIsAnError() async {
         let runner = dscl()
         let (succeeded, messages) = await set(files: FakeFileSystem(), runner: runner)
-        #expect(succeeded)
+        #expect(!succeeded)
         #expect(
             messages == [
-                Message(
-                    .warn,
-                    """
-                    couldn't set your user picture to your Apple Account's picture: no Apple Account picture yet, \
-                    sign in to your Apple Account in System Settings
-                    """)
+                Message(.error, "couldn't set your user picture: there's no picture called me in \(Self.folder)")
             ])
         #expect(runner.commands.isEmpty)
     }
 
     @Test func unreadablePictureIsAnError() async {
-        let pictures = FakeSquarePictures(failure: .unreadable(path: Self.cached))
-        let (succeeded, messages) = await set(files: signedIn(), runner: dscl(), pictures: pictures)
+        let pictures = FakeSquarePictures(failure: .unreadable(path: Self.source))
+        let (succeeded, messages) = await set(files: withPicture(), runner: dscl(), pictures: pictures)
         #expect(!succeeded)
         #expect(
             messages == [
-                Message(
-                    .error,
-                    """
-                    couldn't set your user picture to your Apple Account's picture: \(Self.cached) isn't a picture \
-                    macOS can read
-                    """)
+                Message(.error, "couldn't set your user picture: \(Self.source) isn't a picture macOS can read")
             ])
     }
 
     @Test func refusedPictureIsAnError() async {
-        let (succeeded, messages) = await set(files: signedIn(), runner: dscl(failing: true))
+        let (succeeded, messages) = await set(files: withPicture(), runner: dscl(failing: true))
         #expect(!succeeded)
-        #expect(
-            messages.last
-                == Message(.error, "couldn't set your user picture to your Apple Account's picture: \(Self.setFailure)")
-        )
+        #expect(messages.last == Message(.error, "couldn't set your user picture: \(Self.setFailure)"))
     }
 }

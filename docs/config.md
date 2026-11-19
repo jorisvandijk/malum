@@ -99,13 +99,6 @@ The folder screenshots are saved in.
 
 Makes the Mac match dots when you run `malum run`, installing what `packages.toml` lists, writing the app config files and preferences in `apps/` and setting the macOS settings in `macos.toml`. At the end of the run, Malum updates itself. Nothing happens in the background: the app only reads the switch, and `malum run` does the work.
 
-### `system_config.apple_account_picture`
-
-Makes your user picture your Apple Account's picture, cropped the way your Apple Account shows it, instead of the one picked when the Mac was set up. It follows the Apple Account's picture when that changes.
-
-- Value: true or false
-- Default: `false`
-
 ### `system_config.enabled`
 
 Switches the module on. The module stays off until this is set to true.
@@ -130,6 +123,12 @@ The folder programs from GitHub releases are installed in.
 ### `system_config.terminal`
 
 The terminal app, by its bundle ID, that Run and Show log in the menu open in, such as `net.kovidgoyal.kitty`. A running kitty that listens on `unix:/tmp/kitty` gets a new tab; otherwise a new window opens with `-e` and the command to run. Left out, they show their output in the popup.
+
+- Value: text in quotes
+
+### `system_config.user_picture`
+
+Your user picture, on the login screen and in Users & Groups, by its file name in the `pictures` folder in dots, with or without its extension. Its middle square is used. Left out, the user picture stays as it is.
 
 - Value: text in quotes
 
