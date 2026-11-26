@@ -7,7 +7,7 @@ extension AppConfigsTests {
     @Test func preferencesAreReadForTheAppsDomain() throws {
         let config = try #require(AppConfigs.app(named: "cursorcerer"))
         var reader = try TableReader("[preferences]\nidleHide = 5\nwhen = 2026-11-05\n", file: "apps/cursorcerer.toml")
-        let read = config.read(&reader)
+        let read = config.read(&reader, home: "/Users/test")
         #expect(read.files.isEmpty)
         #expect(read.preferences.map(\.key) == ["idleHide"])
         #expect(read.preferences.first?.domain == "com.doomlaser.cursorcerer")

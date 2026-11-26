@@ -1,0 +1,159 @@
+/// Reading the curated tables of a file in dots.
+extension Catalog {
+    /// A preference to set or remove, with the key in the file that asks for it.
+    struct Wanted: Equatable {
+        /// The key that asks for it, such as `pointer.natural_scrolling`, or none for one Malum
+        /// always sets.
+        let path: [String]
+        /// The preference.
+        let preference: AppPreference
+    }
+
+    /// A value for a key in one of the app's own files, with the key in dots that asks for it.
+    struct FileValue: Equatable {
+        /// The key that asks for it, or none for one Malum always sets.
+        let path: [String]
+        /// Where it goes in the tables the app's files are written from.
+        let target: [String]
+        /// The value.
+        let value: ConfigValue
+    }
+
+    /// What the curated tables of a file ask for.
+    struct Reading {
+        /// The preferences, Malum's own first.
+        var preferences: [Wanted] = []
+        /// The keys of the app's files, Malum's own first.
+        var files: [FileValue] = []
+    }
+
+    /// What the curated tables in `reader`'s file ask for, Malum's own values first, adding a problem
+    /// to `reader` for each value that's wrong and a warning for each key no table takes. A path in
+    /// the home folder is filled in with `home`, and each preference value is written by `document`.
+    func read(
+        _ reader: inout TableReader, home: String, document: (ConfigValue) -> String? = PlistText.document
+    ) -> Reading {
+        var reading = Reading()
+        for item in always {
+            reading.add(.set(item.value), to: item.target, at: [], document: document)
+        }
+        for table in tables where reader.document[table.name] != nil {
+            let fields = reader.table(reader.document, table.name, at: [])
+            if let data = table.data {
+                reading.files += fields.sorted { $0.key < $1.key }.map {
+                    FileValue(path: [table.name, $0.key], target: data.into + [$0.key], value: $0.value)
+                }
+                continue
+            }
+            reader.unknownKeys(fields, at: [table.name], known: table.settings.map(\.name))
+            for setting in table.settings {
+                guard let given = fields[setting.name] else { continue }
+                let path = [table.name, setting.name]
+                guard let writes = setting.writes(for: given, home: home) else {
+                    reader.expect(path, setting.value)
+                    continue
+                }
+                for (target, write) in zip(setting.targets, writes) {
+                    reading.add(write, to: target, at: path, document: document)
+                }
+            }
+        }
+        return reading
+    }
+
+    /// The preferences Malum always sets.
+    var alwaysPreferences: [AppPreference] {
+        var reading = Reading()
+        for item in always {
+            reading.add(.set(item.value), to: item.target, at: [], document: PlistText.document)
+        }
+        return reading.preferences.map(\.preference)
+    }
+
+    /// The preferences in `wanted`, each once, with an error in `reader` for each one two keys set
+    /// to different values, or one Malum always sets.
+    func merged(_ wanted: [Wanted], _ reader: inout TableReader) -> [AppPreference] {
+        let kept = once(
+            wanted, id: { $0.preference.domain + "\n" + $0.preference.key }, path: \.path,
+            same: { $0.preference.value == $1.preference.value }, &reader)
+        return kept.map(\.preference)
+    }
+
+    /// The tables the app's files are written from, holding `values`, each once, with an error in
+    /// `reader` for each key two settings set to different values, or one Malum always sets.
+    func tables(_ values: [FileValue], _ reader: inout TableReader) -> ConfigTable {
+        let kept = once(
+            values, id: { TableReader.dotted($0.target) }, path: \.path, same: { $0.value == $1.value },
+            &reader)
+        var tables: ConfigTable = [:]
+        for value in kept {
+            Self.put(value.value, at: value.target[...], in: &tables)
+        }
+        return tables
+    }
+
+    /// `items`, each `id` once, with an error in `reader` for each one that asks for something
+    /// else than an earlier one with the same `id`.
+    private func once<Item>(
+        _ items: [Item], id: (Item) -> String, path: (Item) -> [String], same: (Item, Item) -> Bool,
+        _ reader: inout TableReader
+    ) -> [Item] {
+        var first: [String: Item] = [:]
+        var kept: [Item] = []
+        for item in items {
+            guard let earlier = first[id(item)] else {
+                first[id(item)] = item
+                kept.append(item)
+                continue
+            }
+            guard !same(earlier, item) else { continue }
+            let dotted = TableReader.dotted(path(item))
+            let earlierPath = path(earlier)
+            let text: MessageText =
+                earlierPath.isEmpty ? alwaysConflict(dotted) : .setTwice(dotted, TableReader.dotted(earlierPath))
+            reader.add(.error, at: path(item), text)
+        }
+        return kept
+    }
+
+    /// Puts `value` at `path` in `table`, making the tables on the way.
+    private static func put(_ value: ConfigValue, at path: ArraySlice<String>, in table: inout ConfigTable) {
+        guard let key = path.first else { return }
+        guard path.count > 1 else {
+            table[key] = value
+            return
+        }
+        var inner: ConfigTable
+        if case .table(let existing)? = table[key] { inner = existing } else { inner = [:] }
+        put(value, at: path.dropFirst(), in: &inner)
+        table[key] = .table(inner)
+    }
+}
+
+extension Catalog.Reading {
+    /// Adds what `write` does to `target`, asked for by the key `path`, with each preference value
+    /// written by `document`. A key in an app's file that's removed or left is left out.
+    fileprivate mutating func add(
+        _ write: CatalogSetting.Write, to target: CatalogSetting.Target, at path: [String],
+        document: (ConfigValue) -> String?
+    ) {
+        let setting = path.isEmpty ? nil : TableReader.dotted(path)
+        switch (target, write) {
+        case (_, .leave):
+            return
+        case (.preference(let domain, let key), .set(let given)):
+            guard let value = document(given) else { return }
+            preferences.append(
+                Catalog.Wanted(
+                    path: path, preference: AppPreference(domain: domain, key: key, value: value, setting: setting)))
+        case (.preference(let domain, let key), .remove):
+            preferences.append(
+                Catalog.Wanted(
+                    path: path, preference: AppPreference(domain: domain, key: key, value: nil, setting: setting)))
+        case (.file(let keys), .set(let given)):
+            files.append(Catalog.FileValue(path: path, target: keys, value: given))
+        case (.file, .remove):
+            return
+        }
+    }
+}

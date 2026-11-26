@@ -93,7 +93,7 @@ struct MacOSSettings {
         }
         let reading: (wanted: Wanted?, problems: [ConfigProblem])
         do {
-            reading = Self.read(try files.read(file))
+            reading = Self.read(try files.read(file), home: paths.home)
         } catch {
             report(.failed(.setMacOSSettings, error))
             return false
@@ -107,7 +107,7 @@ struct MacOSSettings {
             wanted.files, report: report)
         var changed: Set<String> = []
         let writer = AppPreferenceWriter(runner: runner, files: files, sudo: sudo, state: state, scope: .macOS)
-        let preferences = MacOSCatalog.always.map(\.preference) + wanted.preferences
+        let preferences = MacOSCatalog.catalog.alwaysPreferences + wanted.preferences
         let set = await writer.write(
             preferences.map { (Paths.macOSTOMLName, $0) }, keeping: [], changed: { changed.insert($0) },
             report: report)
@@ -124,9 +124,9 @@ struct MacOSSettings {
         return wrote && set && power && removed && defaults && computer && resolution && lock && folders
     }
 
-    /// Reads `text`, the contents of `macos.toml`: what it sets, or nil when an error stops it, and
-    /// every problem found.
-    static func read(_ text: String) -> (wanted: Wanted?, problems: [ConfigProblem]) {
+    /// Reads `text`, the contents of `macos.toml`, with a path in the home folder filled in with
+    /// `home`: what it sets, or nil when an error stops it, and every problem found.
+    static func read(_ text: String, home: String) -> (wanted: Wanted?, problems: [ConfigProblem]) {
         var reader: TableReader
         do {
             reader = try TableReader(text, file: Paths.macOSTOMLName)
@@ -146,8 +146,9 @@ struct MacOSSettings {
             + domains(currentHostTable, named: Defaults.currentHost, &reader)
         // The ones Malum always sets come first, so a key that asks for another value is the one
         // that's wrong, and they're left out of what the file sets: `run` adds them.
-        let always = MacOSCatalog.always
-        wanted.preferences = Array(merged(always + MacOSCatalog.read(&reader) + raw, &reader).dropFirst(always.count))
+        let catalog = MacOSCatalog.catalog
+        let curated = catalog.read(&reader, home: home).preferences
+        wanted.preferences = Array(catalog.merged(curated + raw, &reader).dropFirst(catalog.alwaysPreferences.count))
         if reader.document[hostsTable] != nil {
             wanted.files[SystemFile.hosts.path] = SystemFile.hosts(hosts(&reader))
         }
@@ -197,8 +198,8 @@ struct MacOSSettings {
     /// gives for the table's key, with a warning for each one, since the curated tables replace them.
     private static func domains(
         _ name: String, named domain: (String) -> String, _ reader: inout TableReader
-    ) -> [MacOSCatalog.Wanted] {
-        var preferences: [MacOSCatalog.Wanted] = []
+    ) -> [Catalog.Wanted] {
+        var preferences: [Catalog.Wanted] = []
         for (key, value) in reader.table(reader.document, name, at: []).sorted(by: { $0.key < $1.key }) {
             let path = [name, key]
             guard !key.hasPrefix("-") else {
@@ -212,29 +213,8 @@ struct MacOSSettings {
                 let entryPath = path + [entry.key]
                 let replacement = MacOSCatalog.setting(writing: entry.key, in: preference.domain)
                 reader.add(.warn, at: entryPath, .rawPreference(TableReader.dotted(entryPath), replacement))
-                preferences.append(MacOSCatalog.Wanted(path: entryPath, preference: preference))
+                preferences.append(Catalog.Wanted(path: entryPath, preference: preference))
             }
-        }
-        return preferences
-    }
-
-    /// The preferences in `wanted`, each once, with an error in `reader` for each one two keys set to
-    /// different values, or one Malum always sets.
-    private static func merged(_ wanted: [MacOSCatalog.Wanted], _ reader: inout TableReader) -> [AppPreference] {
-        var first: [String: MacOSCatalog.Wanted] = [:]
-        var preferences: [AppPreference] = []
-        for item in wanted {
-            let id = item.preference.domain + "\n" + item.preference.key
-            guard let earlier = first[id] else {
-                first[id] = item
-                preferences.append(item.preference)
-                continue
-            }
-            guard earlier.preference.value != item.preference.value else { continue }
-            let path = TableReader.dotted(item.path)
-            let text: MessageText =
-                earlier.path.isEmpty ? .tilingAlwaysOff(path) : .setTwice(path, TableReader.dotted(earlier.path))
-            reader.add(.error, at: item.path, text)
         }
         return preferences
     }

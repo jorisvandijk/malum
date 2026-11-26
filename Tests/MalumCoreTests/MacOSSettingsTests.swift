@@ -164,8 +164,9 @@ struct MacOSSettingsTests {
         let off = PlistText.document(.boolean(false)) ?? ""
         #expect(succeeded)
         #expect(
-            MacOSCatalog.alwaysSet.map(\.target.key).allSatisfy {
-                runner.commands.contains(Defaults.write("com.apple.WindowManager", $0, off))
+            MacOSCatalog.alwaysSet.allSatisfy {
+                guard case .preference(let domain, let key) = $0.target else { return false }
+                return runner.commands.contains(Defaults.write(domain, key, off))
             })
     }
 
@@ -259,5 +260,12 @@ struct MacOSSettingsTests {
                 "-currentHost", "delete", "com.apple.controlcenter", "Timer",
             ])
         #expect(Defaults.delete("com.apple.dock", "autohide").arguments == ["delete", "com.apple.dock", "autohide"])
+    }
+}
+
+extension MacOSSettings {
+    /// Reads `text` as `macos.toml`, with the tests' home folder.
+    static func read(_ text: String) -> (wanted: Wanted?, problems: [ConfigProblem]) {
+        read(text, home: "/Users/test")
     }
 }

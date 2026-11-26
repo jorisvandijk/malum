@@ -15,6 +15,7 @@ on:
       - ".github/workflows/test.yml"
       - "docs/config.md"
       - "docs/macos-settings.md"
+      - "docs/apps/**"
   workflow_dispatch:
 
 permissions:
@@ -88,13 +89,13 @@ jobs:
         run: swift build --build-tests
       - name: Test
         run: swift test --skip-build
-      - name: Config docs match the schemas and the macOS catalog
+      - name: Config docs match the schemas and the catalogs
         run: |
           swift run --skip-build MalumDocs
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           if [ -n "$(git status --porcelain -- docs)" ]; then
             git status --short -- docs
             git diff -- docs
-            echo "docs/config.md or docs/macos-settings.md is out of date: run 'swift run MalumDocs' and commit it."
+            echo "docs/config.md, docs/macos-settings.md or docs/apps/ is out of date: run 'swift run MalumDocs' and commit it."
             exit 1
           fi

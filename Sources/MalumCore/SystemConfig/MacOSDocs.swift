@@ -30,16 +30,7 @@ public enum MacOSDocs {
 
     /// The page.
     public static func page() -> String {
-        header + MacOSCatalog.tables.map(section).joined() + power
-    }
-
-    /// The part of the page about `table` and its settings.
-    private static func section(_ table: MacOSTable) -> String {
-        let settings = table.settings.map { setting in
-            let writes = setting.targets.map { "`\($0.domain)` `\($0.key)`" }.joined(separator: ", ")
-            return entry(setting.name, setting.about, value: setting.value.description) + "- Writes: \(writes)\n"
-        }
-        return "\n## `[\(table.name)]`\n\n\(table.about)\n" + settings.joined()
+        header + CatalogDocs.sections(of: MacOSCatalog.catalog, place: CatalogDocs.preference) + power
     }
 
     /// The part of the page about the power settings.
@@ -47,17 +38,12 @@ public enum MacOSDocs {
         let sources = Pmset.Source.allCases.map { "`[\(PowerSettings.table).\($0.rawValue)]`" }
         let settings = PowerSetting.all.map { setting in
             let writes = "- Writes: `pmset` `\(setting.pmset)`\n"
-            return entry(setting.name, setting.about, value: setting.kind.description) + writes
+            return CatalogDocs.entry(setting.name, setting.about, value: setting.kind.description) + writes
         }
         let about = """
             The power settings, with one table for each power source. Each table takes the same \
             settings. System Settings, Battery, Options.
             """
         return "\n## " + sources.joined(separator: " and ") + "\n\n\(about)\n" + settings.joined()
-    }
-
-    /// The part of the page about the setting `name`, which does `about` and takes `value`.
-    private static func entry(_ name: String, _ about: String, value: String) -> String {
-        "\n### `\(name)`\n\n\(about)\n\n- Value: \(value)\n"
     }
 }

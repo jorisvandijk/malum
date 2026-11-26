@@ -18,7 +18,7 @@ extension AppConfigsTests {
             [argv]
             enable-crash-reporter = false
             """, file: "apps/vscodium.toml")
-        let read = config.read(&reader)
+        let read = config.read(&reader, home: "/Users/test")
         #expect(reader.problems.isEmpty)
         #expect(read.extensions == ["dracula-theme.theme-dracula", "tamasfe.even-better-toml"])
         #expect(
@@ -33,7 +33,7 @@ extension AppConfigsTests {
     @Test func wrongExtensionsAreAnError() throws {
         let config = try #require(AppConfigs.app(named: "vscodium"))
         var reader = try TableReader("[extensions]\nids = [\"no-publisher\"]\nother = 1\n", file: "apps/vscodium.toml")
-        let read = config.read(&reader)
+        let read = config.read(&reader, home: "/Users/test")
         #expect(read.extensions.isEmpty)
         #expect(
             reader.problems.map { Message($0.level, $0.text) } == [

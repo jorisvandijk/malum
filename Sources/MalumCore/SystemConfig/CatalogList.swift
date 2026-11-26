@@ -1,7 +1,7 @@
 import Foundation
 
-/// The kinds of list a curated macOS setting takes, each item written as macOS keeps it.
-enum MacOSList: Sendable {
+/// The kinds of list a curated setting takes, each item written as macOS keeps it.
+enum CatalogList: Equatable, Sendable {
     /// Keyboard layouts, by the words in `layouts`.
     case keyboardLayouts
     /// Apps in the Dock, by their full paths.

@@ -21,27 +21,27 @@ extension MacOSCatalog {
     private static let menuItemHidden = ConfigValue.integer(8)
 
     /// `[appearance]`.
-    static let appearance = MacOSTable(
+    static let appearance = CatalogTable(
         name: "appearance", about: "Light or dark, the accent colour and scroll bars. System Settings, Appearance.",
         settings: [
-            MacOSSetting(
+            CatalogSetting(
                 "mode", "Light, dark, or switching between them through the day, which macOS does itself.",
                 .choice([
-                    MacOSChoice("light", [.remove, .remove]),
-                    MacOSChoice("dark", [.set(.string("Dark")), .remove]),
-                    MacOSChoice("auto", [.leave, .set(.boolean(true))]),
+                    CatalogChoice("light", [.remove, .remove]),
+                    CatalogChoice("dark", [.set(.string("Dark")), .remove]),
+                    CatalogChoice("auto", [.leave, .set(.boolean(true))]),
                 ]),
                 [.global("AppleInterfaceStyle"), .global("AppleInterfaceStyleSwitchesAutomatically")]),
-            MacOSSetting(
+            CatalogSetting(
                 "accent_color", "The colour of buttons, selections and highlights.",
                 .choice([
-                    MacOSChoice("multicolor", [.remove]),
+                    CatalogChoice("multicolor", [.remove]),
                     .word("graphite", .integer(-1)), .word("red", .integer(0)), .word("orange", .integer(1)),
                     .word("yellow", .integer(2)), .word("green", .integer(3)), .word("blue", .integer(4)),
                     .word("purple", .integer(5)), .word("pink", .integer(6)),
                 ]),
                 [.global("AppleAccentColor")]),
-            MacOSSetting(
+            CatalogSetting(
                 "scroll_bars", "When scroll bars show.",
                 .choice([
                     .word("automatic", .string("Automatic")), .word("when_scrolling", .string("WhenScrolling")),
@@ -51,50 +51,50 @@ extension MacOSCatalog {
         ])
 
     /// `[menu_bar]`.
-    static let menuBar = MacOSTable(
+    static let menuBar = CatalogTable(
         name: "menu_bar", about: "When the menu bar hides and which items it shows. System Settings, Menu Bar.",
         settings: [
-            MacOSSetting(
+            CatalogSetting(
                 "hide", "When the menu bar hides until the pointer reaches the top of the screen.",
                 .choice([
-                    MacOSChoice("never", [.set(.boolean(false)), .set(.boolean(true))]),
-                    MacOSChoice("in_full_screen", [.set(.boolean(false)), .set(.boolean(false))]),
-                    MacOSChoice("on_desktop", [.set(.boolean(true)), .set(.boolean(true))]),
-                    MacOSChoice("always", [.set(.boolean(true)), .set(.boolean(false))]),
+                    CatalogChoice("never", [.set(.boolean(false)), .set(.boolean(true))]),
+                    CatalogChoice("in_full_screen", [.set(.boolean(false)), .set(.boolean(false))]),
+                    CatalogChoice("on_desktop", [.set(.boolean(true)), .set(.boolean(true))]),
+                    CatalogChoice("always", [.set(.boolean(true)), .set(.boolean(false))]),
                 ]),
                 [.global("_HIHideMenuBar"), .global("AppleMenuBarVisibleInFullscreen")]),
-            MacOSSetting(
+            CatalogSetting(
                 "show_spotlight", "Shows the Spotlight icon.", .flagAs(on: .integer(0), off: .integer(1)),
                 [.currentHost(Domain.spotlight, "MenuItemHidden")]),
-            MacOSSetting(
+            CatalogSetting(
                 "show_now_playing", "Shows Now Playing.", .flagAs(on: menuItemShown, off: menuItemHidden),
                 [.currentHost(Domain.controlCenter, "NowPlaying")]),
-            MacOSSetting(
+            CatalogSetting(
                 "show_timer", "Shows the timer.", .flagAs(on: menuItemShown, off: menuItemHidden),
                 [.currentHost(Domain.controlCenter, "Timer")]),
-            MacOSSetting(
+            CatalogSetting(
                 "show_input_menu", "Shows the input menu, to switch keyboard layouts.", .flag,
                 [.domain(Domain.inputMenu, "visible")]),
         ])
 
     /// `[clock]`.
-    static let clock = MacOSTable(
+    static let clock = CatalogTable(
         name: "clock", about: "The clock in the menu bar. System Settings, Control Center, Clock Options.",
         settings: [
-            MacOSSetting(
+            CatalogSetting(
                 "show_am_pm", "Shows AM or PM after the time.", .flag, [.domain(Domain.clock, "ShowAMPM")]),
-            MacOSSetting(
+            CatalogSetting(
                 "show_day_of_week", "Shows the day of the week.", .flag, [.domain(Domain.clock, "ShowDayOfWeek")]),
         ])
 
     /// `[sound]`.
-    static let sound = MacOSTable(
+    static let sound = CatalogTable(
         name: "sound", about: "Alert and interface sounds. System Settings, Sound.",
         settings: [
-            MacOSSetting(
+            CatalogSetting(
                 "alert_volume", "How loud the alert sound is, as a percentage of the output volume.", .percent,
                 [.global("com.apple.sound.beep.volume")]),
-            MacOSSetting(
+            CatalogSetting(
                 "ui_sounds", "Plays sounds for actions such as emptying the Trash.", .flag,
                 [.global("com.apple.sound.uiaudio.enabled")]),
         ])

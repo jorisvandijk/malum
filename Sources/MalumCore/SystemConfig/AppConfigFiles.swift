@@ -124,7 +124,7 @@ public struct AppConfigFiles {
             report(.failed(.writeAppFiles(of: app.name), error))
             return nil
         }
-        let settings = app.read(&reader)
+        let settings = app.read(&reader, home: paths.home)
         reader.problems.map(\.message).forEach(report)
         guard !reader.hasErrors else {
             report(fixFirst)
