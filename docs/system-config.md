@@ -500,33 +500,41 @@ Command X stores a shortcut as text holding JSON: `KeyboardShortcuts_cut = '{"ca
 
 ## macOS settings
 
-macOS's own settings are set from `macos.toml`, at the top of your dots folder, last in the run. Each domain has its own table inside `[preferences]`, with each setting by the name macOS stores it under, the way `defaults write` takes them. `defaults read <domain>` lists a domain's current settings; quote a domain with dots in it.
+macOS's own settings are set from `macos.toml`, at the top of your dots folder, last in the run. They go in tables named after what they're about, such as `[trackpad]` or `[finder]`, each setting by a name you can read. The [macOS settings reference](macos-settings.md) lists every table and setting, the values each takes, and the macOS preferences it writes.
 
 ```toml
-[preferences.NSGlobalDomain]
-AppleInterfaceStyle = "Dark"
-KeyRepeat = 2
-InitialKeyRepeat = 30
+[appearance]
+mode = "dark"
 
-[preferences."com.apple.finder"]
-ShowPathbar = true
-FXPreferredViewStyle = "Nlsv"
+[pointer]
+natural_scrolling = false
 
-[preferences."com.apple.dock"]
-autohide = true
+[trackpad]
+tap_to_click = true
+force_click = false
 
-[current_host."com.apple.controlcenter"]
-Timer = 8
+[keyboard]
+repeat_delay_ms = 450
+repeat_interval_ms = 30
+
+[finder]
+view = "list"
+show_path_bar = true
+
+[dock]
+show = "never"
 ```
 
-`[current_host]` holds the few settings macOS keeps for this Mac only, the ones `defaults -currentHost` reads, in the same shape.
+A setting that isn't in the reference isn't one Malum manages yet: it's added to Malum, not set by the name macOS stores it under. Malum always turns macOS's own window tiling off, since its window manager tiles.
 
-A value is text, a number, `true` or `false`, or a list or table of them. Malum owns each setting it sets, as with [app preferences](#app-preferences): one you change in System Settings is set back on the next run, and one you take out of the file is removed, so macOS goes back to its own default. Settings the file doesn't name are left alone. When `macos.toml` is missing or has an error, no setting is touched. Malum keeps the names of the settings it set in `installed.json`, under `macos`.
+Malum owns each setting it sets, as with [app preferences](#app-preferences): one you change in System Settings is set back on the next run, and one you take out of the file is removed, so macOS goes back to its own default. Settings the file doesn't name are left alone. When `macos.toml` is missing or has an error, no setting is touched. Malum keeps the names of the preferences it set in `installed.json`, under `macos`.
+
+`[preferences]` and `[current_host]`, which took each preference by the name macOS stores it under, still work for this release. Each key in them gets a warning that names the setting to use instead, and they stop working in the next release. A raw key and a setting that write the same preference to different values are an error.
 
 After a change, Malum tells running apps about it, and restarts Finder, the Dock, the menu bar or Control Center when their settings changed:
 
 ```
-[info] set autohide in com.apple.dock from macos.toml
+[info] set dock.show in com.apple.dock from macos.toml
 [info] restarted Dock to use the new settings
 [info] some macOS settings, such as key repeat, take full effect after you log out and back in
 ```
@@ -558,18 +566,18 @@ These work like app config files: a file that was already there, or that was cha
 
 ### Power settings
 
-`[power]` in `macos.toml` sets the power settings, with one table for each power source: `battery` and `charger`. Each setting goes by the name `pmset` gives it, and `pmset -g custom` lists them with their values.
+`[power]` in `macos.toml` sets the power settings, with one table for each power source: `battery` and `charger`. Each takes the same settings, such as `dim_screen` and `sleep_min`, all listed in the [macOS settings reference](macos-settings.md#powerbattery-and-powercharger). The names `pmset` gives them, such as `lessbright`, still work for this release, with a warning.
 
 ```toml
 [power.battery]
-lessbright = 0
+dim_screen = false
 ```
 
 Setting them needs root, so they use the run's one password prompt, and only ask when a setting has to change. Malum owns each setting it sets: one you change outside Malum is set back on the next run. One you take out of the file goes back to what it was before Malum first set it, unless you changed it outside Malum: then it stays, and Malum lets it go. A table for a power source this Mac doesn't have, such as `battery` on a desktop Mac, is skipped with a warning. Malum keeps the settings it set and what they were before in `installed.json`, under `power`.
 
 ```
 [info] asking for your password to change power settings
-[info] set lessbright on battery power to 0 from macos.toml (it was 1)
+[info] set dim_screen on battery power to 0 from macos.toml (it was 1)
 ```
 
 ### Removing Apple apps
@@ -727,7 +735,7 @@ Then, for each kind of thing Malum manages it prints one count, followed by a wa
 [warn] /Users/you/.config/kitty/kitty.conf was changed outside Malum, malum run overwrites it and keeps a .backup
 [info] managed macOS settings: 23
 [info] managed power settings: 2
-[warn] lessbright on battery power is 0, Malum set it to 1, malum run sets it back
+[warn] dim_screen on battery power is 0, Malum set it to 1, malum run sets it back
 ```
 
 When nothing is off, the last line says so:

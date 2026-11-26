@@ -1,5 +1,6 @@
-/// Sets the power settings `[power]` in `macos.toml` lists, by the names `pmset` gives them, as
-/// root through the run's one password prompt.
+/// Sets the power settings `[power]` in `macos.toml` lists, by the names in `PowerSetting.all`, as
+/// root through the run's one password prompt. The names `pmset` gives them still work for one
+/// release, with a warning.
 ///
 /// Malum owns each setting it sets: one changed outside Malum is set back on the next run, and one
 /// `macos.toml` doesn't set anymore goes back to what it was before Malum first set it, unless it
@@ -27,21 +28,49 @@ struct PowerSettings {
         self.state = state
     }
 
-    /// The settings in `[power]`, adding a problem to `reader` for each one that's wrong.
+    /// The settings in `[power]`, by the name `pmset` gives them, adding a problem to `reader` for
+    /// each one that's wrong.
     static func read(_ reader: inout TableReader) -> Wanted {
         let power = reader.table(reader.document, table, at: [])
         reader.unknownKeys(power, at: [table], known: Pmset.Source.allCases.map(\.rawValue))
         var wanted: Wanted = [:]
         for source in Pmset.Source.allCases {
-            for (setting, value) in reader.table(power, source.rawValue, at: [table]) {
-                guard case .integer(let number) = value else {
-                    reader.expect([table, source.rawValue, setting], SettingKind.integer)
+            // The key that set each pmset name first, so a second one that differs is an error.
+            var setBy: [String: [String]] = [:]
+            for (name, value) in reader.table(power, source.rawValue, at: [table]).sorted(by: { $0.key < $1.key }) {
+                let path = [table, source.rawValue, name]
+                guard let setting = pmset(name, value, at: path, &reader) else { continue }
+                if let earlier = setBy[setting.name], wanted[source]?[setting.name] != setting.number {
+                    reader.add(.error, at: path, .setTwice(TableReader.dotted(path), TableReader.dotted(earlier)))
                     continue
                 }
-                wanted[source, default: [:]][setting] = number
+                setBy[setting.name] = path
+                wanted[source, default: [:]][setting.name] = setting.number
             }
         }
         return wanted
+    }
+
+    /// The name `pmset` gives the setting `name` at `path` and the number it takes for `value`, or
+    /// nil and a problem in `reader` when the value is wrong. A name `pmset` gives a setting itself
+    /// still works, with a warning.
+    private static func pmset(
+        _ name: String, _ value: ConfigValue, at path: [String], _ reader: inout TableReader
+    ) -> (name: String, number: Int)? {
+        if let setting = PowerSetting.all.first(where: { $0.name == name }) {
+            guard let number = setting.pmsetValue(value) else {
+                reader.expect(path, setting.kind)
+                return nil
+            }
+            return (setting.pmset, number)
+        }
+        let replacement = PowerSetting.named(pmset: name).map { TableReader.dotted(Array(path.dropLast()) + [$0.name]) }
+        reader.add(.warn, at: path, .rawPowerSetting(TableReader.dotted(path), replacement))
+        guard case .integer(let number) = value else {
+            reader.expect(path, SettingKind.integer)
+            return nil
+        }
+        return (name, number)
     }
 
     /// Makes each setting in `wanted` hold its value, and puts back each one Malum set that isn't
@@ -78,7 +107,7 @@ struct PowerSettings {
         for (name, settings) in managed.sorted(by: { $0.key < $1.key }) {
             let now = Pmset.Source(rawValue: name).flatMap { current[$0] } ?? [:]
             for (setting, known) in settings.sorted(by: { $0.key < $1.key }) where now[setting] != known.value {
-                report(.statusPowerChanged(setting, on: name, now: now[setting], set: known.value))
+                report(.statusPowerChanged(Self.label(setting), on: name, now: now[setting], set: known.value))
             }
         }
         return true
@@ -135,12 +164,12 @@ struct PowerSettings {
         _ setting: String, to value: Int, on source: Pmset.Source, now: Int?, _ report: (Message) -> Void
     ) async -> Int? {
         guard let now else {
-            report(.noPowerSetting(setting, on: source.rawValue))
+            report(.noPowerSetting(Self.label(setting), on: source.rawValue))
             return nil
         }
         if now != value {
             guard await asRoot(Pmset.set(setting, to: value, on: source), setting, source, report) else { return nil }
-            report(.powerSet(setting, on: source.rawValue, to: value, was: now))
+            report(.powerSet(Self.label(setting), on: source.rawValue, to: value, was: now))
         }
         return now
     }
@@ -151,12 +180,12 @@ struct PowerSettings {
         _ setting: String, on source: Pmset.Source, _ known: ManagedPower, now: Int?, _ report: (Message) -> Void
     ) async -> Bool {
         if let now, now != known.value {
-            report(.powerKeptChanged(setting, on: source.rawValue))
+            report(.powerKeptChanged(Self.label(setting), on: source.rawValue))
         }
         if now == known.value && known.original != known.value {
             let command = Pmset.set(setting, to: known.original, on: source)
             guard await asRoot(command, setting, source, report) else { return false }
-            report(.powerPutBack(setting, on: source.rawValue, to: known.original))
+            report(.powerPutBack(Self.label(setting), on: source.rawValue, to: known.original))
         }
         return true
     }
@@ -168,7 +197,13 @@ struct PowerSettings {
     ) async -> Bool {
         guard await sudo.authorize(for: .changePower, report: report) else { return false }
         let result = await runner.run(Sudo.asRoot(command))
-        if !result.succeeded { report(.powerNotSet(setting, on: source.rawValue, reason: result.reason)) }
+        if !result.succeeded { report(.powerNotSet(Self.label(setting), on: source.rawValue, reason: result.reason)) }
         return result.succeeded
+    }
+
+    /// The name `macos.toml` gives the setting `pmset` calls `setting`, for messages, or `setting`
+    /// itself when it has none.
+    private static func label(_ setting: String) -> String {
+        PowerSetting.named(pmset: setting)?.name ?? setting
     }
 }

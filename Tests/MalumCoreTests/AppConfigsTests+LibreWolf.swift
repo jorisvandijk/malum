@@ -73,6 +73,6 @@ extension AppConfigsTests {
         #expect(reader.problems.isEmpty)
         #expect(read.preferences.map(\.key) == ["DisableTelemetry", "ExtensionSettings"])
         #expect(read.preferences.allSatisfy { $0.domain == "/Library/Preferences/net.librewolf.librewolf" })
-        #expect(read.preferences.last?.value.contains("<key>uBlock0@raymondhill.net</key><dict>") == true)
+        #expect(read.preferences.last?.value?.contains("<key>uBlock0@raymondhill.net</key><dict>") == true)
     }
 }

@@ -63,7 +63,7 @@ struct PowerSettingsTests {
             ])
         #expect(
             messages == [
-                Self.asking, Message(.info, "set lessbright on battery power to 0 from macos.toml (it was 1)"),
+                Self.asking, Message(.info, "set dim_screen on battery power to 0 from macos.toml (it was 1)"),
             ])
         #expect(
             record(files) == [
@@ -93,7 +93,7 @@ struct PowerSettingsTests {
         #expect(runner.commands.last == Sudo.asRoot(Pmset.set("lessbright", to: 0, on: .charger)))
         #expect(
             messages.last
-                == Message(.info, "set lessbright on charger power back to 0, macos.toml doesn't set it anymore"))
+                == Message(.info, "set dim_screen on charger power back to 0, macos.toml doesn't set it anymore"))
         #expect(record(files).isEmpty)
     }
 
@@ -114,13 +114,13 @@ struct PowerSettingsTests {
                 Message(
                     .warn,
                     """
-                    displaysleep on battery power isn't set from macos.toml anymore, but it was changed outside \
+                    screen_off_min on battery power isn't set from macos.toml anymore, but it was changed outside \
                     Malum, so it stays and Malum no longer manages it
                     """),
                 Message(
                     .warn,
                     """
-                    lessbright on battery power isn't set from macos.toml anymore, but it was changed outside \
+                    dim_screen on battery power isn't set from macos.toml anymore, but it was changed outside \
                     Malum, so it stays and Malum no longer manages it
                     """),
             ])

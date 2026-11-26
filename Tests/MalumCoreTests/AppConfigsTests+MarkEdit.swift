@@ -48,7 +48,7 @@ extension AppConfigsTests {
         #expect(reader.problems.isEmpty)
         #expect(preferences.allSatisfy { $0.domain == "app.cyan.markedit" })
         #expect(
-            try preferences.map { try json(in: $0.value) } == [
+            try preferences.map { try json(in: $0.value ?? "") } == [
                 "\"dracula\"", "15.0", "{\"customFont\": {\"name\": \"Menlo\"}}",
             ])
     }
