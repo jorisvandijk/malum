@@ -152,7 +152,11 @@ extension Catalog.Reading {
                     path: path, preference: AppPreference(domain: domain, key: key, value: nil, setting: setting)))
         case (.file(let keys), .set(let given)):
             files.append(Catalog.FileValue(path: path, target: keys, value: given))
-        case (.file, .remove):
+        case (.fileKeys(let table, let value), .set(let given)):
+            for key in TableReader.texts(given) ?? [] {
+                files.append(Catalog.FileValue(path: path, target: table + [key], value: value))
+            }
+        case (.file, .remove), (.fileKeys, .remove):
             return
         }
     }

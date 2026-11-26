@@ -11,12 +11,24 @@ extension AppConfigsTests {
             [extensions]
             ids = ["dracula-theme.theme-dracula", "tamasfe.even-better-toml"]
 
-            [settings]
-            "update.mode" = "none"
-            "editor.fontLigatures" = true
+            [appearance]
+            theme = "Dracula Theme"
 
-            [argv]
-            enable-crash-reporter = false
+            [font]
+            family = "Menlo"
+            size_pt = 14
+            ligatures = true
+
+            [editor]
+            auto_save = "after_delay"
+
+            [updates]
+            auto_check = false
+            auto_check_extensions = false
+
+            [privacy]
+            telemetry = "off"
+            send_crash_reports = false
             """, file: "apps/vscodium.toml")
         let read = config.read(&reader, home: "/Users/test")
         #expect(reader.problems.isEmpty)
@@ -25,9 +37,23 @@ extension AppConfigsTests {
             read.files == [
                 AppFile(
                     "Library/Application Support/VSCodium/User/settings.json",
-                    "{\n    \"editor.fontLigatures\": true,\n    \"update.mode\": \"none\"\n}\n"),
+                    "{\n    \"editor.fontFamily\": \"'Menlo', monospace\",\n    \"editor.fontLigatures\": true,\n"
+                        + "    \"editor.fontSize\": 14,\n    \"extensions.autoCheckUpdates\": false,\n"
+                        + "    \"files.autoSave\": \"afterDelay\",\n    \"telemetry.telemetryLevel\": \"off\",\n"
+                        + "    \"terminal.integrated.fontFamily\": \"'Menlo', monospace\",\n"
+                        + "    \"terminal.integrated.fontSize\": 14,\n    \"update.mode\": \"none\",\n"
+                        + "    \"workbench.colorTheme\": \"Dracula Theme\"\n}\n"),
                 AppFile(".vscode-oss/argv.json", "{\n    \"enable-crash-reporter\": false\n}\n"),
             ])
+    }
+
+    @Test func vscodiumTakesNoRawSettings() throws {
+        let config = try #require(AppConfigs.app(named: "vscodium"))
+        var reader = try TableReader(
+            "[settings]\n\"update.mode\" = \"none\"\n\n[updates]\nauto_check = true\n", file: "apps/vscodium.toml")
+        let read = config.read(&reader, home: "/Users/test")
+        #expect(reader.problems.map { Message($0.level, $0.text) } == [Message(.warn, "unknown table settings")])
+        #expect(read.files.first?.text == "{\n    \"update.mode\": \"default\"\n}\n")
     }
 
     @Test func wrongExtensionsAreAnError() throws {

@@ -46,9 +46,27 @@ public enum AppDocs {
     /// Where `target` is, as the page names it: a preference by its domain and key, a key in one of
     /// `app`'s files by the file's path and the key.
     private static func place(_ target: CatalogSetting.Target, in app: AppConfig) -> String {
-        guard case .file(let path) = target, let table = path.first else { return CatalogDocs.preference(target) }
-        let key = path.dropFirst().joined(separator: ".")
-        let files = app.files.filter { $0.tables.contains(table) }.map { "`\(CatalogValue.homePrefix)\($0.path)`" }
-        return (files + ["`\(key)`"]).joined(separator: " ")
+        let path: [String]
+        let keyPerShortcut: ConfigValue?
+        switch target {
+        case .preference:
+            return CatalogDocs.preference(target)
+        case .file(let keys):
+            (path, keyPerShortcut) = (keys, nil)
+        case .fileKeys(let table, let value):
+            (path, keyPerShortcut) = (table, value)
+        }
+        guard let table = path.first else { return "" }
+        var places: [String] = []
+        var inner = Array(path.dropFirst())
+        for file in app.files where file.tables.contains(table) {
+            // A file written once per table names that table in its path, not in the key.
+            let name = file.each == nil ? nil : inner.first
+            places.append("`\(CatalogValue.homePrefix)\(file.path.replacingOccurrences(of: "*", with: name ?? "*"))`")
+            if name != nil { inner = Array(inner.dropFirst()) }
+        }
+        let key = inner.isEmpty ? [] : ["`\(inner.joined(separator: "."))`"]
+        guard let keyPerShortcut else { return (places + key).joined(separator: " ") }
+        return (places + key).joined(separator: " ") + ", a key per shortcut, set to `\(keyPerShortcut.toml)`"
     }
 }

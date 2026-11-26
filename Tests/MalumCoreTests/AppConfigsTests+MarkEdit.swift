@@ -8,13 +8,11 @@ extension AppConfigsTests {
     /// Where MarkEdit reads its settings file and CSS, relative to home.
     private static let markEditDocuments = "Library/Containers/app.cyan.markedit/Data/Documents"
 
-    @Test func markEditWritesSettingsWithNestedTablesAndCSS() throws {
+    @Test func markEditWritesItsSettingsFileAndCSS() throws {
         let (files, problems) = try read(
             """
-            [settings]
-            "editor.autoSaveWhenIdle" = true
-            "editor.customToolbarItems" = [{ title = "View Mode", icon = "eye" }]
-            "extension.markeditPreview" = { syncScroll = true, changeMode = { modes = ["edit", "preview"] } }
+            [updates]
+            auto_check = false
 
             [css]
             text = ".cm-md-codeBlock { font-family: Menlo !important; }"
@@ -23,11 +21,7 @@ extension AppConfigsTests {
         #expect(
             files == [
                 AppFile(
-                    "\(Self.markEditDocuments)/settings.json",
-                    "{\n    \"editor.autoSaveWhenIdle\": true,\n"
-                        + "    \"editor.customToolbarItems\": [{\"icon\": \"eye\", \"title\": \"View Mode\"}],\n"
-                        + "    \"extension.markeditPreview\": {\"changeMode\": {\"modes\": [\"edit\", \"preview\"]}, "
-                        + "\"syncScroll\": true}\n}\n"),
+                    "\(Self.markEditDocuments)/settings.json", "{\n    \"general.updateBehavior\": \"never\"\n}\n"),
                 AppFile(
                     "\(Self.markEditDocuments)/editor.css",
                     "/* Written by Malum from apps/markedit.toml in dots. Changes made here are overwritten. */\n"
@@ -39,17 +33,30 @@ extension AppConfigsTests {
         let config = try #require(AppConfigs.app(named: "markedit"))
         var reader = try TableReader(
             """
-            [preferences]
-            "editor.dark-theme" = "dracula"
-            "editor.font-size" = 15.0
-            "editor.font-style" = { customFont = { name = "Menlo" } }
+            [appearance]
+            mode = "dark"
+            light_theme = "github-light"
+            dark_theme = "dracula"
+
+            [font]
+            name = "Menlo"
+            size_pt = 15
+
+            [editor]
+            wrap_lines = "at_words"
             """, file: "apps/markedit.toml")
         let preferences = config.read(&reader, home: "/Users/test").preferences
         #expect(reader.problems.isEmpty)
         #expect(preferences.allSatisfy { $0.domain == "app.cyan.markedit" })
         #expect(
+            preferences.map(\.key) == [
+                "general.appearance", "editor.light-theme", "editor.dark-theme", "editor.font-style",
+                "editor.font-size", "editor.line-wrapping",
+            ])
+        #expect(
             try preferences.map { try json(in: $0.value ?? "") } == [
-                "\"dracula\"", "15.0", "{\"customFont\": {\"name\": \"Menlo\"}}",
+                "\"dark\"", "\"github-light\"", "\"dracula\"", "{\"customFont\": {\"name\": \"Menlo\"}}", "15.0",
+                "true",
             ])
     }
 

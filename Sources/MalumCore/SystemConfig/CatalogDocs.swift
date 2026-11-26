@@ -31,6 +31,8 @@ enum CatalogDocs {
             "`\(domain)` `\(key)`"
         case .file(let path):
             "`\(path.joined(separator: "."))`"
+        case .fileKeys(let table, let value):
+            "a key per shortcut in `\(table.joined(separator: "."))`, set to `\(value.toml)`"
         }
     }
 }

@@ -135,7 +135,7 @@ struct AppConfigFilesTests {
     @Test func sandboxedAppIsSkippedUntilItsContainerIsThere() async throws {
         let markEdit = "/Users/test/dots/apps/markedit.toml"
         let settings = "/Users/test/Library/Containers/app.cyan.markedit/Data/Documents/settings.json"
-        let files = FakeFileSystem(texts: [markEdit: "[settings]\n\"editor.autoSaveWhenIdle\" = true\n"])
+        let files = FakeFileSystem(texts: [markEdit: "[updates]\nauto_check = false\n"])
         let (succeeded, messages) = await run(files)
         #expect(succeeded)
         #expect(
@@ -146,7 +146,7 @@ struct AppConfigFilesTests {
         #expect(files.text(at: settings) == nil)
         try files.createDirectory("/Users/test/Library/Containers/app.cyan.markedit")
         _ = await run(files)
-        #expect(files.text(at: settings) == "{\n    \"editor.autoSaveWhenIdle\": true\n}\n")
+        #expect(files.text(at: settings) == "{\n    \"general.updateBehavior\": \"never\"\n}\n")
     }
 
     @Test func droppedFileIsRemoved() async {

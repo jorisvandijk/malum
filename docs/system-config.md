@@ -284,17 +284,16 @@ The profile is always called `default`. When `~/Library/Application Support/Libr
 
 `apps/markedit.toml` sets MarkEdit's preferences, writes its settings file, `settings.json`, adds CSS to its editor, `editor.css`, and installs its extensions. MarkEdit is sandboxed, so both files go in its own folder, `~/Library/Containers/app.cyan.markedit/Data/Documents`, which macOS makes the first time MarkEdit opens. Until then Malum skips the file with a warning: open MarkEdit once, then run again. MarkEdit reads all of it when it starts: quit and reopen it after a run. Install MarkEdit itself with the `markedit` cask.
 
-```toml
-[preferences]
-"editor.dark-theme" = "dracula"
-"editor.font-size" = 15.0
-"editor.font-style" = { customFont = { name = "CaskaydiaCove Nerd Font Mono" } }
-"general.appearance" = "dark"
+Every table and setting it takes is in the [markedit reference](apps/markedit.md), with what each one writes. Like [app preferences](#app-preferences), Malum owns each preference it sets. MarkEdit ignores the whole of `settings.json` when one value in it is wrong.
 
-[settings]
-"editor.autoSaveWhenIdle" = true
-"general.updateBehavior" = "never"
-"extension.markeditPreview" = { syncScroll = true, themeName = "github" }
+```toml
+[appearance]
+mode = "dark"
+dark_theme = "dracula"
+
+[font]
+name = "CaskaydiaCoveNFM-Regular"
+size_pt = 15
 
 [extensions]
 ids = ["markedit-preview", "markedit-theme-one-dark"]
@@ -305,31 +304,25 @@ text = '''
 '''
 ```
 
-- `[preferences]`: what MarkEdit's Settings window sets, by the names in [its source](https://github.com/MarkEdit-app/MarkEdit/blob/main/MarkEditMac/Sources/Main/AppPreferences.swift), such as `editor.light-theme`, `editor.dark-theme`, `editor.font-size`, `editor.show-line-numbers` and `editor.line-wrapping`. MarkEdit keeps each one as JSON, so Malum writes it that way: text, numbers and `true` or `false` as they are, and a choice with details as a table, such as the font above. Themes go by their id, such as `github-light`, `dracula` or `solarized-dark`. Like [app preferences](#app-preferences), Malum owns each one it sets.
-- `[settings]`: the [advanced settings](https://github.com/MarkEdit-app/MarkEdit/wiki/Customization#advanced-settings) and each extension's own settings, as `"name" = value`, written to `settings.json`. A value can be a table or a list of tables. MarkEdit ignores the whole file when one value in it is wrong.
-- `[css]`: `text` is written to `editor.css` as it is, for what the settings don't cover, such as the font of code blocks.
 - `[extensions]`: `ids` lists extensions and themes by their id in [MarkEdit's registry](https://github.com/MarkEdit-app/extensions/blob/main/index.json), the list its Extensions window shows. Malum downloads each one's script into `scripts/` in the same folder, checks it against the registry's checksum, and updates it when the registry has a newer version. MarkEdit runs every script there, so a listed extension is also switched on. One you take out of the list is removed; ones you installed yourself from the Extensions window are left alone, unless you list them, then Malum takes them over.
 
 ### micro
 
-`apps/micro.toml` writes micro's options to `~/.config/micro/settings.json`, its key bindings to `bindings.json`, and each colour scheme to its own file in `colorschemes/`, all in `~/.config/micro/`. JSON has no comments, so `settings.json` and `bindings.json` don't start with the line that says where they come from.
+`apps/micro.toml` writes micro's options to `~/.config/micro/settings.json`, its key bindings to `bindings.json`, and its colours to the colour scheme `colorschemes/malum.micro`, all in `~/.config/micro/`. Malum always has micro use that scheme. JSON has no comments, so `settings.json` and `bindings.json` don't start with the line that says where they come from. Every table and setting it takes is in the [micro reference](apps/micro.md).
 
 ```toml
-[settings]
-colorscheme = "dracula"
-softwrap = true
+[colors]
+text = { fg = "#f8f8f2", bg = "#282a36" }
+comment = { fg = "#6272a4", bg = "#282a36", style = "italic" }
 
-[bindings]
-"Alt-/" = "lua:comment.comment"
+[editor]
+wrap_lines = "at_words"
 
-[colorschemes.dracula]
-default = "#F8F8F2,#282A36"
-comment = "italic #6272A4"
+[shortcuts]
+toggle_comment = ["option+slash", "ctrl+slash"]
 ```
 
-- `[settings]`: any of [micro's options](https://github.com/zyedidia/micro/blob/master/runtime/help/options.md), as `option = value`. Setting an option from inside micro with `set` changes `settings.json`, so the next run overwrites it with a warning: set options here instead.
-- `[bindings]`: [key bindings](https://github.com/zyedidia/micro/blob/master/runtime/help/keybindings.md), as `"key" = "action"`. `bindings.json` is only written when the table has something in it.
-- `[colorschemes.<name>]`: a colour scheme, with `group = "colours"` for each highlight group. Each becomes a `color-link group "colours"` line in `colorschemes/<name>.micro`. Pick the scheme with the `colorscheme` setting.
+Setting an option from inside micro with `set` changes `settings.json`, so the next run overwrites it with a warning: set it here instead. micro runs in a terminal, which doesn't pass cmd or fn on, so a shortcut can't hold them.
 
 ### newsboat
 
@@ -382,23 +375,26 @@ ssh takes the first value it finds, so hosts with a plain name come first and pa
 
 ### VSCodium
 
-`apps/vscodium.toml` writes VSCodium's settings to `~/Library/Application Support/VSCodium/User/settings.json` and its startup options to `~/.vscode-oss/argv.json`, and installs the extensions it lists. Install VSCodium itself with the `vscodium` cask in `packages.toml`, which also gives Malum the `codium` command it installs extensions with.
+`apps/vscodium.toml` writes VSCodium's settings to `~/Library/Application Support/VSCodium/User/settings.json` and its startup options to `~/.vscode-oss/argv.json`, and installs the extensions it lists. Install VSCodium itself with the `vscodium` cask in `packages.toml`, which also gives Malum the `codium` command it installs extensions with. Every table and setting it takes is in the [vscodium reference](apps/vscodium.md).
 
 ```toml
+[appearance]
+theme = "Dracula Theme"
+
+[font]
+family = "CaskaydiaCove Nerd Font Mono"
+size_pt = 14
+
+[privacy]
+send_crash_reports = false
+
 [extensions]
 ids = ["dracula-theme.theme-dracula", "tamasfe.even-better-toml"]
-
-[settings]
-"workbench.colorTheme" = "Dracula Theme"
-"editor.fontLigatures" = true
-
-[argv]
-enable-crash-reporter = false
 ```
 
 - `[extensions]`: `ids` lists extensions as `publisher.name`, their name on [Open VSX](https://open-vsx.org). Malum installs them after the app config files, and works with them the way it does with packages: one that's already installed is taken over, and one you take out of the list is uninstalled. Extensions you installed yourself and never listed are left alone. When `apps/vscodium.toml` has an error, extensions are neither installed nor uninstalled.
-- `[settings]`: [user settings](https://code.visualstudio.com/docs/configure/settings), as `"name" = value`. Names have dots, so quote them. Changing a setting in VSCodium changes `settings.json`, so the next run overwrites it with a warning: change settings here instead.
-- `[argv]`: startup options, as `option = value`. `argv.json` is only written when the table has something in it.
+
+Changing a setting in VSCodium changes `settings.json`, so the next run overwrites it with a warning: change it here instead.
 
 ```
 [info] installing VSCodium extension tamasfe.even-better-toml
