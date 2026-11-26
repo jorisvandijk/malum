@@ -79,7 +79,7 @@ period = "stack_next"
 
 The hyper key holds shift too, so hyper+comma is hyper+< and hyper+period is hyper+>.
 
-The window in front follows the focus, so cmd+\` or the Window menu also changes it. Switch to another app and back, and the window that was in front is in front again. When it closes or is minimised, the one in front before it comes up. A new window joins the stack, in front. With one window left the app stays stacked, which looks the same as one window, until `toggle_stack` is pressed again. While an app is stacked, the split keys, hyper+drag and dropping a window on another do nothing. Floating windows aren't part of the stack. Each app is stacked on its own, and goes back to its split when it quits or Malum restarts.
+The window in front follows the focus, so cmd+\` or the Window menu also changes it. Switch to another app and back, and the window that was in front is in front again. When it closes or is minimised, the one in front before it comes up. A new window joins the stack, in front. When only one window is left, the stack ends by itself, so the next new window is split with it again. `toggle_stack` does nothing on an app with one window. While an app is stacked, the split keys, hyper+drag and dropping a window on another do nothing. Floating windows aren't part of the stack. Each app is stacked on its own, and goes back to its split when it quits or Malum restarts.
 
 Malum fills the screen with the menu bar. Other screens are left alone. When a display is plugged in, unplugged or rearranged, and when the Mac wakes, the windows are laid out again on the screen that has the menu bar then.
 

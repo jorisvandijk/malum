@@ -154,16 +154,24 @@ struct AppTrackerStackTests {
         #expect(windows.allSatisfy { $0.frame == area })
     }
 
-    @Test func oneWindowStaysStackedUntilASecondComesBack() {
+    @Test func oneWindowLeftEndsTheStackAndANewOneIsSplitWithIt() {
         let (tracker, windows) = tracker()
         tracker.toggleStack()
         watched.current = Array(windows.prefix(1))
         watched.focused = windows.first
         tracker.handle(.changed)
+        #expect(!tracker.isStacked)
         watched.current = windows
         tracker.reconcile()
-        #expect(tracker.isStacked)
-        #expect(windows.allSatisfy { $0.frame == area })
+        #expect(!tracker.isStacked)
+        #expect(windows.map(\.frame) == WindowLayout.slots(count: 2, in: area))
+    }
+
+    @Test func toggleStackWithOneWindowDoesNothing() {
+        let (tracker, windows) = tracker(windows: 1)
+        tracker.toggleStack()
+        #expect(!tracker.isStacked)
+        #expect(windows.allSatisfy { $0.raises == 0 })
     }
 
     @Test func newWindowWithoutTheFocusIsShownToo() {

@@ -104,6 +104,8 @@ final class AppTracker {
         for tracked in windows {
             classify(tracked)
         }
+        // One window left ends the stack, so the next new one is split with it again.
+        isStacked = isStacked && managedInView.count > 1
         followFocus()
         showJoined(since: before)
         layout()
@@ -331,8 +333,9 @@ final class AppTracker {
 
 extension AppTracker {
     /// Stacks the managed windows, each filling the area with the focused one in front, or splits
-    /// them again, by the split they had.
+    /// them again, by the split they had. One window alone isn't stacked.
     func toggleStack() {
+        guard isStacked || managedInView.count > 1 else { return }
         isStacked.toggle()
         inFront = nil
         followFocus()
