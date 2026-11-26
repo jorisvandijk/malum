@@ -11,6 +11,8 @@ enum AppCatalogs {
         static let cursorcerer = "com.doomlaser.cursorcerer"
         /// OverSight.
         static let oversight = "com.objective-see.oversight"
+        /// MarkEdit, whose bundle ID also names its container.
+        static let markEdit = "app.cyan.markedit"
     }
 
     /// The longest idle time Malum takes before Cursorcerer hides the pointer, an hour. Cursorcerer

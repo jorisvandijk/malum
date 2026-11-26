@@ -20,6 +20,10 @@ struct CatalogSetting: Sendable {
         /// A key in one of the app's own files, by its path in the tables the app's `AppConfigFile`
         /// formats read, such as `["settings", "editor.fontSize"]`.
         case file([String])
+        /// Keys in one of the app's files, one per item the setting writes, each set to `value`,
+        /// in the table at `table`, such as micro's `["bindings"]` with `lua:comment.comment` for
+        /// each shortcut of an action.
+        case fileKeys(table: [String], value: ConfigValue)
     }
 
     /// The setting's name in its table, such as `natural_scrolling`.

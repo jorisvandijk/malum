@@ -47,6 +47,13 @@ extension CatalogTests {
         }
     }
 
+    @Test func aNumberWithAUnitEndsInIt() {
+        for setting in Self.catalogs.flatMap(\.tables).flatMap(\.settings) {
+            guard case .number(let unit, _, _) = setting.value else { continue }
+            #expect(setting.name.hasSuffix(unit.suffix), "\(setting.name)")
+        }
+    }
+
     @Test func anAppsCatalogReadsItsFileAndWritesItsDomain() {
         for app in AppConfigs.all {
             guard let catalog = app.catalog else { continue }

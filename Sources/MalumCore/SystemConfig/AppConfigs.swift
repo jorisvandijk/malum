@@ -31,11 +31,8 @@ enum AppConfigs {
 
         """
 
-    /// MarkEdit's bundle ID, which names its preferences and its container.
-    private static let markEdit = "app.cyan.markedit"
-
     /// Where MarkEdit reads its settings file and the CSS it adds to the editor.
-    private static let markEditDocuments = Paths.containerDocuments(of: markEdit)
+    private static let markEditDocuments = Paths.containerDocuments(of: AppCatalogs.Domain.markEdit)
 
     /// The apps, each read from `apps/<name>.toml`.
     static let all = [
@@ -72,14 +69,15 @@ enum AppConfigs {
             ]),
         AppConfig(
             name: "markedit",
-            domain: markEdit,
+            domain: AppCatalogs.Domain.markEdit,
             files: [
                 AppConfigFile("\(markEditDocuments)/settings.json", .json(table: "settings")),
                 AppConfigFile("\(markEditDocuments)/editor.css", .css(table: "css")),
             ],
             extensions: .markEdit(scripts: "\(markEditDocuments)/scripts"),
             jsonPreferences: true,
-            sandboxed: true),
+            sandboxed: true,
+            catalog: AppCatalogs.markEdit),
         AppConfig(
             name: "micro",
             files: [
@@ -89,7 +87,8 @@ enum AppConfigs {
                     ".config/micro/colorschemes/*.micro",
                     .lines([LineBlock(nil, prefix: "color-link", quoted: .double)]),
                     each: "colorschemes"),
-            ]),
+            ],
+            catalog: AppCatalogs.micro),
         AppConfig(
             name: "newsboat",
             files: [
@@ -112,7 +111,8 @@ enum AppConfigs {
                     always: true),
                 AppConfigFile(".vscode-oss/argv.json", .json(table: "argv")),
             ],
-            extensions: .vscodium),
+            extensions: .vscodium,
+            catalog: AppCatalogs.vscodium),
         AppConfig(
             name: "zsh",
             files: [

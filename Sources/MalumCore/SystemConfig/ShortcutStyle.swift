@@ -2,9 +2,13 @@
 /// what each app reads.
 enum ShortcutStyle: Equatable, Sendable {
     /// Text: fn by `fn` when it's held, the modifiers by `names`, in `Modifier`'s order, then the
-    /// key's name, joined by `joiner`, such as kitty's `ctrl+alt+k`. An app with no `fn` name
-    /// takes no shortcut that holds fn.
-    case text(names: [Modifier: String], fn: String?, joiner: String)
+    /// key's name, joined by `joiner`, such as kitty's `ctrl+alt+k`. A key in `keys` is written by
+    /// its name there, and a whole shortcut in `whole`, by its shared syntax, as its text there,
+    /// such as micro's `CtrlUnderscore` for `ctrl+slash`. An app with no `fn` name takes no
+    /// shortcut that holds fn, and one with no name for a modifier takes no shortcut that holds it.
+    case text(
+        names: [Modifier: String], fn: String?, joiner: String, keys: [String: String] = [:],
+        whole: [String: String] = [:])
     /// The Carbon key code and modifiers as JSON text, as apps built with KeyboardShortcuts keep
     /// them: `{"carbonKeyCode":40,"carbonModifiers":6144}`. Carbon has no fn.
     case carbonJSON
@@ -30,17 +34,25 @@ enum ShortcutStyle: Equatable, Sendable {
         static let modifiers = "carbonModifiers"
     }
 
+    /// `shortcut` as text in this style, or nil when it isn't a text style or can't take it.
+    private func text(_ shortcut: Shortcut) -> String? {
+        guard case .string(let text)? = value(shortcut) else { return nil }
+        return text
+    }
+
     /// `shortcut` as the app keeps it, or nil when the app can't take it.
     func value(_ shortcut: Shortcut) -> ConfigValue? {
         let hotkey = shortcut.hotkey
         let code = Int(hotkey.key.keyCode)
         let mask = hotkey.modifiers.reduce(0) { $0 + (Self.carbonMasks[$1] ?? 0) }
         switch self {
-        case .text(let names, let fn, let joiner):
-            guard !shortcut.fn || fn != nil else { return nil }
-            let modifiers = Modifier.allCases.filter(hotkey.modifiers.contains).compactMap { names[$0] }
+        case .text(let names, let fn, let joiner, let keys, let whole):
+            if !whole.isEmpty, let text = whole[Self.shared.text(shortcut) ?? ""] { return .string(text) }
+            guard !shortcut.fn || fn != nil,
+                let modifiers = Modifier.allCases.filter(hotkey.modifiers.contains).map({ names[$0] }).allPresent()
+            else { return nil }
             let held = (shortcut.fn ? fn.map { [$0] } ?? [] : []) + modifiers
-            return .string((held + [hotkey.key.name]).joined(separator: joiner))
+            return .string((held + [keys[hotkey.key.name] ?? hotkey.key.name]).joined(separator: joiner))
         case _ where shortcut.fn:
             return nil
         case .carbonJSON:
