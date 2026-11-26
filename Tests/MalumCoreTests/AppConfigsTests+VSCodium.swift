@@ -69,7 +69,7 @@ extension AppConfigsTests {
     }
 
     @Test func otherAppsHaveNoExtensions() throws {
-        let (_, problems) = try read("[extensions]\nids = [\"a.b\"]\n")
+        let (_, problems) = try read("[extensions]\nids = [\"a.b\"]\n", app: "git")
         #expect(problems == [Message(.warn, "unknown table extensions")])
     }
 }

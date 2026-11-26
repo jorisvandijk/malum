@@ -32,7 +32,7 @@ struct CatalogTests {
                         CatalogSetting(
                             "auto_save", "Saves.", .invertedFlag,
                             [.file(["settings", "files.noAutoSave"]), .domain("com.example.sample", "NoSave")]),
-                        CatalogSetting("save_folder", "Where.", .path, [.file(["settings", "files.folder"])]),
+                        CatalogSetting("save_folder", "Where.", .path(), [.file(["settings", "files.folder"])]),
                         CatalogSetting(
                             "delay", "Clashes.", .seconds(6...72), [.file(["settings", "editor.saveDelay"])]),
                     ]),
@@ -116,12 +116,12 @@ struct CatalogTests {
         }
         #expect(one(.seconds(1...10), .integer(10)) == .integer(10))
         #expect(one(.minutes(0...Int.max), .integer(-1)) == nil)
-        #expect(one(.path, .string("$HOME/Git")) == .string("/Users/test/Git"))
-        #expect(one(.path, .string("/opt/homebrew")) == .string("/opt/homebrew"))
-        #expect(one(.path, .string("~/Git")) == nil)
-        #expect(one(.path, .string("/Users/test/Git")) == nil)
-        #expect(one(.path, .string("$HOME/")) == nil)
-        #expect(one(.path, .string("$HOME/../other")) == nil)
+        #expect(one(.path(), .string("$HOME/Git")) == .string("/Users/test/Git"))
+        #expect(one(.path(), .string("/opt/homebrew")) == .string("/opt/homebrew"))
+        #expect(one(.path(), .string("~/Git")) == nil)
+        #expect(one(.path(), .string("/Users/test/Git")) == nil)
+        #expect(one(.path(), .string("$HOME/")) == nil)
+        #expect(one(.path(), .string("$HOME/../other")) == nil)
         #expect(one(.color, .string("#f8f8f2")) == .string("#f8f8f2"))
         #expect(one(.color, .string("#F8F8F2")) == nil)
         #expect(one(.color, .string("#fff")) == nil)

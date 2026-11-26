@@ -1,6 +1,6 @@
 import Foundation
 
-/// The kinds of list a curated setting takes, each item written as macOS keeps it.
+/// The kinds of list a curated setting takes, each item written as macOS or the app keeps it.
 enum CatalogList: Equatable, Sendable {
     /// Keyboard layouts, by the words in `layouts`.
     case keyboardLayouts
@@ -8,6 +8,8 @@ enum CatalogList: Equatable, Sendable {
     case dockApps
     /// Folders in the Dock, by their full paths.
     case dockFolders
+    /// Host names or patterns, such as ssh's, each without spaces.
+    case hosts
 
     /// A keyboard layout's ID and the name macOS keeps it under, by the word `macos.toml` uses.
     struct Layout: Sendable {
@@ -67,10 +69,10 @@ enum CatalogList: Equatable, Sendable {
         static let folderTile = "directory-tile"
     }
 
-    /// The fewest items the list takes: a Mac needs a keyboard layout, but the Dock can keep no
-    /// apps or folders.
+    /// The fewest items the list takes: a Mac needs a keyboard layout and a key a host, but the
+    /// Dock can keep no apps or folders.
     var minimum: Int {
-        self == .keyboardLayouts ? 1 : 0
+        self == .keyboardLayouts || self == .hosts ? 1 : 0
     }
 
     /// `item` as macOS keeps it, or nil when it isn't an item of this list.
@@ -82,6 +84,8 @@ enum CatalogList: Equatable, Sendable {
             Self.tile(item, kind: Kind.appTile)
         case .dockFolders:
             Self.tile(item, kind: Kind.folderTile)
+        case .hosts:
+            item.isEmpty || item.contains(where: \.isWhitespace) ? nil : .string(item)
         }
     }
 

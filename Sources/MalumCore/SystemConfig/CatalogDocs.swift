@@ -8,15 +8,29 @@ enum CatalogDocs {
 
     /// The part of the page about `table` and its settings, each setting's targets written by `place`.
     private static func section(_ table: CatalogTable, place: (CatalogSetting.Target) -> String) -> String {
-        let heading = "\n## `[\(table.name)]`\n\n\(table.about)\n"
         if let data = table.data {
-            return heading + "\n- Keys: \(data.keys)\n- Values: \(data.values)\n"
+            return heading(table.name, table.about) + "\n- Keys: \(data.keys)\n- Values: \(data.values)\n"
         }
-        let settings = table.settings.map { setting in
+        if let entries = table.entries {
+            let name = "\(table.name).\(CatalogEntries.item("name"))"
+            return heading(name, table.about) + "\n- Names: \(entries.keys)\n- Each one needs every setting below.\n"
+                + settings(entries.settings, place: place)
+        }
+        return heading(table.name, table.about) + settings(table.settings, place: place)
+    }
+
+    /// The heading of the table `name`, which is about `about`.
+    private static func heading(_ name: String, _ about: String) -> String {
+        "\n## `[\(name)]`\n\n\(about)\n"
+    }
+
+    /// The entries of `settings`, each one's targets written by `place`.
+    private static func settings(_ settings: [CatalogSetting], place: (CatalogSetting.Target) -> String) -> String {
+        settings.map { setting in
             let writes = setting.targets.map(place).joined(separator: ", ")
-            return entry(setting.name, setting.about, value: setting.value.description) + "- Writes: \(writes)\n"
-        }
-        return heading + settings.joined()
+            let written = writes.isEmpty ? "" : "- Writes: \(writes)\n"
+            return entry(setting.name, setting.about, value: setting.value.description) + written
+        }.joined()
     }
 
     /// The part of the page about the setting `name`, which does `about` and takes `value`.

@@ -90,10 +90,10 @@ Every warning and error in a run gets a number as it happens, and the run ends w
 [info] installing Homebrew cask lulu
 [error] #1 couldn't install Homebrew cask lulu: Download failed on Cask 'lulu'
 [info] wrote ~/.gitconfig from apps/git.toml
-[warn] #2 apps/kitty.toml line 4: unknown setting settings.fontsize
+[warn] #2 apps/kitty.toml line 4: unknown setting font.fontsize
 [error] 2 issues in this run:
 [error] #1 couldn't install Homebrew cask lulu: Download failed on Cask 'lulu'
-[warn] #2 apps/kitty.toml line 4: unknown setting settings.fontsize
+[warn] #2 apps/kitty.toml line 4: unknown setting font.fontsize
 ```
 
 Homebrew itself has to be installed at `/opt/homebrew/bin/brew`. Taking a package out of the list uninstalls it, as [Removing](#removing) describes.
@@ -199,53 +199,44 @@ When an app's file has an error, its config files are left as they are, and the 
 
 ### git
 
-`apps/git.toml` writes git's per-user config, `~/.config/git/config`. Settings in `~/.gitconfig` still apply on top of it, so keep that file empty or remove it.
+`apps/git.toml` writes git's per-user config, `~/.config/git/config`. Settings in `~/.gitconfig` still apply on top of it, so keep that file empty or remove it. Every table and setting it takes is in the [git reference](apps/git.md).
 
 ```toml
-[settings.user]
+[user]
 name = "Joris"
 email = "joris@example.com"
 
-[settings.init]
-defaultBranch = "main"
+[branches]
+default = "main"
 
-[settings."url.git@github.com:"]
-insteadOf = "https://github.com/"
+[push]
+auto_set_upstream = true
 
-[ignore]
-patterns = [".DS_Store", "*.swp"]
-
-[attributes]
-lines = ["*.pdf diff=pdf"]
+[github]
+use_ssh = true
 ```
-
-- `[settings.<section>]`: one table for each section of git's config, with its keys spelled the way git spells them. A dot in the section's name makes a subsection: `"url.git@github.com:"` becomes `[url "git@github.com:"]`. Values are text, whole numbers, `true` or `false`, or a list of them, which writes the key once for each item.
-- `[ignore]`: `patterns` is written to `~/.config/git/ignore`, one per line, and git ignores them in every repository.
-- `[attributes]`: `lines` is written to `~/.config/git/attributes`, which applies to every repository.
-
-`ignore` and `attributes` are only written when their list has something in it.
 
 ### kitty
 
-`apps/kitty.toml` writes kitty's config, `~/.config/kitty/kitty.conf`. kitty reads its config when it starts; press ctrl+cmd+, in a running kitty to load the new one.
+`apps/kitty.toml` writes kitty's config, `~/.config/kitty/kitty.conf`. kitty reads its config when it starts; press ctrl+cmd+, in a running kitty to load the new one. Every table and setting it takes is in the [kitty reference](apps/kitty.md). Malum always has kitty listen on its socket, which a new tab from the menu bar needs.
 
 ```toml
-[theme]
-foreground = "#f8f8f2"
-background = "#282a36"
+[font]
+family = "CaskaydiaCove Nerd Font Mono"
+size_pt = 14
 
-[settings]
-font_family = "CaskaydiaCove Nerd Font Mono"
-font_size = 14
+[colors]
+text = { fg = "#f8f8f2", bg = "#282a36" }
+
+[colors.normal]
+red = "#ff5555"
+
+[window]
 scrollback_lines = 100000
-enable_audio_bell = false
 
-[keybindings]
-"cmd+b" = "launch --location=vsplit"
+[shortcuts]
+split_window = "cmd+b"
 ```
-
-- `[theme]` and `[settings]`: any of [kitty's options](https://sw.kovidgoyal.net/kitty/conf/), as `option = value`, each written as an `option value` line. `true` and `false` are written as `yes` and `no`. The theme is written first, so a setting wins over it. A list writes the option once for each item, for options kitty takes more than once, such as `symbol_map`.
-- `[keybindings]`: keyboard shortcuts, as `"keys" = "action"`. Each becomes a `map keys action` line.
 
 ### LibreWolf
 
@@ -326,19 +317,24 @@ Setting an option from inside micro with `set` changes `settings.json`, so the n
 
 ### newsboat
 
-`apps/newsboat.toml` writes newsboat's config, `~/.config/newsboat/config`, and its feeds to `~/.config/newsboat/urls`. What you've read is kept in newsboat's cache, which Malum leaves alone. Install newsboat itself with the `newsboat` formula in `packages.toml`.
+`apps/newsboat.toml` writes newsboat's config, `~/.config/newsboat/config`, and its feeds to `~/.config/newsboat/urls`. What you've read is kept in newsboat's cache, which Malum leaves alone. Install newsboat itself with the `newsboat` formula in `packages.toml`. Every table and setting it takes is in the [newsboat reference](apps/newsboat.md).
 
 ```toml
-[settings]
-auto-reload = true
-reload-time = 60
-browser = "open %u"
+[shortcuts]
+down = "j"
+next_feed = "shift+j"
 
-[keybindings]
-j = "down"
-J = "next-feed articlelist"
+[browser]
+app = "net.librewolf.librewolf"
 
-[ignore_articles]
+[reload]
+auto_reload = true
+interval_minutes = 60
+
+[lists]
+article_columns = ["number", "flags", "date", "title"]
+
+[ignored_articles]
 "*" = ["title =~ \"sponsored\"", "author = \"bot\""]
 
 [feeds]
@@ -346,32 +342,33 @@ J = "next-feed articlelist"
 Lobsters = { url = "https://lobste.rs/rss", tags = ["tech"] }
 ```
 
-- `[settings]`: any of [newsboat's options](https://newsboat.org/releases/2.42/docs/newsboat.html#_configuration_commands), as `option = value`. Text is written in double quotes, `true` and `false` as `yes` and `no`.
-- `[keybindings]`: key bindings, as `key = "operation"`, each written as `bind-key key operation`. Put a dialog after the operation to bind it in that dialog only, as `J` does above.
-- `[ignore_articles]`: articles to hide, as `feed = "filter"`, or a list of filters. Each filter becomes an `ignore-article feed "filter"` line. The feed is its address, or `"*"` for every feed, and the filter is in [newsboat's filter language](https://newsboat.org/releases/2.42/docs/newsboat.html#_filter_language).
-- `[feeds]`: the feeds, as `title = "address"`. The title is shown in newsboat's feed list instead of the feed's own. Use `{ url = "...", tags = [...] }` to give a feed tags. The feeds are written in alphabetical order of title, and `urls` is only written when there's at least one.
+- `[ignored_articles]`: articles to hide, as `feed = "filter"`, or a list of filters. The feed is its address, or `"*"` for every feed, and the filter is in [newsboat's filter language](https://newsboat.org/releases/2.42/docs/newsboat.html#_filter_language).
+- `[feeds]`: the feeds, as `title = "address"`. The title is shown in newsboat's feed list instead of the feed's own. Use `{ url = "...", tags = [...] }` to give a feed tags. `urls` is only written when there's at least one.
 
 ### ssh
 
-`apps/ssh.toml` writes ssh's per-user config, `~/.ssh/config`, with one table inside `[hosts]` for each `Host` section. Each setting goes by the name ssh gives it, and `true` and `false` are written as `yes` and `no`. Your keys stay out of dots: only the settings that point at them go here.
+`apps/ssh.toml` writes ssh's per-user config, `~/.ssh/config`. Your keys stay out of dots: only where they are and which hosts they're for go here. Every table and setting it takes is in the [ssh reference](apps/ssh.md).
 
 ```toml
-[hosts."github.com"]
-IdentityFile = "~/.ssh/id_ed25519"
-AddKeysToAgent = true
-UseKeychain = true
+[agent]
+add_keys = true
+use_keychain = true
+
+[keys.github]
+file = "$HOME/.ssh/id_ed25519"
+hosts = ["github.com"]
 ```
 
 writes
 
 ```
 Host github.com
+  IdentityFile /Users/you/.ssh/id_ed25519
+
+Host *
   AddKeysToAgent yes
-  IdentityFile ~/.ssh/id_ed25519
   UseKeychain yes
 ```
-
-ssh takes the first value it finds, so hosts with a plain name come first and patterns, such as `"*"`, last; each group is in alphabetical order, and so are the settings inside a host.
 
 ### VSCodium
 

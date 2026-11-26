@@ -14,6 +14,8 @@ extension CatalogValue: CustomStringConvertible {
             Self.whole("seconds", range)
         case .minutes(let range):
             Self.whole("minutes", range)
+        case .count(let range):
+            Self.whole(nil, range)
         case .number(let unit, let range, _):
             "a number of \(unit.words) from \(Self.plain(range.lowerBound)) to \(Self.plain(range.upperBound))"
         case .percent:
@@ -22,6 +24,8 @@ extension CatalogValue: CustomStringConvertible {
             "a folder's full path, starting with /"
         case .path:
             "a path, starting with \(Self.homePrefix) in your home folder or / outside it"
+        case .app:
+            "an app's bundle ID, such as \"net.librewolf.librewolf\""
         case .text:
             "text that isn't empty"
         case .color:
@@ -30,12 +34,16 @@ extension CatalogValue: CustomStringConvertible {
             "a table with a colour fg\(unset == nil ? "" : " (or none, for the default)"), an optional colour bg "
                 + "and an optional style " + Self.oneOf(Self.colorStyles)
                 + ", such as { fg = \"#f8f8f2\", bg = \"#282a36\" }"
+        case .colorPairKeys:
+            "a table with a colour fg and a colour bg, such as { fg = \"#f8f8f2\", bg = \"#282a36\" }"
         case .shortcut:
             Self.shortcut
         case .shortcutKeys:
             "\(Self.shortcut), or a list of them"
         case .list(let list):
             list.description
+        case .parts(let parts, _):
+            "a list of at least one of " + Self.oneOf(parts.map(\.word))
         }
     }
 
@@ -48,10 +56,12 @@ extension CatalogValue: CustomStringConvertible {
         number.rounded() == number && abs(number) < Double(Int.max) ? String(Int(number)) : String(number)
     }
 
-    /// A whole number of `unit` in `range`, with no upper end when it reaches `Int.max`.
-    private static func whole(_ unit: String, _ range: ClosedRange<Int>) -> String {
-        guard range.upperBound < Int.max else { return "a whole number of \(unit), \(range.lowerBound) or more" }
-        return "a whole number of \(unit) from \(range.lowerBound) to \(range.upperBound)"
+    /// A whole number of `unit`, or a plain one without it, in `range`, with no upper end when it
+    /// reaches `Int.max`.
+    private static func whole(_ unit: String?, _ range: ClosedRange<Int>) -> String {
+        let number = unit.map { "a whole number of \($0)" } ?? "a whole number"
+        guard range.upperBound < Int.max else { return "\(number), \(range.lowerBound) or more" }
+        return "\(number) from \(range.lowerBound) to \(range.upperBound)"
     }
 
     /// `words` in quotes, as a choice of one of them: `"a", "b" or "c"`.
@@ -74,6 +84,8 @@ extension CatalogList: CustomStringConvertible {
             "a list of apps' full paths, such as \"/Applications/Safari.app\""
         case .dockFolders:
             "a list of folders' full paths, such as \"/Users/you/Downloads\""
+        case .hosts:
+            "a list of at least one host name or pattern, such as \"github.com\" or \"*.example.com\""
         }
     }
 }

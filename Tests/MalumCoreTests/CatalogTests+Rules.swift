@@ -41,8 +41,17 @@ extension CatalogTests {
                 let names = table.settings.map(\.name)
                 #expect(Set(names).count == names.count, "\(catalog.file) \(table.name)")
                 #expect(
-                    (names + [table.name]).allSatisfy { $0.allSatisfy { $0.isLowercase || $0.isNumber || $0 == "_" } },
+                    (names + table.path).allSatisfy { $0.allSatisfy { $0.isLowercase || $0.isNumber || $0 == "_" } },
                     "\(catalog.file) \(table.name)")
+            }
+        }
+    }
+
+    @Test func aPartOfATableIsOneLevelInsideATableOfTheCatalog() {
+        for catalog in Self.catalogs {
+            for table in catalog.tables where table.path.count > 1 {
+                #expect(table.path.count == 2, "\(catalog.file) \(table.name)")
+                #expect(catalog.topTables.contains(table.path.first ?? ""), "\(catalog.file) \(table.name)")
             }
         }
     }

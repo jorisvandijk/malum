@@ -137,7 +137,7 @@ struct RunCommandTests {
 
     @Test func appConfigFilesAreWrittenAfterThePackages() async {
         let (succeeded, messages) = await run(
-            switchedOn, more: ["/Users/test/dots/apps/git.toml": "[settings.init]\ndefaultBranch = \"main\"\n"])
+            switchedOn, more: ["/Users/test/dots/apps/git.toml": "[branches]\ndefault = \"main\"\n"])
         #expect(succeeded)
         #expect(
             messages == [
