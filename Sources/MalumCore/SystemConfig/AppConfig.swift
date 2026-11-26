@@ -28,14 +28,20 @@ struct AppConfig: Sendable {
     /// Whether the app is sandboxed: its files and preferences live in its container in
     /// `Library/Containers/<domain>`, which macOS makes when the app first opens.
     let sandboxed: Bool
+    /// The app's curated tables, or nil when its file still holds the tables its files are written
+    /// from as they are. With a catalog, the file holds only the catalog's tables (and `extensions`),
+    /// and Malum translates them into what the files and preferences need.
+    let catalog: Catalog?
 
     /// Creates the app called `name`, which gets `files`, its preferences in `domain` and its
     /// system-wide ones in `policies` when those are set, and the extensions it lists from
     /// `extensions` when that's set. Its preferences are written as JSON when it has
-    /// `jsonPreferences`, and only once its container is there when it's `sandboxed`.
+    /// `jsonPreferences`, and only once its container is there when it's `sandboxed`. With
+    /// `catalog`, its file is read through the catalog's tables.
     init(
         name: String, domain: String? = nil, policies: String? = nil, files: [AppConfigFile] = [],
-        extensions: AppExtensions? = nil, jsonPreferences: Bool = false, sandboxed: Bool = false
+        extensions: AppExtensions? = nil, jsonPreferences: Bool = false, sandboxed: Bool = false,
+        catalog: Catalog? = nil
     ) {
         self.name = name
         self.domain = domain
@@ -44,6 +50,7 @@ struct AppConfig: Sendable {
         self.extensions = extensions
         self.jsonPreferences = jsonPreferences
         self.sandboxed = sandboxed
+        self.catalog = catalog
     }
 
     /// The app's container, relative to the home folder, or nil when it isn't sandboxed.
@@ -53,13 +60,22 @@ struct AppConfig: Sendable {
     }
 
     /// What the app gets from its file in `apps/`, which `reader` holds, adding each problem found
-    /// to `reader`.
-    func read(_ reader: inout TableReader) -> AppSettings {
-        let tables =
-            files.flatMap(\.tables) + preferenceTables.map(\.table) + (extensions == nil ? [] : [Self.extensionsTable])
-        reader.unknownKeys(reader.document, at: [], known: tables)
-        let appFiles = files.flatMap { $0.read(reader.document, app: name, reader: &reader) }
-        return AppSettings(files: appFiles, preferences: preferences(&reader), extensions: extensionIDs(&reader))
+    /// to `reader`. A path in the home folder is filled in with `home`.
+    func read(_ reader: inout TableReader, home: String) -> AppSettings {
+        let extensionTables = extensions == nil ? [] : [Self.extensionsTable]
+        guard let catalog else {
+            let tables = files.flatMap(\.tables) + preferenceTables.map(\.table) + extensionTables
+            reader.unknownKeys(reader.document, at: [], known: tables)
+            let appFiles = files.flatMap { $0.read(reader.document, app: name, reader: &reader) }
+            return AppSettings(files: appFiles, preferences: preferences(&reader), extensions: extensionIDs(&reader))
+        }
+        reader.unknownKeys(reader.document, at: [], known: catalog.tables.map(\.name) + extensionTables)
+        let document = jsonPreferences ? PlistText.jsonData : PlistText.document
+        let reading = catalog.read(&reader, home: home, document: document)
+        let tables = catalog.tables(reading.files, &reader)
+        let appFiles = files.flatMap { $0.read(tables, app: name, reader: &reader) }
+        let preferences = catalog.merged(reading.preferences, &reader)
+        return AppSettings(files: appFiles, preferences: preferences, extensions: extensionIDs(&reader))
     }
 
     /// The tables of preferences the app has, each with the domain it's written to.

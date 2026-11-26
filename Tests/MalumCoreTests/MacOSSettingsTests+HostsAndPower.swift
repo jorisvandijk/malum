@@ -68,7 +68,7 @@ extension MacOSSettingsTests {
             problems.map(\.message) == [
                 Message(
                     .error,
-                    "macos.toml line 4: power.charger.screen_off_min should be a whole number of minutes, 0 for never"),
+                    "macos.toml line 4: power.charger.screen_off_min should be a whole number of minutes, 0 or more"),
                 Message(.warn, "macos.toml line 5: unknown table power.ups"),
             ])
         #expect(
@@ -82,7 +82,7 @@ extension MacOSSettingsTests {
             problems.map(\.message).contains(
                 Message(
                     .error,
-                    "macos.toml line 2: power.battery.sleep_min sets the same macOS setting as power.battery.sleep, to something else"
+                    "macos.toml line 2: power.battery.sleep_min sets the same setting as power.battery.sleep, to something else"
                 )))
     }
 

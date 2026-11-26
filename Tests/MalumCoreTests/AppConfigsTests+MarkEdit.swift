@@ -44,7 +44,7 @@ extension AppConfigsTests {
             "editor.font-size" = 15.0
             "editor.font-style" = { customFont = { name = "Menlo" } }
             """, file: "apps/markedit.toml")
-        let preferences = config.read(&reader).preferences
+        let preferences = config.read(&reader, home: "/Users/test").preferences
         #expect(reader.problems.isEmpty)
         #expect(preferences.allSatisfy { $0.domain == "app.cyan.markedit" })
         #expect(
@@ -57,9 +57,10 @@ extension AppConfigsTests {
         let config = try #require(AppConfigs.app(named: "markedit"))
         var reader = try TableReader(
             "[extensions]\nids = [\"markedit-preview\", \"markedit-theme-one-dark\"]\n", file: "apps/markedit.toml")
-        #expect(config.read(&reader).extensions == ["markedit-preview", "markedit-theme-one-dark"])
+        #expect(
+            config.read(&reader, home: "/Users/test").extensions == ["markedit-preview", "markedit-theme-one-dark"])
         var wrong = try TableReader("[extensions]\nids = [\"a.b\"]\n", file: "apps/markedit.toml")
-        _ = config.read(&wrong)
+        _ = config.read(&wrong, home: "/Users/test")
         #expect(
             wrong.problems.map { Message($0.level, $0.text) } == [
                 Message(

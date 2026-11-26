@@ -17,7 +17,7 @@ struct AppConfigsTests {
     ) throws -> (files: [AppFile], problems: [Message]) {
         let config = try #require(AppConfigs.app(named: app))
         var reader = try TableReader(text, file: "apps/\(app).toml")
-        let files = config.read(&reader).files
+        let files = config.read(&reader, home: "/Users/test").files
         return (files, reader.problems.map { Message($0.level, $0.text) })
     }
 

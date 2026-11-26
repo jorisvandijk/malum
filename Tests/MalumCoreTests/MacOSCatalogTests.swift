@@ -61,7 +61,7 @@ struct MacOSCatalogTests {
         for table in MacOSCatalog.tables {
             for setting in table.settings {
                 for target in setting.targets {
-                    writers["\(target.domain) \(target.key)", default: []].append("\(table.name).\(setting.name)")
+                    writers["\(target)", default: []].append("\(table.name).\(setting.name)")
                 }
             }
         }
@@ -194,7 +194,7 @@ struct MacOSCatalogTests {
             clash.problems == [
                 Message(
                     .error,
-                    "macos.toml line 3: siri.listen sets the same macOS setting as siri.enabled, to something else")
+                    "macos.toml line 3: siri.listen sets the same setting as siri.enabled, to something else")
             ])
     }
 
@@ -207,7 +207,7 @@ struct MacOSCatalogTests {
                 == Message(
                     .error,
                     """
-                    macos.toml line 4: preferences.NSGlobalDomain."com.apple.swipescrolldirection" sets the same macOS \
+                    macos.toml line 4: preferences.NSGlobalDomain."com.apple.swipescrolldirection" sets the same \
                     setting as pointer.natural_scrolling, to something else
                     """))
     }

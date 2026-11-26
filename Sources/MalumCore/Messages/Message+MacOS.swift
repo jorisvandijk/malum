@@ -186,7 +186,7 @@ extension Message {
     }
 }
 
-/// The words for problems with the curated tables and raw preferences in `macos.toml`.
+/// The words for problems with the curated tables of a catalog and the raw preferences in `macos.toml`.
 extension MessageText {
     /// The raw preference at `path`, written dotted, still works for one release; `replacement`
     /// is the curated setting that writes it, if there's one.
@@ -203,9 +203,14 @@ extension MessageText {
         return "\(path) is a raw pmset name, which stops working in the next release: \(instead)"
     }
 
-    /// The keys at `path` and `other`, written dotted, set the same macOS preference to different values.
+    /// The keys at `path` and `other`, written dotted, set the same setting to different values.
     static func setTwice(_ path: String, _ other: String) -> MessageText {
-        "\(path) sets the same macOS setting as \(other), to something else"
+        "\(path) sets the same setting as \(other), to something else"
+    }
+
+    /// The key at `path`, written dotted, asks for another value where Malum always sets one.
+    static func alwaysSet(_ path: String) -> MessageText {
+        "\(path) can't be set: \(Project.name) always sets it"
     }
 
     /// The key at `path`, written dotted, turns macOS's window tiling on, which Malum keeps off.

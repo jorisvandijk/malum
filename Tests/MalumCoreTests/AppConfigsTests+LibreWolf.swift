@@ -69,7 +69,7 @@ extension AppConfigsTests {
             [policies.ExtensionSettings."uBlock0@raymondhill.net"]
             installation_mode = "force_installed"
             """, file: "apps/librewolf.toml")
-        let read = config.read(&reader)
+        let read = config.read(&reader, home: "/Users/test")
         #expect(reader.problems.isEmpty)
         #expect(read.preferences.map(\.key) == ["DisableTelemetry", "ExtensionSettings"])
         #expect(read.preferences.allSatisfy { $0.domain == "/Library/Preferences/net.librewolf.librewolf" })

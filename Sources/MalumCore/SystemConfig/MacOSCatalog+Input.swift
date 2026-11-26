@@ -10,65 +10,65 @@ extension MacOSCatalog {
     private static let repeatRange = 15...1800
 
     /// `[pointer]`.
-    static let pointer = MacOSTable(
+    static let pointer = CatalogTable(
         name: "pointer", about: "What the mouse and the trackpad share. System Settings, Mouse and Trackpad.",
         settings: [
-            MacOSSetting(
+            CatalogSetting(
                 "natural_scrolling", "Content follows your fingers, as on a phone. macOS sets it for the mouse too.",
                 .flag, [.global("com.apple.swipescrolldirection")]),
-            MacOSSetting(
+            CatalogSetting(
                 "shake_to_locate", "Makes the pointer bigger for a moment when you shake it.", .invertedFlag,
                 [.global("CGDisableCursorLocationMagnification")]),
         ])
 
     /// `[trackpad]`.
-    static let trackpad = MacOSTable(
+    static let trackpad = CatalogTable(
         name: "trackpad", about: "The built-in trackpad and the Magic Trackpad. System Settings, Trackpad.",
         settings: [
-            MacOSSetting(
+            CatalogSetting(
                 "tap_to_click", "A tap clicks, without pressing the trackpad down.", .flag,
-                trackpads.map { MacOSSetting.Target.domain($0, "Clicking") }),
-            MacOSSetting(
+                trackpads.map { CatalogSetting.Target.domain($0, "Clicking") }),
+            CatalogSetting(
                 "three_finger_drag", "Drags windows and selections with three fingers. Accessibility, Pointer Control.",
-                .flag, trackpads.map { MacOSSetting.Target.domain($0, "TrackpadThreeFingerDrag") }),
-            MacOSSetting(
+                .flag, trackpads.map { CatalogSetting.Target.domain($0, "TrackpadThreeFingerDrag") }),
+            CatalogSetting(
                 "force_click", "A harder press looks things up or previews them.", .flag,
                 [.global("com.apple.trackpad.forceClick")]),
         ])
 
     /// `[keyboard]`.
-    static let keyboard = MacOSTable(
+    static let keyboard = CatalogTable(
         name: "keyboard", about: "Key repeat, the backlight and the keyboard layouts. System Settings, Keyboard.",
         settings: [
-            MacOSSetting(
+            CatalogSetting(
                 "repeat_delay_ms", "How long a key is held before it starts repeating, in milliseconds.",
                 .milliseconds(step: repeatStep, range: repeatRange), [.global("InitialKeyRepeat")]),
-            MacOSSetting(
+            CatalogSetting(
                 "repeat_interval_ms", "The time between repeats of a held key, in milliseconds.",
                 .milliseconds(step: repeatStep, range: repeatRange), [.global("KeyRepeat")]),
-            MacOSSetting(
+            CatalogSetting(
                 "auto_backlight", "Turns the keyboard's backlight on in low light.", .flag,
                 [.domain("com.apple.BezelServices", "dAuto")]),
-            MacOSSetting(
+            CatalogSetting(
                 "input_sources", "The keyboard layouts you switch between, the first one in use.",
                 .list(.keyboardLayouts), [.domain("com.apple.HIToolbox", "AppleEnabledInputSources")]),
         ])
 
     /// `[text]`.
-    static let text = MacOSTable(
+    static let text = CatalogTable(
         name: "text", about: "What macOS changes as you type. System Settings, Keyboard, Text Input.",
         settings: [
-            MacOSSetting(
+            CatalogSetting(
                 "auto_correct", "Corrects spelling as you type, in apps and on web pages.", .flag,
                 [.global("NSAutomaticSpellingCorrectionEnabled"), .global("WebAutomaticSpellingCorrectionEnabled")]),
-            MacOSSetting(
+            CatalogSetting(
                 "auto_capitalize", "Starts sentences with a capital.", .flag,
                 [.global("NSAutomaticCapitalizationEnabled")]),
-            MacOSSetting(
+            CatalogSetting(
                 "auto_period", "Two spaces type a period.", .flag, [.global("NSAutomaticPeriodSubstitutionEnabled")]),
-            MacOSSetting(
+            CatalogSetting(
                 "smart_dashes", "Two hyphens become a dash.", .flag, [.global("NSAutomaticDashSubstitutionEnabled")]),
-            MacOSSetting(
+            CatalogSetting(
                 "smart_quotes", "Straight quotes become curly ones.", .flag,
                 [.global("NSAutomaticQuoteSubstitutionEnabled")]),
         ])

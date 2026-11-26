@@ -459,21 +459,21 @@ Dims the screen before it turns off.
 
 Minutes without use before the screen turns off, 0 for never.
 
-- Value: a whole number of minutes, 0 for never
+- Value: a whole number of minutes, 0 or more
 - Writes: `pmset` `displaysleep`
 
 ### `sleep_min`
 
 Minutes without use before the Mac sleeps, 0 for never.
 
-- Value: a whole number of minutes, 0 for never
+- Value: a whole number of minutes, 0 or more
 - Writes: `pmset` `sleep`
 
 ### `disk_sleep_min`
 
 Minutes without use before the disks sleep, 0 for never.
 
-- Value: a whole number of minutes, 0 for never
+- Value: a whole number of minutes, 0 or more
 - Writes: `pmset` `disksleep`
 
 ### `wake_for_network`

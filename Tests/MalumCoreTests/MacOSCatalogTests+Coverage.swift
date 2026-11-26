@@ -27,8 +27,8 @@ extension MacOSCatalogTests {
     }
 
     @Test func everyPowerSettingWritesItsPmsetName() {
-        let flags = PowerSetting.all.filter { $0.kind == .flag }.map { "\($0.name) = true" }
-        let minutes = PowerSetting.all.filter { $0.kind == .minutes }.map { "\($0.name) = 5" }
+        let flags = PowerSetting.all.filter { $0.kind == PowerSetting.flag }.map { "\($0.name) = true" }
+        let minutes = PowerSetting.all.filter { $0.kind == PowerSetting.minutes }.map { "\($0.name) = 5" }
         let (wanted, problems) = MacOSSettings.read(
             "[power.battery]\n" + (flags + minutes).joined(separator: "\n") + "\n")
         #expect(problems.isEmpty)

@@ -19,113 +19,113 @@ extension MacOSCatalog {
     private static let neverDelay = ConfigValue.float(1000)
 
     /// `[finder]`.
-    static let finder = MacOSTable(
+    static let finder = CatalogTable(
         name: "finder", about: "Finder's windows and files. Finder, Settings, and the View menu.",
         settings: [
-            MacOSSetting(
+            CatalogSetting(
                 "show_extensions", "Shows every file's extension.", .flag, [.global("AppleShowAllExtensions")]),
-            MacOSSetting(
+            CatalogSetting(
                 "warn_on_extension_change", "Asks before a file's extension changes.", .flag,
                 [.domain(Domain.finder, "FXEnableExtensionChangeWarning")]),
-            MacOSSetting(
+            CatalogSetting(
                 "search_scope", "Where a search in a Finder window looks.",
                 .choice([
                     .word("this_mac", .string("SCev")), .word("current_folder", .string("SCcf")),
                     .word("previous", .string("SCsp")),
                 ]),
                 [.domain(Domain.finder, "FXDefaultSearchScope")]),
-            MacOSSetting(
+            CatalogSetting(
                 "view", "How new Finder windows show their files.",
                 .choice([
                     .word("icons", .string("icnv")), .word("list", .string("Nlsv")), .word("columns", .string("clmv")),
                     .word("gallery", .string("glyv")),
                 ]),
                 [.domain(Domain.finder, "FXPreferredViewStyle")]),
-            MacOSSetting(
+            CatalogSetting(
                 "new_window", "The folder a new Finder window opens.",
                 .choice([
                     .word("home", .string("PfHm")), .word("desktop", .string("PfDe")),
                     .word("documents", .string("PfDo")), .word("computer", .string("PfCm")),
                 ]),
                 [.domain(Domain.finder, "NewWindowTarget")]),
-            MacOSSetting(
+            CatalogSetting(
                 "empty_old_trash", "Removes items from the Trash after 30 days.", .flag,
                 [.domain(Domain.finder, "FXRemoveOldTrashItems")]),
-            MacOSSetting(
+            CatalogSetting(
                 "quit_menu_item", "Adds Quit Finder to Finder's menu.", .flag,
                 [.domain(Domain.finder, "QuitMenuItem")]),
-            MacOSSetting(
+            CatalogSetting(
                 "show_path_bar", "Shows the folder path at the bottom of windows.", .flag,
                 [.domain(Domain.finder, "ShowPathbar")]),
-            MacOSSetting(
+            CatalogSetting(
                 "show_status_bar", "Shows the item count and free space at the bottom of windows.", .flag,
                 [.domain(Domain.finder, "ShowStatusBar")]),
-            MacOSSetting(
+            CatalogSetting(
                 "write_ds_store_on_network", "Leaves .DS_Store files in folders on network shares.", .invertedFlag,
                 [.domain(Domain.desktopServices, "DSDontWriteNetworkStores")]),
-            MacOSSetting(
+            CatalogSetting(
                 "write_ds_store_on_usb", "Leaves .DS_Store files in folders on USB drives.", .invertedFlag,
                 [.domain(Domain.desktopServices, "DSDontWriteUSBStores")]),
         ])
 
     /// `[desktop]`.
-    static let desktop = MacOSTable(
+    static let desktop = CatalogTable(
         name: "desktop",
         about: "The desktop and Stage Manager. System Settings, Desktop & Dock, and Finder's settings.",
         settings: [
-            MacOSSetting(
+            CatalogSetting(
                 "show_hard_drives", "Shows this Mac's disks on the desktop.", .flag,
                 [.domain(Domain.finder, "ShowHardDrivesOnDesktop")]),
-            MacOSSetting(
+            CatalogSetting(
                 "show_external_drives", "Shows external disks on the desktop.", .flag,
                 [.domain(Domain.finder, "ShowExternalHardDrivesOnDesktop")]),
-            MacOSSetting(
+            CatalogSetting(
                 "show_removable_media", "Shows CDs, DVDs and iPods on the desktop.", .flag,
                 [.domain(Domain.finder, "ShowRemovableMediaOnDesktop")]),
-            MacOSSetting(
+            CatalogSetting(
                 "show_icons", "Shows the files on the desktop.", .invertedFlag,
                 [.domain(windowManager, "StandardHideDesktopIcons")]),
-            MacOSSetting(
+            CatalogSetting(
                 "show_widgets", "Shows widgets on the desktop.", .invertedFlag,
                 [.domain(windowManager, "StandardHideWidgets")]),
-            MacOSSetting(
+            CatalogSetting(
                 "click_to_show", "Clicking the wallpaper moves every window aside to show the desktop.", .flag,
                 [.domain(windowManager, "EnableStandardClickToShowDesktop")]),
-            MacOSSetting(
+            CatalogSetting(
                 "stage_manager", "Turns Stage Manager on.", .flag, [.domain(windowManager, "GloballyEnabled")]),
         ])
 
     /// `[dock]`.
-    static let dock = MacOSTable(
+    static let dock = CatalogTable(
         name: "dock", about: "When the Dock shows and what's in it. System Settings, Desktop & Dock.",
         settings: [
-            MacOSSetting(
+            CatalogSetting(
                 "show", "When the Dock shows: always, when the pointer reaches it, or never.",
                 .choice([
-                    MacOSChoice("always", [.set(.boolean(false)), .remove, .remove]),
-                    MacOSChoice("auto_hide", [.set(.boolean(true)), .remove, .remove]),
-                    MacOSChoice("never", [.set(.boolean(true)), .set(neverDelay), .set(.float(0))]),
+                    CatalogChoice("always", [.set(.boolean(false)), .remove, .remove]),
+                    CatalogChoice("auto_hide", [.set(.boolean(true)), .remove, .remove]),
+                    CatalogChoice("never", [.set(.boolean(true)), .set(neverDelay), .set(.float(0))]),
                 ]),
                 [
                     .domain(Domain.dock, "autohide"), .domain(Domain.dock, "autohide-delay"),
                     .domain(Domain.dock, "autohide-time-modifier"),
                 ]),
-            MacOSSetting(
+            CatalogSetting(
                 "pinned_apps", "The apps kept in the Dock, by their full paths. An empty list keeps none.",
                 .list(.dockApps), [.domain(Domain.dock, "persistent-apps")]),
-            MacOSSetting(
+            CatalogSetting(
                 "pinned_folders", "The folders kept in the Dock, by their full paths. An empty list keeps none.",
                 .list(.dockFolders), [.domain(Domain.dock, "persistent-others")]),
         ])
 
     /// `[screen_capture]`.
-    static let screenCapture = MacOSTable(
+    static let screenCapture = CatalogTable(
         name: "screen_capture", about: "Where macOS's own screenshots go. The Screenshot app's Options menu.",
         settings: [
-            MacOSSetting(
+            CatalogSetting(
                 "folder", "The folder screenshots are saved in, by its full path.", .folder,
                 [.domain(Domain.screenCapture, "location")]),
-            MacOSSetting(
+            CatalogSetting(
                 "save_to", "Whether a screenshot is saved as a file, put on the clipboard, or opened in Preview.",
                 .choice([
                     .word("file", .string("file")), .word("clipboard", .string("clipboard")),
