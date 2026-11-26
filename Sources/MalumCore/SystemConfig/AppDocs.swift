@@ -32,7 +32,15 @@ public enum AppDocs {
             catalog, not set by its raw name. A name a table doesn't take gets a warning.
 
             """
-        return header + CatalogDocs.sections(of: catalog) { place($0, in: app) }
+        return header + always(catalog, in: app) + CatalogDocs.sections(of: catalog) { place($0, in: app) }
+    }
+
+    /// The part of the page that lists what Malum always writes for `app`, whatever its file says,
+    /// or nothing when it writes nothing of its own.
+    private static func always(_ catalog: Catalog, in app: AppConfig) -> String {
+        guard !catalog.always.isEmpty else { return "" }
+        let lines = catalog.always.map { "- \(place($0.target, in: app)): `\($0.value.toml)`\n" }
+        return "\n\(Project.name) always writes these, which have no setting:\n\n" + lines.joined()
     }
 
     /// Where `target` is, as the page names it: a preference by its domain and key, a key in one of

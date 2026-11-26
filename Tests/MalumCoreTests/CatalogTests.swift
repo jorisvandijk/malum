@@ -201,6 +201,7 @@ struct CatalogTests {
         #expect(page.contains("- Writes: `$HOME/.config/sample/settings.json` `editor.saveDelay`"))
         #expect(page.contains("`com.example.sample` `NoSave`"))
         #expect(page.contains("- Keys: a title\n- Values: an address"))
+        #expect(page.contains("no setting:\n\n- `$HOME/.config/sample/settings.json` `telemetry`: `false`\n"))
     }
 
     @Test func everyAppsCatalogWritesFilesTheAppHasAndPagesAreMade() {

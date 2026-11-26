@@ -472,31 +472,34 @@ pc = "| pbcopy"
 
 ## App preferences
 
-Some apps keep their settings as macOS preferences rather than in a file. Their file in `apps/` has one table, `[preferences]`, with each preference by the name the app stores it under, as `"Name" = value`. `defaults read <domain>` lists an app's current preferences. Malum sets them after the app config files, the way `defaults write` would:
+Some apps keep their settings as macOS preferences rather than in a file. Their file in `apps/` takes tables named after what they're about, each setting by a name you can read, and Malum writes what the app stores it as. Each app's reference lists every table and setting, the values each takes, and the preference it writes. Malum sets them after the app config files, the way `defaults write` would:
 
 ```
-[info] set Hide Dock Icon in com.if.Amphetamine from apps/amphetamine.toml
+[info] set appearance.show_dock_icon in com.if.Amphetamine from apps/amphetamine.toml
 [info] amphetamine reads its preferences when it starts: quit and reopen it to use the new ones
 [info] every app preference is up to date
 ```
 
-A value is text, a number, `true` or `false`, or a list or table of them; a table becomes a dictionary. Malum owns each preference it sets: one you change in the app is set back on the next run. When you take a preference out of the file, or remove the file, the next run removes it, so the app falls back to its own default. Preferences that aren't in the file are left alone. Malum keeps the names of the preferences it set in `installed.json`.
+Malum owns each preference it sets: one you change in the app is set back on the next run. When you take a setting out of the file, or remove the file, the next run removes its preference, so the app falls back to its own default. Preferences no setting writes are left alone. A few preferences have only one value Malum uses and no setting; the reference lists them, and Malum writes them while the app has a file. Malum keeps the names of the preferences it set in `installed.json`.
 
-| App | File | Domain | Install with |
+| App | File | Reference | Install with |
 | --- | --- | --- | --- |
-| Amphetamine | `apps/amphetamine.toml` | `com.if.Amphetamine` | the App Store app 937984704 |
-| Command X | `apps/command-x.toml` | `com.sindresorhus.Command-X` | the App Store app 6448461551 |
-| Cursorcerer | `apps/cursorcerer.toml` | `com.doomlaser.cursorcerer` | the `cursorcerer` cask |
-| OverSight | `apps/oversight.toml` | `com.objective-see.oversight` | the `oversight` cask |
+| Amphetamine | `apps/amphetamine.toml` | [amphetamine](apps/amphetamine.md) | the App Store app 937984704 |
+| Command X | `apps/command-x.toml` | [command-x](apps/command-x.md) | the App Store app 6448461551 |
+| Cursorcerer | `apps/cursorcerer.toml` | [cursorcerer](apps/cursorcerer.md) | the `cursorcerer` cask |
+| OverSight | `apps/oversight.toml` | [oversight](apps/oversight.md) | the `oversight` cask |
 
 ```toml
-# apps/amphetamine.toml
-[preferences]
-"Hide Dock Icon" = true
-"Default Duration" = 0
+# apps/cursorcerer.toml
+[shortcuts]
+toggle_pointer = "ctrl+option+k"
+
+[pointer]
+hide_after_seconds = 5
+show_on_move = true
 ```
 
-Command X stores a shortcut as text holding JSON: `KeyboardShortcuts_cut = '{"carbonKeyCode":7,"carbonModifiers":256}'` is ⌘X.
+A shortcut uses the same syntax in every file, as in `keyboard.toml`: modifiers, then a key, joined by `+`. Malum turns it into the key code the app stores.
 
 ## macOS settings
 
