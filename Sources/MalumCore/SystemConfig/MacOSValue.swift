@@ -27,6 +27,8 @@ enum MacOSValue: Sendable {
     static let percentRange = 0...100
     /// What a percentage is divided by to make a fraction.
     private static let percentScale = 100.0
+    /// How many values a switch takes: on and off.
+    private static let switchValues = 2
 
     /// What `given` writes to each of `targets` preferences, or nil when it isn't a value of this kind.
     func writes(for given: ConfigValue, targets: Int) -> [MacOSSetting.Write]? {
@@ -73,11 +75,11 @@ enum MacOSValue: Sendable {
     var choices: Int? {
         switch self {
         case .flag, .invertedFlag, .flagAs, .combinedFlag:
-            2
+            Self.switchValues
         case .choice(let choices):
             choices.count
         case .milliseconds(let step, let range):
-            stride(from: range.lowerBound, through: range.upperBound, by: step).count
+            (range.upperBound - range.lowerBound) / step + 1
         case .percent:
             Self.percentRange.count
         case .folder, .list:
