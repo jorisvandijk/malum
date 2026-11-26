@@ -165,4 +165,43 @@ struct AppTrackerStackTests {
         #expect(tracker.isStacked)
         #expect(windows.allSatisfy { $0.frame == area })
     }
+
+    @Test func newWindowWithoutTheFocusIsShownToo() {
+        let (tracker, windows) = tracker()
+        tracker.toggleStack()
+        let new = FakeAppWindow()
+        watched.current = windows + [new]
+        tracker.handle(.changed)
+        #expect(new.raises == 1)
+        tracker.showStacked(1)
+        #expect(windows.map(\.raises) == [1, 0])
+    }
+
+    @Test func minimisingTheShownWindowRaisesTheOneShownBeforeIt() {
+        let (tracker, windows) = tracker(windows: 3)
+        tracker.toggleStack()
+        tracker.showStacked(-1)
+        windows[2].isMinimized = true
+        watched.focused = nil
+        tracker.handle(.changed)
+        #expect(windows.map(\.raises) == [1, 0, 1])
+    }
+
+    @Test func floatingWindowIsLeftOutOfTheStack() {
+        let (tracker, windows) = tracker(windows: 3)
+        tracker.toggleStack()
+        watched.focused = windows[1]
+        tracker.toggleFloat()
+        #expect(windows[1].frame == WindowLayout.floated(in: area))
+        watched.focused = nil
+        tracker.showStacked(1)
+        tracker.showStacked(1)
+        #expect(windows.map(\.raises) == [1, 0, 1])
+    }
+
+    @Test func newTrackerStartsSplit() {
+        let (tracker, windows) = tracker()
+        #expect(!tracker.isStacked)
+        #expect(windows.map(\.frame) == WindowLayout.slots(count: 2, in: area))
+    }
 }

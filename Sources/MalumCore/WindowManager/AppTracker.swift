@@ -95,7 +95,9 @@ final class AppTracker {
     /// kind while hidden, and nobody sees them anyway.
     func reconcile() {
         guard !watched.isHidden, let current = watched.windows() else { return }
+        let before = managedInView
         windows.removeAll { known in !current.contains { $0.isSame(as: known.window) } }
+        stack.keep(windows.map(ObjectIdentifier.init))
         for window in current where !windows.contains(where: { $0.window.isSame(as: window) }) {
             windows.append(TrackedWindow(window))
         }
@@ -103,6 +105,7 @@ final class AppTracker {
             classify(tracked)
         }
         followFocus()
+        showJoined(since: before)
         layout()
         bringShownToFront()
         guard windows.contains(where: { $0.kind == .notReady }) else {
@@ -366,6 +369,15 @@ extension AppTracker {
         else { return }
         stack.show(ObjectIdentifier(tracked))
         inFront = ObjectIdentifier(tracked)
+    }
+
+    /// Shows the newest managed window that joined the stack since `before`, such as a new or
+    /// restored one, even when macOS hasn't said it has the focus yet. `before` also keeps the
+    /// windows that closed meanwhile alive, so a new one never takes over a closed one's identity.
+    private func showJoined(since before: [TrackedWindow]) {
+        guard isStacked, let joined = managedInView.last(where: { tracked in !before.contains { $0 === tracked } })
+        else { return }
+        stack.show(ObjectIdentifier(joined))
     }
 
     /// Raises the shown stacked window when another one is in front, as after the shown one closed,
