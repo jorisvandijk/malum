@@ -192,6 +192,12 @@ extension MessageText {
         MessageText(ScreenFrame.allCases.map { "\"\($0.rawValue)\"" }.joined(separator: " or "))
     }
 
+    /// What a window manager's `split_step` should be.
+    static var splitStep: MessageText {
+        let steps = WindowManagerConfig.splitSteps
+        return "a whole number from \(steps.lowerBound) to \(steps.upperBound)"
+    }
+
     /// What a float rule's `title` should be.
     static var titlePattern: MessageText { "a pattern for the window's title, such as \"^Picture-in-Picture$\"" }
 

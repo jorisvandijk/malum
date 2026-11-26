@@ -225,9 +225,12 @@ extension WindowManagerModuleTests {
         await module.raising?.value
     }
 
-    @Test func offersTheInspectAndToggleFloatActions() {
+    @Test func offersTheInspectToggleFloatAndSplitActions() {
         #expect(
-            module().hotkeys.actions == [WindowManagerModule.inspectAction, WindowManagerModule.toggleFloatAction])
+            module().hotkeys.actions == [
+                WindowManagerModule.inspectAction, WindowManagerModule.toggleFloatAction, "split_left", "split_right",
+                "split_taller", "split_shorter",
+            ])
     }
 
     @Test func inspectShowsTheClickedWindow() async throws {
@@ -314,5 +317,37 @@ extension WindowManagerModuleTests {
         try await module.start()
         module.perform(.module(WindowManagerModule.toggleFloatAction))
         #expect(window.frame == WindowLayout.floated(in: visibleArea))
+    }
+
+    /// kitty in front with two windows, tracked by a started module.
+    private func kittyInFront() async throws -> (WindowManagerModule, [FakeAppWindow]) {
+        let active = RunningApp(
+            pid: kitty.pid, bundleID: kitty.bundleID, name: kitty.name, isActive: true, isHidden: false,
+            isRegular: true)
+        apps.running = [kitty.bundleID ?? "": active]
+        watcher.apps = [kitty]
+        let windows = [window(of: kitty.pid), window(of: kitty.pid)]
+        let module = module()
+        try await module.start()
+        return (module, windows)
+    }
+
+    @Test func splitRightMovesTheBorderBySplitStep() async throws {
+        let (module, windows) = try await kittyInFront()
+        module.apply(["split_step": .integer(10)])
+        module.perform(.module("split_right"))
+        #expect(windows.first?.frame?.width == (visibleArea.width * 0.6).rounded(.down))
+    }
+
+    @Test func splitIsKeptWhenTheAppQuitsAndComesBack() async throws {
+        let (module, windows) = try await kittyInFront()
+        module.perform(.module("split_right"))
+        let moved = windows.first?.frame
+        watcher.send(.terminated(kitty.pid))
+        access.apps[kitty.pid] = nil
+        let again = [window(of: kitty.pid), window(of: kitty.pid)]
+        watcher.send(.launched(kitty))
+        #expect(again.first?.frame == moved)
+        #expect(moved != WindowLayout.slots(count: 2, in: visibleArea).first)
     }
 }

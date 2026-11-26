@@ -11,10 +11,24 @@ struct WindowManagerConfig: Equatable, Sendable {
     static let inspectAction = "inspect_window"
     /// The action that floats the focused window, or puts it back in its place.
     static let toggleFloatAction = "toggle_float"
+    /// The action that moves the border between the left window and the rest to the left.
+    static let splitLeftAction = "split_left"
+    /// The action that moves the border between the left window and the rest to the right.
+    static let splitRightAction = "split_right"
+    /// The action that makes the focused window in the right column taller.
+    static let splitTallerAction = "split_taller"
+    /// The action that makes the focused window in the right column shorter.
+    static let splitShorterAction = "split_shorter"
+    /// How far the split keys move a border when nothing is set, in percent of the area.
+    static let defaultSplitStep = 5
+    /// The steps `split_step` can be, in percent of the area.
+    static let splitSteps = 1...25
     /// The key of the part of the screen windows fill.
     private static let frameKey = "frame"
     /// The key that blocks cmd+H, cmd+M and cmd+option+M.
     private static let blockKey = "block_hide_minimize"
+    /// The key of how far the split keys move a border.
+    private static let splitStepKey = "split_step"
     /// The list of float rules.
     private static let floatKey = "float"
     /// A float rule's app.
@@ -35,6 +49,12 @@ struct WindowManagerConfig: Equatable, Sendable {
             blockKey: Setting(
                 .boolean, "Swallows cmd+H, cmd+M and cmd+option+M, which would hide an app or minimise a window.",
                 default: .boolean(true)),
+            splitStepKey: Setting(
+                .integer,
+                "How far `split_left`, `split_right`, `split_taller` and `split_shorter` move a border, "
+                    + "in percent of the area: a whole number from \(splitSteps.lowerBound) to "
+                    + "\(splitSteps.upperBound).",
+                default: .integer(defaultSplitStep)),
             floatKey: Setting(
                 .tables,
                 "Apps whose windows are left alone, each with `app` (a bundle ID) and an optional `title`, "
@@ -48,15 +68,18 @@ struct WindowManagerConfig: Equatable, Sendable {
     let blocksHideMinimize: Bool
     /// The windows left alone.
     let floats: [FloatRule]
+    /// How far the split keys move a border, in percent of the area.
+    let splitStep: Int
 
     /// Creates a config, by default the one used when nothing is set.
     init(
         frame: ScreenFrame = .visible, blocksHideMinimize: Bool = true,
-        floats: [FloatRule] = []
+        floats: [FloatRule] = [], splitStep: Int = defaultSplitStep
     ) {
         self.frame = frame
         self.blocksHideMinimize = blocksHideMinimize
         self.floats = floats
+        self.splitStep = splitStep
     }
 
     /// Reads `table`, whose kinds `schema` has checked, sending each error to `report`. A value with
@@ -73,7 +96,17 @@ struct WindowManagerConfig: Equatable, Sendable {
         let floats = floatRules(table[floatKey], report: report)
         return Self(
             frame: frame, blocksHideMinimize: boolean(table[blockKey]),
-            floats: floats)
+            floats: floats, splitStep: splitStep(table[splitStepKey], report: report))
+    }
+
+    /// The split step in `value`, or the default when it's not set or out of range.
+    private static func splitStep(_ value: ConfigValue?, report: Report) -> Int {
+        guard case .integer(let step)? = value else { return defaultSplitStep }
+        guard splitSteps.contains(step) else {
+            report([splitStepKey]) { .shouldBe($0, MessageText.splitStep) }
+            return defaultSplitStep
+        }
+        return step
     }
 
     /// The value of a switch that's on unless it says false.

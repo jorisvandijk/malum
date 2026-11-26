@@ -38,6 +38,9 @@ final class AppTracker {
     var config = WindowManagerConfig()
     /// The area windows fill, in Accessibility's coordinates, or nil when there's no screen.
     var area: CGRect?
+    /// How the area is shared out between the managed windows. The module keeps it per app while
+    /// the app isn't running.
+    var split = Split()
     /// The windows it knows, oldest first, since the order decides which one gets the left half.
     private var windows: [TrackedWindow] = []
     /// How many looks again were taken for windows that weren't ready.
@@ -115,6 +118,24 @@ final class AppTracker {
         layout()
     }
 
+    /// Moves a border between the managed windows by `step` of the area: sideways the one between
+    /// the left window and the rest, up or down the focused window's in the right column. Nothing
+    /// moves with one window, or up or down for the left window, which fills the height.
+    func resize(_ move: SplitMove, by step: CGFloat) {
+        let managed = managedInView
+        guard managed.count > 1 else { return }
+        switch move {
+        case .left, .right:
+            split.moveDivider(by: move == .left ? -step : step)
+        case .taller, .shorter:
+            guard let focused = watched.focusedWindow(),
+                let index = managed.firstIndex(where: { $0.window.isSame(as: focused) }), index > 0
+            else { return }
+            split.resizeRow(index - 1, of: managed.count - 1, by: move == .taller ? step : -step)
+        }
+        layout()
+    }
+
     /// Stops tracking the app.
     func stop() {
         watched.stop()
@@ -123,8 +144,8 @@ final class AppTracker {
     /// Puts every managed window that's in view in its slot, unless it's already there.
     func layout() {
         guard let area else { return }
-        let managed = windows.filter { $0.kind == .managed && !$0.window.isMinimized }
-        for (tracked, slot) in zip(managed, WindowLayout.slots(count: managed.count, in: area)) {
+        let managed = managedInView
+        for (tracked, slot) in zip(managed, WindowLayout.slots(count: managed.count, in: area, split: split)) {
             guard tracked.slot == slot, let settled = tracked.settled else {
                 tracked.snaps = []
                 place(tracked, in: slot)
@@ -133,6 +154,11 @@ final class AppTracker {
             guard let current = tracked.window.frame, !WindowLayout.isSame(current, settled) else { continue }
             snapBack(tracked, from: current, to: slot)
         }
+    }
+
+    /// The managed windows that aren't minimised, oldest first: the ones that get a slot.
+    private var managedInView: [TrackedWindow] {
+        windows.filter { $0.kind == .managed && !$0.window.isMinimized }
     }
 
     /// Sorts out what to do with `tracked`. A window that briefly stops answering keeps what it was,
@@ -215,8 +241,8 @@ final class AppTracker {
     /// is the managed window that's no longer where it was put.
     private func swapDropped() {
         guard let area else { return }
-        let managed = windows.filter { $0.kind == .managed && !$0.window.isMinimized }
-        let slots = WindowLayout.slots(count: managed.count, in: area)
+        let managed = managedInView
+        let slots = WindowLayout.slots(count: managed.count, in: area, split: split)
         guard let from = managed.firstIndex(where: Self.wasMoved),
             let to = WindowLayout.dropTarget(at: access.pointerLocation, slots: slots, from: from),
             let first = windows.firstIndex(where: { $0 === managed[from] }),

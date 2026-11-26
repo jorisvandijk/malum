@@ -111,4 +111,14 @@ struct WindowLayoutTests {
         untitled.title = nil
         #expect(WindowLayout.classify(untitled, app: "org.gimp.gimp", floats: floats) == .managed)
     }
+
+    @Test func splitMovesTheLeftColumnAndSharesTheRows() {
+        var split = Split()
+        split.moveDivider(by: 0.1)
+        split.resizeRow(0, of: 2, by: 0.1)
+        let slots = WindowLayout.slots(count: 3, in: area, split: split)
+        #expect(slots.first == CGRect(x: 0, y: 25, width: 907, height: 957))
+        #expect(slots[1] == CGRect(x: 907, y: 25, width: 605, height: 574))
+        #expect(slots.last == CGRect(x: 907, y: 599, width: 605, height: 383))
+    }
 }

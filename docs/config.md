@@ -162,3 +162,10 @@ The part of the screen windows fill: "visible" (below the menu bar and outside t
 
 - Value: text in quotes
 - Default: `"visible"`
+
+### `window_manager.split_step`
+
+How far `split_left`, `split_right`, `split_taller` and `split_shorter` move a border, in percent of the area: a whole number from 1 to 25.
+
+- Value: a whole number
+- Default: `5`
