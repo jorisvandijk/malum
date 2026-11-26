@@ -58,6 +58,12 @@ public final class ModuleRoutes {
         return true
     }
 
+    /// Hands `drag`, part of a drag with the hyper key held, to the running module that takes drags.
+    func drag(_ drag: PointerDrag) {
+        let taker = entries.values.compactMap(\.module).first { $0.hotkeys.takesDrags && $0.status.isActive }
+        taker?.drag(drag)
+    }
+
     /// Runs `target` on its module, only while that module runs. A shortcut for a module that is
     /// starting, waiting or failed does nothing.
     func run(_ target: HotkeyTarget) {

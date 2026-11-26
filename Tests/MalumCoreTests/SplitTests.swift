@@ -65,4 +65,27 @@ struct SplitTests {
         split.resizeRow(2, of: 2, by: 0.1)
         #expect(split == Split())
     }
+
+    @Test func rowBorderMovesOnlyTheTwoRowsBesideIt() {
+        var split = Split()
+        split.moveRowBorder(0, of: 3, by: 0.1)
+        #expect(split.rowShares(count: 3).map { $0.map { ($0 * 10_000).rounded() } } == [4333, 2334, 3333])
+        split.moveRowBorder(0, of: 3, by: -0.1)
+        #expect(split.rowShares(count: 3).map { $0.map { ($0 * 10_000).rounded() } } == [3333, 3334, 3333])
+    }
+
+    @Test func rowBorderStopsAtTheFloor() {
+        var split = Split()
+        split.moveRowBorder(0, of: 2, by: 0.9)
+        #expect(split.rowShares(count: 2) == [0.8, 0.2])
+        split.moveRowBorder(0, of: 2, by: -0.9)
+        #expect(split.rowShares(count: 2) == [0.2, 0.8])
+    }
+
+    @Test func rowBorderOutOfRangeChangesNothing() {
+        var split = Split()
+        split.moveRowBorder(1, of: 2, by: 0.1)
+        split.moveRowBorder(0, of: 1, by: 0.1)
+        #expect(split == Split())
+    }
 }

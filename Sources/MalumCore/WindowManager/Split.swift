@@ -53,6 +53,21 @@ struct Split: Equatable, Sendable {
         rows = shares
     }
 
+    /// Moves the border below row `border` of `count` rows by `step` of the right column's height,
+    /// down when it's positive. Only the two rows on either side of it change, and neither gets less
+    /// than `floor(count:)`.
+    mutating func moveRowBorder(_ border: Int, of count: Int, by step: CGFloat) {
+        guard count > 1, (0..<count - 1).contains(border) else { return }
+        var shares = rowShares(count: count) ?? Array(repeating: 1 / CGFloat(count), count: count)
+        let floor = Self.floor(count: count)
+        let pair = shares[border] + shares[border + 1]
+        let change = min(max(step, floor - shares[border]), shares[border + 1] - floor)
+        guard change != 0 else { return }
+        shares[border] = Self.rounded(shares[border] + change)
+        shares[border + 1] = Self.rounded(pair - shares[border])
+        rows = shares
+    }
+
     /// The smallest share a row of `count` gets: `minimum`, or half an equal share when there are
     /// so many rows that `minimum` would leave nothing to move.
     static func floor(count: Int) -> CGFloat {

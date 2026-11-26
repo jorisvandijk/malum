@@ -17,7 +17,8 @@ final class AppTracker {
     private static let placeTries = 3
     /// How long to wait before putting it there again, so a window that wasn't ready gets about 200 ms.
     private static let placeDelayMilliseconds = 70
-    /// How often the pointer is looked at while a window is dragged.
+    /// How often the pointer is looked at while a window is dragged, and how often at most the
+    /// windows are laid out again while a hyper drag moves the borders.
     private static let dragPollMilliseconds = 50
     /// How many snaps back within `fightSpan` mean the app keeps changing its window's frame itself.
     private static let fightLimit = 5
@@ -49,6 +50,12 @@ final class AppTracker {
     private var isRetryPending = false
     /// Whether a drag is being followed.
     private var isFollowingDrag = false
+    /// The hyper drag moving the borders, while one runs.
+    private var splitDrag: SplitDrag?
+    /// Where the pointer went in the hyper drag since the windows were last laid out, if it moved.
+    private var splitDragPoint: CGPoint?
+    /// Whether the windows were laid out for the hyper drag too recently to do it again yet.
+    private var isSplitDragPaused = false
 
     /// Starts tracking `app`, whose windows `watched` reaches.
     init(app: RunningApp, watched: any WatchedApp, access: any WindowAccess, scheduler: any WindowScheduler, log: Log) {
@@ -60,8 +67,10 @@ final class AppTracker {
     }
 
     /// Reacts to what happened to the app's windows. A window being dragged is left to follow the
-    /// pointer, and drops into place once the button is let go.
+    /// pointer, and drops into place once the button is let go. Nothing snaps back during a hyper
+    /// drag, which moves the windows itself; they're read again when it ends.
     func handle(_ event: WindowEvent) {
+        guard splitDrag == nil else { return }
         guard event == .moved, access.isPointerDown else {
             reconcile()
             return
@@ -134,6 +143,32 @@ final class AppTracker {
             split.resizeRow(index - 1, of: managed.count - 1, by: move == .taller ? step : -step)
         }
         layout()
+    }
+
+    /// Starts a hyper drag at `point` that moves the borders between the managed windows. Nothing
+    /// moves with one window.
+    func beginSplitDrag(at point: CGPoint) {
+        guard let area else { return }
+        splitDrag = SplitDrag(at: point, in: area, split: split, count: managedInView.count)
+        splitDragPoint = nil
+    }
+
+    /// Moves the borders to follow the hyper drag to `point`, laying the windows out at most every
+    /// `dragPollMilliseconds`, so a fast drag doesn't flood the app with resizes.
+    func moveSplitDrag(to point: CGPoint) {
+        guard splitDrag != nil else { return }
+        splitDragPoint = point
+        guard !isSplitDragPaused else { return }
+        followSplitDrag()
+    }
+
+    /// Ends the hyper drag with the pointer at `point`, keeping the split it made.
+    func endSplitDrag(at point: CGPoint) {
+        guard let splitDrag else { return }
+        split = splitDrag.split(at: point)
+        self.splitDrag = nil
+        splitDragPoint = nil
+        reconcile()
     }
 
     /// Stops tracking the app.
@@ -216,6 +251,20 @@ final class AppTracker {
             self?.isRetryPending = false
             self?.reconcile()
         }
+    }
+
+    /// Lays the windows out for where the hyper drag's pointer went, then waits `dragPollMilliseconds`
+    /// before doing it again for wherever it goes meanwhile.
+    private func followSplitDrag() {
+        guard let splitDrag, let point = splitDragPoint else {
+            isSplitDragPaused = false
+            return
+        }
+        splitDragPoint = nil
+        split = splitDrag.split(at: point)
+        layout()
+        isSplitDragPaused = true
+        scheduler.after(.milliseconds(Self.dragPollMilliseconds)) { [weak self] in self?.followSplitDrag() }
     }
 
     /// Waits until the pointer's button is let go, then puts the windows back in place, swapping two

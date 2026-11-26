@@ -36,6 +36,8 @@ public protocol Module: AnyObject, Observable {
     func resume() async
     /// Does one of the actions in `hotkeys`, or opens an app, for a shortcut that was pressed.
     func perform(_ action: KeyAction)
+    /// Follows a drag with the hyper key held, for a module whose `hotkeys` take drags.
+    func drag(_ drag: PointerDrag)
     /// Learns that `malum.toml` switched other modules on or off, or that what a module offers changed
     /// with its settings, for a module that routes to them.
     func modulesSwitched()
@@ -53,6 +55,9 @@ extension Module {
 
     /// Nothing to do, for a module that offers no actions.
     public func perform(_: KeyAction) {}
+
+    /// Nothing to follow, for a module that takes no drags.
+    public func drag(_: PointerDrag) {}
 
     /// Nothing to update, for a module that routes to no other module.
     public func modulesSwitched() {}

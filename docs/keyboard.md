@@ -34,7 +34,7 @@ return = "net.kovidgoyal.kitty"
 
 The key that holds ctrl, option, cmd and shift down together while you hold it. One of `caps_lock`, `left_option`, `right_option`, `right_command` or `f13` to `f20`. Leave it out for no hyper key.
 
-Other apps see the hyper key as all four modifiers, so a shortcut such as hyper+k works in any app that lets you set one. Hyper+tab opens the app switcher, as cmd+tab does.
+Other apps see the hyper key as all four modifiers, so a shortcut such as hyper+k works in any app that lets you set one. Hyper+tab opens the app switcher, as cmd+tab does. With the [window manager](window-manager.md#adjusting-the-split) on, hyper+drag moves the borders between an app's windows, and that click doesn't reach the app.
 
 ### [remap]
 

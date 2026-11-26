@@ -46,6 +46,8 @@ final class KeyboardModule: Module {
     @ObservationIgnored private var restart: Task<Void, Never>?
     /// Hands the shortcuts the running tap catches to `routes`.
     @ObservationIgnored private var listener: Task<Void, Never>?
+    /// Hands the hyper drags the running tap catches to `routes`.
+    @ObservationIgnored private var dragListener: Task<Void, Never>?
     /// The running tap's session, which counts how often macOS switched the tap off.
     @ObservationIgnored private var session: TapSession?
     /// What kept keys from reaching Malum when that was last logged, so the log shows when it starts
@@ -106,6 +108,8 @@ final class KeyboardModule: Module {
         keyCatcher.stop()
         listener?.cancel()
         listener = nil
+        dragListener?.cancel()
+        dragListener = nil
         session = nil
         loggedBlocker = nil
         await clearRemaps()
@@ -208,12 +212,19 @@ final class KeyboardModule: Module {
         queueRestart()
     }
 
-    /// Hands every shortcut `session` catches to the module that handles it, until the session ends.
+    /// Hands every shortcut `session` catches to the module that handles it, and every hyper drag to
+    /// the module that takes drags, until the session ends.
     private func listen(to session: TapSession) {
         listener?.cancel()
         listener = Task { [weak self] in
             for await target in session.actions {
                 self?.routes.run(target)
+            }
+        }
+        dragListener?.cancel()
+        dragListener = Task { [weak self] in
+            for await drag in session.drags {
+                self?.routes.drag(drag)
             }
         }
     }

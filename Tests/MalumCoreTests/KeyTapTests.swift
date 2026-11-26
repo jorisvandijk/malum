@@ -1,6 +1,12 @@
+import Foundation
 import Testing
 
 @testable import MalumCore
+
+// Linux's Foundation has the geometry types; on macOS they come from CoreGraphics.
+#if canImport(CoreGraphics)
+    import CoreGraphics
+#endif
 
 @Suite(.timeLimit(.minutes(1)))
 struct KeyTapTests {
@@ -23,13 +29,17 @@ struct KeyTapTests {
     /// Every modifier, which the hyper key holds.
     private let hyper = Set(Modifier.allCases)
 
-    /// The tap for `text`, with a launcher and clipboard history and no module that opens apps.
-    private func tap(_ text: String = text) throws -> KeyTap {
+    /// The tap for `text`, with a launcher and clipboard history and no module that opens apps, and
+    /// a window manager that takes drags when `drags` is true.
+    private func tap(_ text: String = text, drags: Bool = false) throws -> KeyTap {
         let config = try #require(KeyboardConfig.read(text).config)
-        let offers = [
+        var offers = [
             "launcher": HotkeyOffer(actions: ["launcher"]),
             "clipboard_history": HotkeyOffer(actions: ["clipboard_history"]),
         ]
+        if drags {
+            offers["window_manager"] = HotkeyOffer(takesDrags: true)
+        }
         let registry = HotkeyRegistry(
             bindings: config.bindings, offers: offers, switchedOn: Set(offers.keys), lines: TOMLLines(text))
         return KeyTap(registry: registry, hyperKey: config.hyperKey)
@@ -175,5 +185,61 @@ struct KeyTapTests {
         let press = [hyperKey(down: true), try key("space"), try key("space", down: false), try key("k")]
         let events = Array(repeating: press + [try key("k", down: false), hyperKey(down: false)], count: 10_000)
         #expect(try decisions(events.flatMap { $0 }).count == 60_000)
+    }
+}
+
+// MARK: - Hyper drags
+
+extension KeyTapTests {
+    /// The pointer at `phase` of a drag, `across` from the left and 100 down.
+    private func pointer(_ phase: PointerDrag.Phase, across: CGFloat = 100) -> PointerDrag {
+        PointerDrag(phase, at: CGPoint(x: across, y: 100))
+    }
+
+    @Test func hyperDragIsSwallowedAndHandedOver() throws {
+        let drag = [pointer(.began), pointer(.moved, across: 150), pointer(.ended, across: 200)]
+        let events = [hyperKey(down: true)] + drag.map(TapEvent.pointer)
+        #expect(try decisions(events, from: tap(drags: true)) == [.swallow] + drag.map(TapDecision.drag))
+    }
+
+    @Test func clickWithoutHyperPasses() throws {
+        let events = [pointer(.began), pointer(.moved), pointer(.ended)].map(TapEvent.pointer)
+        #expect(try decisions(events, from: tap(drags: true)) == [.pass, .pass, .pass])
+    }
+
+    @Test func hyperClickPassesWhenNoModuleTakesDrags() throws {
+        let events = [hyperKey(down: true), .pointer(pointer(.began)), .pointer(pointer(.ended))]
+        #expect(try decisions(events) == [.swallow, .pass, .pass])
+    }
+
+    @Test func dragGoesOnUntilTheButtonIsLetGoEvenWithoutHyper() throws {
+        let events: [TapEvent] = [
+            hyperKey(down: true), .pointer(pointer(.began)), hyperKey(down: false), .pointer(pointer(.moved)),
+            .pointer(pointer(.ended)), .pointer(pointer(.began)),
+        ]
+        #expect(
+            try decisions(events, from: tap(drags: true)) == [
+                .swallow, .drag(pointer(.began)), .swallow, .drag(pointer(.moved)), .drag(pointer(.ended)), .pass,
+            ])
+    }
+
+    @Test func switchedOffEndsTheDragWhereThePointerWas() throws {
+        let events: [TapEvent] = [
+            hyperKey(down: true), .pointer(pointer(.began)), .pointer(pointer(.moved, across: 140)),
+        ]
+        var tap = try tap(drags: true)
+        _ = events.map { tap.decide($0) }
+        #expect(tap.decide(.switchedOff) == .drag(pointer(.ended, across: 140)))
+        #expect(tap.decide(.pointer(pointer(.ended))) == .pass)
+    }
+
+    @Test func hyperTabDuringADragDoesNotOpenTheSwitcher() throws {
+        let events = [hyperKey(down: true), .pointer(pointer(.began)), try key("tab")]
+        #expect(try decisions(events, from: tap(drags: true)) == [.swallow, .drag(pointer(.began)), .passAs(hyper)])
+    }
+
+    @Test func hyperClickWhileSwitchingPasses() throws {
+        let events = [hyperKey(down: true), try key("tab"), .pointer(pointer(.began))]
+        #expect(try decisions(events, from: tap(drags: true)) == [.swallow, .openSwitcher([.cmd]), .pass])
     }
 }

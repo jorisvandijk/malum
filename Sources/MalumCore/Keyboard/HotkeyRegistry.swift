@@ -6,6 +6,10 @@
 struct HotkeyRegistry: Sendable {
     /// What's wrong, in the order of the lines in `keyboard.toml`, those without a line last.
     let problems: [ConfigProblem]
+    /// Whether a switched-on module takes hyper drags, so the tap hands them over instead of
+    /// letting the clicks through. Like a shortcut, a hyper click is swallowed even while that
+    /// module isn't running yet, such as while it waits for Accessibility, and then does nothing.
+    let takesDrags: Bool
     /// Where each registered shortcut goes.
     private let targets: [Hotkey: HotkeyTarget]
 
@@ -21,6 +25,7 @@ struct HotkeyRegistry: Sendable {
         }
         builder.reportIdleBindings()
         targets = builder.targets
+        takesDrags = offers.contains { $0.value.takesDrags && switchedOn.contains($0.key) }
         problems = ConfigProblem.byLine(builder.problems)
     }
 

@@ -74,6 +74,10 @@ final class RecordingModule: Module {
         calls.append("perform \(action)")
     }
 
+    func drag(_ drag: PointerDrag) {
+        calls.append("drag \(drag)")
+    }
+
     func modulesSwitched() {
         calls.append("modules switched")
     }

@@ -146,4 +146,11 @@ struct HotkeyRegistryTests {
                 ])
         #expect(registry.target(for: cmdM) == HotkeyTarget(module: "a_module", action: .module("one")))
     }
+
+    @Test func dragsAreTakenOnlyByASwitchedOnModule() throws {
+        let offers = ["window_manager": HotkeyOffer(takesDrags: true), "launcher": HotkeyOffer(actions: ["launcher"])]
+        #expect(try registry(offers: offers).takesDrags)
+        #expect(try !registry(offers: offers, switchedOn: ["launcher"]).takesDrags)
+        #expect(try !registry(offers: ["launcher": HotkeyOffer(actions: ["launcher"])]).takesDrags)
+    }
 }

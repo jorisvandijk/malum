@@ -1,6 +1,12 @@
+import Foundation
 import Testing
 
 @testable import MalumCore
+
+// Linux's Foundation has the geometry types; on macOS they come from CoreGraphics.
+#if canImport(CoreGraphics)
+    import CoreGraphics
+#endif
 
 @MainActor
 @Suite(.timeLimit(.minutes(1)))
@@ -277,5 +283,29 @@ struct KeyboardModuleTests {
         keyboard.modulesSwitched()
         await keyboard.resume()
         #expect(keyboard.status == .running)
+    }
+}
+
+// MARK: - Hyper drags
+
+extension KeyboardModuleTests {
+    @Test func caughtHyperDragGoesToTheModuleThatTakesDrags() async throws {
+        let windows = RecordingModule(id: "window_manager")
+        windows.hotkeys = HotkeyOffer(takesDrags: true)
+        routes.add([windows])
+        _ = routes.switchOn(["window_manager"])
+        try await windows.start()
+        let keyboard = module()
+        keyboard.apply(settings(launcherKey))
+        try await keyboard.start()
+        let session = try #require(catcher.session)
+        let drag = PointerDrag(.began, at: .zero)
+        _ = session.decide(
+            .key(KeyPress(keyCode: KeyMapping.hyperTarget.keyCode, isDown: true, isRepeat: false, modifiers: [])))
+        #expect(session.decide(.pointer(drag)) == .drag(drag))
+        while windows.calls.count < 2 {
+            await Task.yield()
+        }
+        #expect(windows.calls == ["start", "drag \(drag)"])
     }
 }

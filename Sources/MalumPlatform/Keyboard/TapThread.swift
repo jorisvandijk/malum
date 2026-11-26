@@ -8,8 +8,11 @@ import MalumCore
 /// typing. It hands each event to the session and carries out its decision. It does no
 /// Accessibility work or I/O and never logs.
 final class TapThread: @unchecked Sendable {  // SAFETY: port, runLoop and stopped are only used under lock.
-    /// The events the tap catches.
-    private static let events: [CGEventType] = [.keyDown, .keyUp, .flagsChanged]
+    /// The events the tap catches. Only the main button's clicks and drags, never plain pointer
+    /// moves, so an idle pointer costs nothing.
+    private static let events: [CGEventType] = [
+        .keyDown, .keyUp, .flagsChanged, .leftMouseDown, .leftMouseDragged, .leftMouseUp,
+    ]
     /// The bit an event type's raw value shifts into a mask.
     private static let typeBit: CGEventMask = 1
 
@@ -83,6 +86,12 @@ final class TapThread: @unchecked Sendable {  // SAFETY: port, runLoop and stopp
         case .flagsChanged:
             guard !SyntheticKeys.isOwn(event) else { return event }
             return carryOut(session.decide(.modifiersChanged(Modifier.held(in: event.flags))), on: event)
+        case .leftMouseDown:
+            return carryOut(session.decide(.pointer(drag(.began, event))), on: event)
+        case .leftMouseDragged:
+            return carryOut(session.decide(.pointer(drag(.moved, event))), on: event)
+        case .leftMouseUp:
+            return carryOut(session.decide(.pointer(drag(.ended, event))), on: event)
         default:
             return event
         }
@@ -117,7 +126,7 @@ final class TapThread: @unchecked Sendable {  // SAFETY: port, runLoop and stopp
         case .passAs(let modifiers):
             event.flags = Modifier.flags(event.flags, holding: modifiers)
             return event
-        case .swallow, .run:
+        case .swallow, .run, .drag:
             return nil
         case .openSwitcher(let modifiers):
             SyntheticKeys.openSwitcher(modifiers)
@@ -132,6 +141,12 @@ final class TapThread: @unchecked Sendable {  // SAFETY: port, runLoop and stopp
     private func letGo(_ decision: TapDecision) {
         guard decision == .closeSwitcher else { return }
         SyntheticKeys.closeSwitcher()
+    }
+
+    /// The pointer in `event` at `phase` of a drag. A pointer event's location starts at the top left
+    /// of the main screen, as Accessibility's does.
+    private func drag(_ phase: PointerDrag.Phase, _ event: CGEvent) -> PointerDrag {
+        PointerDrag(phase, at: event.location)
     }
 
     /// The key press in `event`, a key-down when `type` is one.
