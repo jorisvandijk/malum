@@ -66,6 +66,21 @@ You can also drag the borders: hold the hyper key and drag anywhere in the app i
 
 Each app keeps its own split, also after it quits and starts again. When the number of windows in the right column changes, their heights are shared out equally again. Malum forgets every split when it quits.
 
+### Stacking the windows
+
+The action `toggle_stack` stacks the windows of the app in front: each fills the whole area, on top of each other, with the focused one in front. The same key splits them again, with the split they had. `stack_next` and `stack_previous` bring the next or previous window to the front and give it the focus, oldest first and going round at either end, so with two windows either key switches between them. Bind them in `keyboard.toml`:
+
+```toml
+[hyper]
+l = "toggle_stack"
+comma = "stack_previous"
+period = "stack_next"
+```
+
+The hyper key holds shift too, so hyper+comma is hyper+< and hyper+period is hyper+>.
+
+The window in front follows the focus, so cmd+\` or the Window menu also changes it. Switch to another app and back, and the window that was in front is in front again. When it closes or is minimised, the one in front before it comes up. A new window joins the stack, in front. With one window left the app stays stacked, which looks the same as one window, until `toggle_stack` is pressed again. While an app is stacked, the split keys, hyper+drag and dropping a window on another do nothing. Floating windows aren't part of the stack. Each app is stacked on its own, and goes back to its split when it quits or Malum restarts.
+
 Malum fills the screen with the menu bar. Other screens are left alone. When a display is plugged in, unplugged or rearranged, and when the Mac wakes, the windows are laid out again on the screen that has the menu bar then.
 
 ## Hiding and minimising

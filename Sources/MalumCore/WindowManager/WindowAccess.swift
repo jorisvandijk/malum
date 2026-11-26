@@ -58,6 +58,8 @@ public protocol AppWindow: AnyObject {
     func setFrame(_ frame: CGRect)
     /// Moves it, keeping its size.
     func setOrigin(_ origin: CGPoint)
+    /// Brings it in front of its app's other windows and gives it the app's focus.
+    func raise()
     /// Whether `other` is this same window, read again.
     func isSame(as other: any AppWindow) -> Bool
 }

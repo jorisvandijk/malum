@@ -225,11 +225,11 @@ extension WindowManagerModuleTests {
         await module.raising?.value
     }
 
-    @Test func offersTheInspectToggleFloatAndSplitActions() {
+    @Test func offersTheInspectToggleFloatSplitAndStackActions() {
         #expect(
             module().hotkeys.actions == [
                 WindowManagerModule.inspectAction, WindowManagerModule.toggleFloatAction, "split_left", "split_right",
-                "split_taller", "split_shorter",
+                "split_taller", "split_shorter", "toggle_stack", "stack_next", "stack_previous",
             ])
     }
 
@@ -349,6 +349,29 @@ extension WindowManagerModuleTests {
         watcher.send(.launched(kitty))
         #expect(again.first?.frame == moved)
         #expect(moved != WindowLayout.slots(count: 2, in: visibleArea).first)
+    }
+
+    @Test func toggleStackStacksTheWindowsOfTheAppInFront() async throws {
+        let (module, windows) = try await kittyInFront()
+        module.perform(.module("toggle_stack"))
+        #expect(windows.allSatisfy { $0.frame == visibleArea })
+    }
+
+    @Test func stackNextAndPreviousShowAnotherStackedWindow() async throws {
+        let (module, windows) = try await kittyInFront()
+        module.perform(.module("toggle_stack"))
+        #expect(windows.map(\.raises) == [1, 0])
+        module.perform(.module("stack_next"))
+        #expect(windows.map(\.raises) == [1, 1])
+        module.perform(.module("stack_previous"))
+        #expect(windows.map(\.raises) == [2, 1])
+    }
+
+    @Test func activatedStackedAppRaisesItsShownWindowAgain() async throws {
+        let (module, windows) = try await kittyInFront()
+        module.perform(.module("toggle_stack"))
+        watcher.send(.activated(kitty))
+        #expect(windows.map(\.raises) == [2, 0])
     }
 
     @Test func takesHyperDrags() {

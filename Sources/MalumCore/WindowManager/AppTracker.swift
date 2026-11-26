@@ -56,6 +56,13 @@ final class AppTracker {
     private var splitDragPoint: CGPoint?
     /// Whether the windows were laid out for the hyper drag too recently to do it again yet.
     private var isSplitDragPaused = false
+    /// Whether the managed windows are stacked, each filling the area with one in front, rather
+    /// than split. Kept only while the app runs.
+    private(set) var isStacked = false
+    /// Which stacked window is shown.
+    private var stack = WindowStack<ObjectIdentifier>()
+    /// The stacked window last known to be in front, to raise the shown one only when it changes.
+    private var inFront: ObjectIdentifier?
 
     /// Starts tracking `app`, whose windows `watched` reaches.
     init(app: RunningApp, watched: any WatchedApp, access: any WindowAccess, scheduler: any WindowScheduler, log: Log) {
@@ -95,7 +102,9 @@ final class AppTracker {
         for tracked in windows {
             classify(tracked)
         }
+        followFocus()
         layout()
+        bringShownToFront()
         guard windows.contains(where: { $0.kind == .notReady }) else {
             readyTriesTaken = 0
             return
@@ -132,7 +141,7 @@ final class AppTracker {
     /// moves with one window, or up or down for the left window, which fills the height.
     func resize(_ move: SplitMove, by step: CGFloat) {
         let managed = managedInView
-        guard managed.count > 1 else { return }
+        guard !isStacked, managed.count > 1 else { return }
         switch move {
         case .left, .right:
             split.moveDivider(by: move == .left ? -step : step)
@@ -148,7 +157,7 @@ final class AppTracker {
     /// Starts a hyper drag at `point` that moves the borders between the managed windows. Nothing
     /// moves with one window.
     func beginSplitDrag(at point: CGPoint) {
-        guard let area else { return }
+        guard !isStacked, let area else { return }
         splitDrag = SplitDrag(at: point, in: area, split: split, count: managedInView.count)
         splitDragPoint = nil
     }
@@ -180,7 +189,7 @@ final class AppTracker {
     func layout() {
         guard let area else { return }
         let managed = managedInView
-        for (tracked, slot) in zip(managed, WindowLayout.slots(count: managed.count, in: area, split: split)) {
+        for (tracked, slot) in zip(managed, slots(count: managed.count, in: area)) {
             guard tracked.slot == slot, let settled = tracked.settled else {
                 tracked.snaps = []
                 place(tracked, in: slot)
@@ -194,6 +203,14 @@ final class AppTracker {
     /// The managed windows that aren't minimised, oldest first: the ones that get a slot.
     private var managedInView: [TrackedWindow] {
         windows.filter { $0.kind == .managed && !$0.window.isMinimized }
+    }
+
+    /// Where each of `count` managed windows goes in `area`: all of it each while stacked, or
+    /// shared out by the split.
+    private func slots(count: Int, in area: CGRect) -> [CGRect] {
+        isStacked
+            ? WindowLayout.stacked(count: count, in: area)
+            : WindowLayout.slots(count: count, in: area, split: split)
     }
 
     /// Sorts out what to do with `tracked`. A window that briefly stops answering keeps what it was,
@@ -289,9 +306,9 @@ final class AppTracker {
     /// Swaps the window that was dragged with the one whose slot it was dropped on. The dragged one
     /// is the managed window that's no longer where it was put.
     private func swapDropped() {
-        guard let area else { return }
+        guard !isStacked, let area else { return }
         let managed = managedInView
-        let slots = WindowLayout.slots(count: managed.count, in: area, split: split)
+        let slots = self.slots(count: managed.count, in: area)
         guard let from = managed.firstIndex(where: Self.wasMoved),
             let to = WindowLayout.dropTarget(at: access.pointerLocation, slots: slots, from: from),
             let first = windows.firstIndex(where: { $0 === managed[from] }),
@@ -304,5 +321,63 @@ final class AppTracker {
     private static func wasMoved(_ tracked: TrackedWindow) -> Bool {
         guard let settled = tracked.settled, let frame = tracked.window.frame else { return false }
         return !WindowLayout.isSame(frame, settled)
+    }
+}
+
+// MARK: - Stack
+
+extension AppTracker {
+    /// Stacks the managed windows, each filling the area with the focused one in front, or splits
+    /// them again, by the split they had.
+    func toggleStack() {
+        isStacked.toggle()
+        inFront = nil
+        followFocus()
+        layout()
+        bringShownToFront()
+    }
+
+    /// Brings the stacked window `offset` places after the shown one to the front, oldest first and
+    /// wrapping around, and gives it the focus.
+    func showStacked(_ offset: Int) {
+        guard isStacked, let next = stack.step(offset, among: stackedIDs) else { return }
+        stack.show(next)
+        bringShownToFront()
+    }
+
+    /// Raises the shown stacked window again, as when the app comes back to the front, in case
+    /// macOS brought up another one. A managed window that has the focus is shown.
+    func raiseShown() {
+        followFocus()
+        inFront = nil
+        bringShownToFront()
+    }
+
+    /// The managed windows in view, by identity, which is how the stack names them.
+    private var stackedIDs: [ObjectIdentifier] {
+        managedInView.map(ObjectIdentifier.init)
+    }
+
+    /// Shows the focused window while stacked, when it's a managed one. It's in front already, since
+    /// it has the focus, as after cmd+` or a click in the Window menu.
+    private func followFocus() {
+        guard isStacked, let focused = watched.focusedWindow(),
+            let tracked = managedInView.first(where: { $0.window.isSame(as: focused) })
+        else { return }
+        stack.show(ObjectIdentifier(tracked))
+        inFront = ObjectIdentifier(tracked)
+    }
+
+    /// Raises the shown stacked window when another one is in front, as after the shown one closed,
+    /// so the one shown before it comes up.
+    private func bringShownToFront() {
+        guard isStacked else { return }
+        let ids = stackedIDs
+        stack.keep(ids)
+        guard let shown = stack.shown(among: ids), shown != inFront,
+            let tracked = windows.first(where: { ObjectIdentifier($0) == shown })
+        else { return }
+        inFront = shown
+        tracked.window.raise()
     }
 }

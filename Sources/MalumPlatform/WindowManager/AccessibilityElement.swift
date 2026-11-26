@@ -64,6 +64,11 @@ struct AccessibilityElement {
         AXUIElementSetAttributeValue(element, attribute as CFString, value as CFTypeRef) == .success
     }
 
+    /// Performs `action`, such as raising a window.
+    func perform(_ action: String) {
+        AXUIElementPerformAction(element, action as CFString)
+    }
+
     /// Sets `attribute` to the point `point`.
     func set(_ attribute: String, point: CGPoint) {
         var point = point

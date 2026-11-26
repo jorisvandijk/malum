@@ -23,6 +23,11 @@ struct WindowLayoutTests {
         #expect(WindowLayout.slots(count: 0, in: area).isEmpty)
     }
 
+    @Test func stackedWindowsEachFillTheArea() {
+        #expect(WindowLayout.stacked(count: 3, in: area) == [area, area, area])
+        #expect(WindowLayout.stacked(count: 0, in: area).isEmpty)
+    }
+
     @Test func twoWindowsSplitLeftAndRight() {
         #expect(
             WindowLayout.slots(count: 2, in: area) == [

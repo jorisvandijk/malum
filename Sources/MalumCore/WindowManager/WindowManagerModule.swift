@@ -30,6 +30,11 @@ final class WindowManagerModule: Module {
         (WindowManagerConfig.splitLeftAction, .left), (WindowManagerConfig.splitRightAction, .right),
         (WindowManagerConfig.splitTallerAction, .taller), (WindowManagerConfig.splitShorterAction, .shorter),
     ]
+    /// The actions that show another stacked window, for `keyboard.toml`, with how many places on
+    /// each goes.
+    static let stackActions: [(name: String, offset: Int)] = [
+        (WindowManagerConfig.stackNextAction, 1), (WindowManagerConfig.stackPreviousAction, -1),
+    ]
     /// Turns `split_step`, in percent, into a share of the area.
     private static let percent: CGFloat = 100
     /// The action of the keys it swallows, which isn't offered to `keyboard.toml`.
@@ -52,7 +57,9 @@ final class WindowManagerModule: Module {
     /// minimise when `block_hide_minimize` is on, and takes hyper drags, which move the borders.
     var hotkeys: HotkeyOffer {
         HotkeyOffer(
-            actions: Set([Self.inspectAction, Self.toggleFloatAction] + Self.splitActions.map(\.name)),
+            actions: Set(
+                [Self.inspectAction, Self.toggleFloatAction, WindowManagerConfig.toggleStackAction]
+                    + Self.splitActions.map(\.name) + Self.stackActions.map(\.name)),
             fixedKeys: config.blocksHideMinimize ? Self.blockedKeys : [:], opensApps: true, takesDrags: true)
     }
     /// Where the module is now.
@@ -137,8 +144,8 @@ final class WindowManagerModule: Module {
     }
 
     /// Starts the app a shortcut names, or brings it into view, inspects a window, floats the
-    /// focused one or puts it back, or moves a border between the windows. A swallowed key does
-    /// nothing.
+    /// focused one or puts it back, moves a border between the windows, stacks them or splits them
+    /// again, or shows another stacked one. A swallowed key does nothing.
     func perform(_ action: KeyAction) {
         switch action {
         case .app(let bundleID):
@@ -147,9 +154,15 @@ final class WindowManagerModule: Module {
             raising = Task { [weak self] in await self?.inspect() }
         case .module(Self.toggleFloatAction):
             toggleFloat()
+        case .module(WindowManagerConfig.toggleStackAction):
+            frontTracker?.toggleStack()
         case .module(let name):
-            guard let move = Self.splitActions.first(where: { $0.name == name })?.move else { return }
-            frontTracker?.resize(move, by: CGFloat(config.splitStep) / Self.percent)
+            if let move = Self.splitActions.first(where: { $0.name == name })?.move {
+                frontTracker?.resize(move, by: CGFloat(config.splitStep) / Self.percent)
+                return
+            }
+            guard let offset = Self.stackActions.first(where: { $0.name == name })?.offset else { return }
+            frontTracker?.showStacked(offset)
         }
     }
 
@@ -214,6 +227,7 @@ final class WindowManagerModule: Module {
             }
         case .activated(let app):
             runRaise.hideOthers(except: app, config: config)
+            trackers[app.pid]?.raiseShown()
         case .unhidden(let pid):
             trackers[pid]?.reconcile()
         case .screensChanged:
