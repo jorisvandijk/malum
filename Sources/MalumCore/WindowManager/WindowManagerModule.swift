@@ -24,6 +24,14 @@ final class WindowManagerModule: Module {
     public static let inspectAction = WindowManagerConfig.inspectAction
     /// The action that floats the focused window, or puts it back in its place, for `keyboard.toml`.
     public static let toggleFloatAction = WindowManagerConfig.toggleFloatAction
+    /// The actions that move the borders between the windows, for `keyboard.toml`, in the order
+    /// they're offered, with the way each moves them.
+    static let splitActions: [(name: String, move: SplitMove)] = [
+        (WindowManagerConfig.splitLeftAction, .left), (WindowManagerConfig.splitRightAction, .right),
+        (WindowManagerConfig.splitTallerAction, .taller), (WindowManagerConfig.splitShorterAction, .shorter),
+    ]
+    /// Turns `split_step`, in percent, into a share of the area.
+    private static let percent: CGFloat = 100
     /// The action of the keys it swallows, which isn't offered to `keyboard.toml`.
     private static let blockAction = "block"
     /// cmd+H, cmd+M and cmd+option+M, which hide the app or minimise windows, for
@@ -44,7 +52,7 @@ final class WindowManagerModule: Module {
     /// minimise when `block_hide_minimize` is on.
     var hotkeys: HotkeyOffer {
         HotkeyOffer(
-            actions: [Self.inspectAction, Self.toggleFloatAction],
+            actions: [Self.inspectAction, Self.toggleFloatAction] + Self.splitActions.map(\.name),
             fixedKeys: config.blocksHideMinimize ? Self.blockedKeys : [:], opensApps: true)
     }
     /// Where the module is now.
@@ -68,6 +76,9 @@ final class WindowManagerModule: Module {
     @ObservationIgnored private var isStarted = false
     /// Whether laying the windows out again after a change to the screens is waiting.
     @ObservationIgnored private var isLayoutPending = false
+    /// How each app's area was shared out when it last quit, by bundle ID, so it comes back the same.
+    /// Kept only while Malum runs.
+    @ObservationIgnored private var splits: [String: Split] = [:]
     /// The last app raised for a shortcut, or the last window inspected, which tests wait for.
     @ObservationIgnored private(set) var raising: Task<Void, Never>?
 
@@ -123,8 +134,9 @@ final class WindowManagerModule: Module {
         layOutAgain()
     }
 
-    /// Starts the app a shortcut names, or brings it into view, inspects a window, or floats the
-    /// focused one or puts it back. A swallowed key does nothing.
+    /// Starts the app a shortcut names, or brings it into view, inspects a window, floats the
+    /// focused one or puts it back, or moves a border between the windows. A swallowed key does
+    /// nothing.
     func perform(_ action: KeyAction) {
         switch action {
         case .app(let bundleID):
@@ -133,8 +145,9 @@ final class WindowManagerModule: Module {
             raising = Task { [weak self] in await self?.inspect() }
         case .module(Self.toggleFloatAction):
             toggleFloat()
-        case .module:
-            return
+        case .module(let name):
+            guard let move = Self.splitActions.first(where: { $0.name == name })?.move else { return }
+            frontTracker?.resize(move, by: CGFloat(config.splitStep) / Self.percent)
         }
     }
 
@@ -146,9 +159,13 @@ final class WindowManagerModule: Module {
     /// Floats the focused window of the app in front, or puts it back in its place when it was
     /// floated this way.
     private func toggleFloat() {
-        guard let front = system.apps.visibleApps().first(where: \.isActive), let tracker = trackers[front.pid]
-        else { return }
-        tracker.toggleFloat()
+        frontTracker?.toggleFloat()
+    }
+
+    /// The tracker of the app in front, or nil when it isn't tracked.
+    private var frontTracker: AppTracker? {
+        guard let front = system.apps.visibleApps().first(where: \.isActive) else { return nil }
+        return trackers[front.pid]
     }
 
     /// What the module does with `pointed`, a window of `app`: what its tracker decided, or what it
@@ -172,7 +189,11 @@ final class WindowManagerModule: Module {
         case .launched(let app):
             track(app)
         case .terminated(let pid):
-            trackers.removeValue(forKey: pid)?.stop()
+            guard let tracker = trackers.removeValue(forKey: pid) else { return }
+            tracker.stop()
+            if let bundleID = tracker.app.bundleID {
+                splits[bundleID] = tracker.split
+            }
         case .activated(let app):
             runRaise.hideOthers(except: app, config: config)
         case .unhidden(let pid):
@@ -218,6 +239,7 @@ final class WindowManagerModule: Module {
             app: app, watched: watched, access: system.windows, scheduler: system.scheduler, log: log)
         tracker.config = config
         tracker.area = area
+        tracker.split = app.bundleID.flatMap { splits[$0] } ?? Split()
         trackers[pid] = tracker
         tracker.reconcile()
     }

@@ -41,7 +41,28 @@ Each app's windows fill the screen:
 - Two windows split it into a left and a right half.
 - With more, the oldest window keeps the left half and the others stack on the right.
 
+The split keys below change how much each window gets.
+
 A window that's moved or resized snaps back to its place. A window that's dragged follows the pointer. Let go of it over another window's place and the two swap; let go anywhere else and it drops back into its own place. A window that can't grow to its place is centred in it, and one that can't shrink is pinned to its top left. An app that keeps resizing its own window is left where it settles.
+
+### Adjusting the split
+
+Four actions move the borders between an app's windows:
+
+- `split_left` and `split_right` move the border between the left window and the others.
+- `split_taller` and `split_shorter` make the focused window in the right column taller or shorter, taking room from or giving it to the windows above and below.
+
+Each press moves a border by `split_step`, 5% of the area unless set otherwise. Neither column gets narrower than 20% of the area, and no window in the right column gets shorter than 20% of its height (less when so many windows share it that 20% each wouldn't fit). The left window always fills the height, so `split_taller` and `split_shorter` do nothing on it. With one window, nothing moves. Bind them in `keyboard.toml`:
+
+```toml
+[hyper]
+left = "split_left"
+right = "split_right"
+up = "split_taller"
+down = "split_shorter"
+```
+
+Each app keeps its own split, also after it quits and starts again. A window opening or closing in the right column shares its height out equally again. Malum forgets every split when it quits.
 
 Malum fills the screen with the menu bar. Other screens are left alone. When a display is plugged in, unplugged or rearranged, and when the Mac wakes, the windows are laid out again on the screen that has the menu bar then.
 
@@ -94,9 +115,11 @@ The key dims the screens a little and shows a crosshair. Click any window to see
 [settings]
 frame = "visible"
 block_hide_minimize = true
+split_step = 5
 ```
 
 - `frame`: `"visible"` fills the screen below the menu bar and outside the Dock, and `"full"` fills the whole screen.
 - `block_hide_minimize`: swallows cmd+H, cmd+M and cmd+option+M, which would hide an app or minimise a window.
+- `split_step`: how far the split keys move a border, in percent of the area, a whole number from 1 to 25. Anything else is a config error at its line, and 5 is used.
 
 Every key is optional, and the values above are the defaults. The [config reference](config.md) lists them all.

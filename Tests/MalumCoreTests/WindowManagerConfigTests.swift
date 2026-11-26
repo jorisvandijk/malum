@@ -106,4 +106,15 @@ struct WindowManagerConfigTests {
         #expect(config == nil)
         #expect(problems == [ConfigProblem(.error, file: fileName, line: 1, .shouldBe("float", SettingKind.tables))])
     }
+
+    @Test func splitStepIsReadAndOneOutOfRangeIsAnError() {
+        #expect(load("[settings]\nsplit_step = 10\n").config?.splitStep == 10)
+        #expect(load("").config?.splitStep == 5)
+        let (config, problems) = load("[settings]\nsplit_step = 30\n")
+        #expect(config?.splitStep == 5)
+        #expect(
+            problems == [
+                ConfigProblem(.error, file: fileName, line: 2, .shouldBe("settings.split_step", MessageText.splitStep))
+            ])
+    }
 }

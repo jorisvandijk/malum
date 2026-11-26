@@ -15,7 +15,7 @@ enum WindowLayout {
     static let unknownSubrole = "AXUnknown"
     /// How far apart two frames may be and still count as the same, since apps round their sizes.
     static let tolerance: CGFloat = 1
-    /// The left slot takes half the area when there's more than one window.
+    /// Halves a length, to centre one thing in another.
     private static let halves: CGFloat = 2
     /// The share of the area's width and height a window floated with `toggle_float` takes.
     private static let floatShare: CGFloat = 0.6
@@ -37,15 +37,15 @@ enum WindowLayout {
         return .managed
     }
 
-    /// Where each of an app's `count` managed windows goes in `area`, oldest first. One fills the
-    /// area, two split it left and right, and from three on the oldest keeps the left half while the
-    /// rest stack on the right.
-    static func slots(count: Int, in area: CGRect) -> [CGRect] {
+    /// Where each of an app's `count` managed windows goes in `area`, oldest first, shared out by
+    /// `split`. One fills the area, two split it left and right, and from three on the oldest keeps
+    /// the left column while the rest stack in rows on the right.
+    static func slots(count: Int, in area: CGRect, split: Split = Split()) -> [CGRect] {
         guard count > 1 else { return count == 1 ? [area.integral] : [] }
-        let leftWidth = (area.width / halves).rounded(.down)
+        let leftWidth = (area.width * split.left).rounded(.down)
         let right = area.minX + leftWidth
         let stacked = count - 1
-        let rows = (0...stacked).map { area.minY + (area.height * CGFloat($0) / CGFloat(stacked)).rounded(.down) }
+        let rows = tops(stacked, in: area, shares: split.rowShares(count: stacked))
         let rightSlots = (0..<stacked).map { row in
             let bottom = row == stacked - 1 ? area.maxY : rows[row + 1]
             return CGRect(x: right, y: rows[row], width: area.maxX - right, height: bottom - rows[row])
@@ -81,6 +81,15 @@ enum WindowLayout {
     /// Accessibility's (from the top left, going down), on a main screen `height` high.
     static func toAccessibility(_ rect: CGRect, mainScreenHeight height: CGFloat) -> CGRect {
         CGRect(x: rect.minX, y: height - rect.maxY, width: rect.width, height: rect.height)
+    }
+
+    /// Where each of `count` rows in `area` starts, top first: by `shares` when they're set,
+    /// equally when they're nil.
+    private static func tops(_ count: Int, in area: CGRect, shares: [CGFloat]?) -> [CGFloat] {
+        guard let shares else {
+            return (0..<count).map { area.minY + (area.height * CGFloat($0) / CGFloat(count)).rounded(.down) }
+        }
+        return shares.indices.map { area.minY + (area.height * shares[..<$0].reduce(0, +)).rounded(.down) }
     }
 
     /// Where a window `length` long starts along a slot that starts at `origin` and is `room` long:
