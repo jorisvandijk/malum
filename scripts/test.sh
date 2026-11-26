@@ -8,7 +8,8 @@
 #   filter      a swift test --filter pattern, such as ScreenshotsConfigTests
 #
 # Prints "All tests passed" when every test passes. Otherwise it prints one line for each
-# build error or failed expectation, and where the full log is. Exits non-zero on any failure.
+# build error or failed expectation, which is all a fix needs. It names the full log only when
+# a run stops without saying why, such as a crash. Exits non-zero on any failure.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -70,7 +71,7 @@ _report_build() {
     count="$(printf '%s\n' "$problems" | wc -l | tr -d ' ')"
     printf '%s\n' "$problems" | head -n "$MAX_BUILD_ERRORS"
     ((count > MAX_BUILD_ERRORS)) && printf '%s\n' "...and $((count - MAX_BUILD_ERRORS)) more"
-    printf '%s\n' "Full log: $LOG"
+    return 0
 }
 
 # Turns one "Test x() recorded an issue at File.swift:12:5: message" line into "x() at File.swift:12: message".
@@ -103,7 +104,6 @@ _report_tests() {
     printf '%s\n' "All tests ran: $failed of $total failed"
     local line
     grep -F ' recorded an issue' "$LOG" | while IFS= read -r line; do _issue_line "$line"; done
-    printf '%s\n' "Full log: $LOG"
 }
 
 # Reports a passing run, or a filter that matched nothing.
