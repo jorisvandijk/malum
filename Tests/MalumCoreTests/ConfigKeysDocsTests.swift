@@ -13,6 +13,7 @@ import Testing
 /// A new key in a reader fails `everyExampleSetsEveryKey` until the example sets it, and then
 /// `everyKeyHasDocs` until the docs name it.
 @Suite(.timeLimit(.minutes(1)))
+@MainActor
 struct ConfigKeysDocsTests {
     /// A table a reader checked for keys it doesn't know.
     struct Checked: Sendable {

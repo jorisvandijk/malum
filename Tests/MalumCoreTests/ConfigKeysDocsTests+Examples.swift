@@ -21,7 +21,7 @@ extension ConfigKeysDocsTests {
         /// Where its keys have docs.
         let docs: [DocsPart]
         /// Reads `text` and gives the problems found.
-        let read: @Sendable (String) -> [ConfigProblem]
+        let read: @MainActor @Sendable (String) -> [ConfigProblem]
         /// Whether the key at a path has its docs on a generated page, and so isn't checked here.
         var generated: @Sendable ([String]) -> Bool = { _ in false }
     }
