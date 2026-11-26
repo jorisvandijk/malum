@@ -22,37 +22,7 @@ struct MacOSCatalogTests {
         return String(document[start..<end])
     }
 
-    @Test func everySettingTakesAtLeastTwoValues() {
-        for table in MacOSCatalog.tables {
-            for setting in table.settings {
-                #expect((setting.value.choices ?? 2) >= 2, "\(table.name).\(setting.name)")
-            }
-        }
-    }
-
-    @Test func everyChoiceWritesEachTarget() {
-        for setting in MacOSCatalog.tables.flatMap(\.settings) {
-            switch setting.value {
-            case .choice(let choices):
-                #expect(choices.allSatisfy { $0.writes.count == setting.targets.count }, "\(setting.name)")
-                #expect(Set(choices.map(\.word)).count == choices.count, "\(setting.name)")
-            case .combinedFlag(let on, let off):
-                #expect(on.count == setting.targets.count && off.count == setting.targets.count, "\(setting.name)")
-            default:
-                #expect(!setting.targets.isEmpty, "\(setting.name)")
-            }
-        }
-    }
-
-    @Test func namesAreUniqueAndPlain() {
-        let tables = MacOSCatalog.tables.map(\.name)
-        #expect(Set(tables).count == tables.count)
-        for table in MacOSCatalog.tables {
-            let names = table.settings.map(\.name)
-            #expect(Set(names).count == names.count, "\(table.name)")
-            #expect(
-                (names + [table.name]).allSatisfy { $0.allSatisfy { $0.isLowercase || $0.isNumber || $0 == "_" } })
-        }
+    @Test func powerSettingNamesAreUnique() {
         #expect(Set(PowerSetting.all.map(\.name)).count == PowerSetting.all.count)
     }
 

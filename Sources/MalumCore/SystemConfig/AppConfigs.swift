@@ -39,9 +39,9 @@ enum AppConfigs {
 
     /// The apps, each read from `apps/<name>.toml`.
     static let all = [
-        AppConfig(name: "amphetamine", domain: "com.if.Amphetamine"),
-        AppConfig(name: "command-x", domain: "com.sindresorhus.Command-X"),
-        AppConfig(name: "cursorcerer", domain: "com.doomlaser.cursorcerer"),
+        AppConfig(name: "amphetamine", domain: AppCatalogs.Domain.amphetamine, catalog: AppCatalogs.amphetamine),
+        AppConfig(name: "command-x", domain: AppCatalogs.Domain.commandX, catalog: AppCatalogs.commandX),
+        AppConfig(name: "cursorcerer", domain: AppCatalogs.Domain.cursorcerer, catalog: AppCatalogs.cursorcerer),
         AppConfig(
             name: "git",
             files: [
@@ -102,7 +102,7 @@ enum AppConfigs {
                     always: true),
                 AppConfigFile(".config/newsboat/urls", .feeds(table: "feeds")),
             ]),
-        AppConfig(name: "oversight", domain: "com.objective-see.oversight"),
+        AppConfig(name: "oversight", domain: AppCatalogs.Domain.oversight, catalog: AppCatalogs.oversight),
         AppConfig(name: "ssh", files: [AppConfigFile(".ssh/config", .sections(table: "hosts", keyword: "Host"))]),
         AppConfig(
             name: "vscodium",
