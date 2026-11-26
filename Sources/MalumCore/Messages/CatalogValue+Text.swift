@@ -84,10 +84,6 @@ extension NumberUnit {
         switch self {
         case .pt:
             "points"
-        case .px:
-            "pixels"
-        case .lines:
-            "lines"
         }
     }
 }

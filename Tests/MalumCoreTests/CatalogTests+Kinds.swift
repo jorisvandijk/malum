@@ -21,7 +21,7 @@ extension CatalogTests {
         #expect(one(size, .integer(5)) == nil)
         #expect(one(size, .string("14")) == nil)
         #expect(size.description == "a number of points from 6 to 100")
-        #expect(NumberUnit.lines.suffix == "_lines")
+        #expect(NumberUnit.pt.suffix == "_pt")
     }
 
     @Test func textIsWrittenInItsForm() {

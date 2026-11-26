@@ -251,10 +251,6 @@ struct CatalogChoice: Equatable, Sendable {
 enum NumberUnit: String, Sendable {
     /// Points, as a font's size.
     case pt
-    /// Pixels on the screen.
-    case px
-    /// Lines of text.
-    case lines
 
     /// The end of the name of a setting that takes it, such as `_pt` in `size_pt`.
     var suffix: String {
