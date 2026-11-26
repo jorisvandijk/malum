@@ -17,6 +17,8 @@ final class FakeAppWindow: AppWindow {
     var maxSize = CGSize(width: 10_000, height: 10_000)
     /// How many times it was given a frame or an origin.
     private(set) var moves = 0
+    /// How many times it was raised.
+    private(set) var raises = 0
 
     func setFrame(_ frame: CGRect) {
         moves += 1
@@ -27,6 +29,10 @@ final class FakeAppWindow: AppWindow {
     func setOrigin(_ origin: CGPoint) {
         moves += 1
         frame?.origin = origin
+    }
+
+    func raise() {
+        raises += 1
     }
 
     func isSame(as other: any AppWindow) -> Bool {

@@ -53,6 +53,12 @@ enum WindowLayout {
         return [CGRect(x: area.minX, y: area.minY, width: leftWidth, height: area.height)] + rightSlots
     }
 
+    /// Where each of an app's `count` stacked windows goes in `area`: all of it, each on top of the
+    /// others.
+    static func stacked(count: Int, in area: CGRect) -> [CGRect] {
+        Array(repeating: area.integral, count: max(count, 0))
+    }
+
     /// Where a window floated with `toggle_float` goes: centred in `area`, `floatShare` of its size.
     static func floated(in area: CGRect) -> CGRect {
         let margin = (1 - floatShare) / halves

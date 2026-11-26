@@ -70,6 +70,12 @@ extension AccessibilityWindow: AppWindow {
         }
     }
 
+    /// Makes the window its app's main one, then raises it, as yabai and Rectangle do.
+    func raise() {
+        window.set(AccessibilityName.main, true)
+        window.perform(AccessibilityName.raise)
+    }
+
     /// Whether `other` wraps the same window.
     func isSame(as other: any AppWindow) -> Bool {
         guard let other = other as? AccessibilityWindow else { return false }

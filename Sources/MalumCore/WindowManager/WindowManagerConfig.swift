@@ -19,6 +19,12 @@ struct WindowManagerConfig: Equatable, Sendable {
     static let splitTallerAction = "split_taller"
     /// The action that makes the focused window in the right column shorter.
     static let splitShorterAction = "split_shorter"
+    /// The action that stacks the windows of the app in front, or splits them again.
+    static let toggleStackAction = "toggle_stack"
+    /// The action that shows the next stacked window.
+    static let stackNextAction = "stack_next"
+    /// The action that shows the previous stacked window.
+    static let stackPreviousAction = "stack_previous"
     /// How far the split keys move a border when nothing is set, in percent of the area.
     static let defaultSplitStep = 5
     /// The steps `split_step` can be, in percent of the area.

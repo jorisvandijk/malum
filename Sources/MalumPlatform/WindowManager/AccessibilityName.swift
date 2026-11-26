@@ -31,6 +31,8 @@ enum AccessibilityName {
     static let hidden = "AXHidden"
     /// Brings a window to the front of its app.
     static let raise = "AXRaise"
+    /// Whether a window is its app's main window, the one that gets the focus.
+    static let main = "AXMain"
     /// An app opened a window.
     static let windowCreated = "AXWindowCreated"
     /// Another window of an app got the focus.

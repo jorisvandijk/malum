@@ -104,7 +104,7 @@ extension WorkspaceApps: AppControl {
             })
         else { return }
         window.set(AccessibilityName.minimized, false)
-        AXUIElementPerformAction(window.element, AccessibilityName.raise as CFString)
+        window.perform(AccessibilityName.raise)
     }
 
     /// Hides `app`. `NSRunningApplication.hide()` often hides the app yet says it didn't, so then it's
