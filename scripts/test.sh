@@ -13,24 +13,11 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
+# shellcheck source=scripts/common.sh
+source scripts/common.sh
 
 LOG=".build/test.log"
 TESTS="Tests/MalumCoreTests"
-BASE_BRANCH="main"
-MAX_BUILD_ERRORS=20
-
-# Adds the flags a Mac with only the Command Line Tools needs to find the Testing framework.
-_toolchain_flags() {
-    command -v xcode-select > /dev/null || return 0
-    local developer
-    developer="$(xcode-select -p 2> /dev/null)" || return 0
-    [[ "$developer" == *CommandLineTools* ]] || return 0
-    local frameworks="$developer/Library/Developer/Frameworks"
-    local libraries="$developer/Library/Developer/usr/lib"
-    FLAGS+=(-Xswiftc -F -Xswiftc "$frameworks" -Xlinker -rpath -Xlinker "$frameworks")
-    [[ -d "$libraries" ]] && FLAGS+=(-Xlinker -rpath -Xlinker "$libraries")
-    return 0
-}
 
 # Prints the suite name for a changed Swift file, if that suite exists.
 _suite_for() {
@@ -44,34 +31,14 @@ _suite_for() {
 
 # Adds one filter for each suite that covers a file this branch changed.
 _changed_filters() {
-    local base
-    base="$(git merge-base HEAD "origin/$BASE_BRANCH" 2> /dev/null || git merge-base HEAD "$BASE_BRANCH")"
     local file
     local suites
-    suites="$(
-        { git diff --name-only "$base" -- Sources Tests; git ls-files --others --exclude-standard -- Sources Tests; } \
-            | { grep '\.swift$' || true; } \
-            | while read -r file; do _suite_for "$file"; done \
-            | sort -u
-    )"
+    suites="$(_changed_swift_files Sources Tests | while read -r file; do _suite_for "$file"; done | sort -u)"
     [[ -n "$suites" ]] || { printf '%s\n' "No tests cover the changed files"; exit 0; }
     local suite
     for suite in $suites; do
         FLAGS_FILTER+=(--filter "\\.$suite/")
     done
-}
-
-# Prints the build errors and warnings once each, with paths relative to the repo.
-_report_build() {
-    local problems
-    problems="$(grep -E ': (error|warning): ' "$LOG" | sed "s|^$PWD/||" | awk '!seen[$0]++')" || true
-    printf '%s\n' "Build failed:"
-    [[ -n "$problems" ]] || { tail -n 5 "$LOG"; printf '%s\n' "Full log: $LOG"; return; }
-    local count
-    count="$(printf '%s\n' "$problems" | wc -l | tr -d ' ')"
-    printf '%s\n' "$problems" | head -n "$MAX_BUILD_ERRORS"
-    ((count > MAX_BUILD_ERRORS)) && printf '%s\n' "...and $((count - MAX_BUILD_ERRORS)) more"
-    return 0
 }
 
 # Turns one "Test x() recorded an issue at File.swift:12:5: message" line into "x() at File.swift:12: message".
@@ -126,7 +93,7 @@ done
 mkdir -p .build
 : > "$LOG"
 
-swift build --build-tests ${FLAGS[@]+"${FLAGS[@]}"} >> "$LOG" 2>&1 || { _report_build; exit 1; }
+swift build --build-tests ${FLAGS[@]+"${FLAGS[@]}"} >> "$LOG" 2>&1 || { _report_problems "$LOG" "Build failed:"; exit 1; }
 
 STATUS=0
 swift test --skip-build ${FLAGS[@]+"${FLAGS[@]}"} ${FLAGS_FILTER[@]+"${FLAGS_FILTER[@]}"} >> "$LOG" 2>&1 || STATUS=$?
