@@ -171,7 +171,7 @@ The folder, which gets a folder for each feed, by the feed's name.
 - Value: a path, starting with $HOME/ in your home folder or / outside it
 - Writes: `$HOME/.config/newsboat/config` `download-path`
 
-### `max_at_once`
+### `max_downloads`
 
 How many files podboat downloads at once.
 
@@ -182,19 +182,12 @@ How many files podboat downloads at once.
 
 Whether newsboat tells you about new articles.
 
-### `enabled`
+### `when`
 
-Whether newsboat shows a notification and sets the terminal's title.
+When newsboat shows a notification and sets the terminal's title: never, when a fetch finds new articles, or after every fetch.
 
-- Value: true or false
-- Writes: `$HOME/.config/newsboat/config` `notify-program`, `$HOME/.config/newsboat/config` `notify-screen`
-
-### `after_every_reload`
-
-Whether newsboat notifies after every fetch, even with nothing new.
-
-- Value: true or false
-- Writes: `$HOME/.config/newsboat/config` `notify-always`
+- Value: "never", "new_articles" or "every_reload"
+- Writes: `$HOME/.config/newsboat/config` `notify-program`, `$HOME/.config/newsboat/config` `notify-screen`, `$HOME/.config/newsboat/config` `notify-always`
 
 ## `[quit]`
 

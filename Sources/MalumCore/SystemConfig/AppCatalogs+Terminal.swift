@@ -308,21 +308,25 @@ extension AppCatalogs {
                         "folder", "The folder, which gets a folder for each feed, by the feed's name.",
                         .path(then: newsboatFeedFolder), [newsboat("download-path")]),
                     CatalogSetting(
-                        "max_at_once", "How many files podboat downloads at once.", .count(anyNumber),
+                        "max_downloads", "How many files podboat downloads at once.", .count(anyNumber),
                         [newsboat("max-downloads")]),
                 ]),
             CatalogTable(
                 name: "notifications", about: "Whether newsboat tells you about new articles.",
                 settings: [
                     CatalogSetting(
-                        "enabled", "Whether newsboat shows a notification and sets the terminal's title.",
-                        .combinedFlag(
-                            on: [.set(.string(newsboatNotifier)), .set(.boolean(true))],
-                            off: [.remove, .set(.boolean(false))]),
-                        [newsboat("notify-program"), newsboat("notify-screen")]),
-                    CatalogSetting(
-                        "after_every_reload", "Whether newsboat notifies after every fetch, even with nothing new.",
-                        .flag, [newsboat("notify-always")]),
+                        "when",
+                        "When newsboat shows a notification and sets the terminal's title: never, when a fetch finds "
+                            + "new articles, or after every fetch.",
+                        .choice([
+                            CatalogChoice("never", [.remove, .set(.boolean(false)), .set(.boolean(false))]),
+                            CatalogChoice(
+                                "new_articles",
+                                [.set(.string(newsboatNotifier)), .set(.boolean(true)), .set(.boolean(false))]),
+                            CatalogChoice(
+                                "every_reload",
+                                [.set(.string(newsboatNotifier)), .set(.boolean(true)), .set(.boolean(true))]),
+                        ]), [newsboat("notify-program"), newsboat("notify-screen"), newsboat("notify-always")])
                 ]),
             CatalogTable(
                 name: "quit", about: "What newsboat does when it quits.",

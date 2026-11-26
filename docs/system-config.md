@@ -89,7 +89,7 @@ Every warning and error in a run gets a number as it happens, and the run ends w
 ```
 [info] installing Homebrew cask lulu
 [error] #1 couldn't install Homebrew cask lulu: Download failed on Cask 'lulu'
-[info] wrote ~/.gitconfig from apps/git.toml
+[info] wrote ~/.config/git/config from apps/git.toml
 [warn] #2 apps/kitty.toml line 4: unknown setting font.fontsize
 [error] 2 issues in this run:
 [error] #1 couldn't install Homebrew cask lulu: Download failed on Cask 'lulu'

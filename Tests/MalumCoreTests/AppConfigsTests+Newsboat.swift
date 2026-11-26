@@ -28,7 +28,7 @@ extension AppConfigsTests {
             folder = "$HOME/Downloads/newsboat"
 
             [notifications]
-            enabled = true
+            when = "new_articles"
             """, app: "newsboat")
         #expect(problems.isEmpty)
         #expect(
@@ -39,7 +39,7 @@ extension AppConfigsTests {
                         + "auto-reload yes\nbrowser \"open -b net.librewolf.librewolf %u\"\n"
                         + "datetime-format \"%b %d\"\ndownload-path \"/Users/test/Downloads/newsboat/%n\"\n"
                         + "feed-sort-order \"lastupdated\"\n"
-                        + "notify-program \"terminal-notifier -title 'Newsboat' -message\"\nnotify-screen yes\n"
+                        + "notify-always no\nnotify-program \"terminal-notifier -title 'Newsboat' -message\"\nnotify-screen yes\n"
                         + "reload-time 60\n\n"
                         + "bind-key J next-feed articlelist\nbind-key ^Q quit\nbind-key h quit\nbind-key j down\n")
             ])
@@ -70,8 +70,11 @@ extension AppConfigsTests {
     }
 
     @Test func newsboatWithoutNotificationsWritesNoProgram() throws {
-        let (files, _) = try read("[notifications]\nenabled = false\n", app: "newsboat")
-        #expect(files == [AppFile(".config/newsboat/config", Self.header(of: "newsboat") + "notify-screen no\n")])
+        let (files, _) = try read("[notifications]\nwhen = \"never\"\n", app: "newsboat")
+        #expect(
+            files == [
+                AppFile(".config/newsboat/config", Self.header(of: "newsboat") + "notify-always no\nnotify-screen no\n")
+            ])
     }
 
     @Test func newsboatWithoutFeedsWritesNoUrlsFile() throws {
