@@ -125,18 +125,19 @@ enum CatalogValue: Equatable, Sendable {
         case (.colorPair(let join), .table(let pair)):
             Self.pair(pair, join: join).map { ConfigValue.string($0) }
         case (.shortcut(let style), .string(let text)):
-            Hotkey(text).map(style.value)
+            Shortcut(text).flatMap(style.value)
         default:
             nil
         }
     }
 
     /// `path` with the home folder `home` filled in, or nil when it isn't a full path or `$HOME/`
-    /// and one, or names the home folder by its own path.
+    /// and one, climbs out of the home folder with `..`, or names the home folder by its own path.
     private static func path(_ path: String, home: String) -> String? {
         if path.hasPrefix(homePrefix) {
             let rest = path.dropFirst(homePrefix.count)
-            return rest.isEmpty ? nil : "\(home)/\(rest)"
+            let parts = rest.split(separator: "/", omittingEmptySubsequences: false)
+            return rest.isEmpty || parts.contains("..") ? nil : "\(home)/\(rest)"
         }
         guard path.hasPrefix("/"), path != home, !path.hasPrefix(home + "/") else { return nil }
         return path
@@ -144,13 +145,8 @@ enum CatalogValue: Equatable, Sendable {
 
     /// Whether `text` is a colour: `#` and six lowercase hexadecimal digits.
     static func isColor(_ text: String) -> Bool {
-        let digits = text.dropFirst()
-        return text.first == "#" && digits.count == colorDigits
-            && digits.allSatisfy { $0.isHexDigit && !$0.isUppercase }
+        ScreenshotColor(hex: text)?.hex == text
     }
-
-    /// How many digits a colour has.
-    private static let colorDigits = 6
 
     /// The colour pair `pair` as text, its colours joined by `join`, or nil when it isn't one.
     private static func pair(_ pair: ConfigTable, join: String) -> String? {

@@ -26,7 +26,7 @@ extension CatalogValue: CustomStringConvertible {
             "a table with a colour fg, an optional colour bg and an optional style "
                 + Self.oneOf(Self.colorStyles) + ", such as { fg = \"#f8f8f2\", bg = \"#282a36\" }"
         case .shortcut:
-            "a shortcut: modifiers cmd, ctrl, option, shift or hyper, then a key, joined by +, such as \"ctrl+option+k\""
+            "a shortcut: modifiers cmd, ctrl, option, shift, fn or hyper, then a key, joined by +, such as \"ctrl+option+k\""
         case .list(let list):
             list.description
         }

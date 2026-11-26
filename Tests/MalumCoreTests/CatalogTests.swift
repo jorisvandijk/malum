@@ -121,6 +121,7 @@ struct CatalogTests {
         #expect(one(.path, .string("~/Git")) == nil)
         #expect(one(.path, .string("/Users/test/Git")) == nil)
         #expect(one(.path, .string("$HOME/")) == nil)
+        #expect(one(.path, .string("$HOME/../other")) == nil)
         #expect(one(.color, .string("#f8f8f2")) == .string("#f8f8f2"))
         #expect(one(.color, .string("#F8F8F2")) == nil)
         #expect(one(.color, .string("#fff")) == nil)
@@ -134,21 +135,62 @@ struct CatalogTests {
 
     @Test func shortcutsUseTheKeyboardsNames() throws {
         let kitty = ShortcutStyle.text(
-            names: [.ctrl: "ctrl", .option: "alt", .cmd: "cmd", .shift: "shift"], joiner: "+")
-        #expect(ShortcutStyle.shared.value(try #require(Hotkey("option+ctrl+k"))) == .string("ctrl+option+k"))
-        #expect(kitty.value(try #require(Hotkey("cmd+option+k"))) == .string("alt+cmd+k"))
+            names: [.ctrl: "ctrl", .option: "alt", .cmd: "cmd", .shift: "shift"], fn: nil, joiner: "+")
+        #expect(ShortcutStyle.shared.value(try #require(Shortcut("option+ctrl+k"))) == .string("ctrl+option+k"))
+        #expect(ShortcutStyle.shared.value(try #require(Shortcut("ctrl+fn+f"))) == .string("fn+ctrl+f"))
+        #expect(kitty.value(try #require(Shortcut("cmd+option+k"))) == .string("alt+cmd+k"))
+        #expect(kitty.value(try #require(Shortcut("fn+cmd+k"))) == nil)
         #expect(
-            ShortcutStyle.carbonJSON.value(try #require(Hotkey("cmd+x")))
+            ShortcutStyle.carbonJSON.value(try #require(Shortcut("cmd+x")))
                 == .string("{\"carbonKeyCode\":7,\"carbonModifiers\":256}"))
+        #expect(ShortcutStyle.carbonJSON.value(try #require(Shortcut("fn+x"))) == nil)
         #expect(
             ShortcutStyle.carbonTable(keyCode: "keyCode", modifiers: "modifiers").value(
-                try #require(Hotkey("ctrl+option+k")))
+                try #require(Shortcut("ctrl+option+k")))
                 == .table(["keyCode": .integer(40), "modifiers": .integer(6144)]))
-        #expect(Hotkey("hyper+space")?.modifiers == Set(Modifier.allCases))
-        #expect(Hotkey("f5")?.modifiers == [])
-        for wrong in ["", "ctrl+", "ctrl+ctrl+k", "hyper+cmd+k", "Ctrl+k", "ctrl+kk", "super+k"] {
-            #expect(Hotkey(wrong) == nil, "\(wrong)")
+        #expect(Shortcut("hyper+space")?.hotkey.modifiers == Set(Modifier.allCases))
+        #expect(Shortcut("f5")?.hotkey.modifiers == [])
+        #expect(Shortcut("ctrl+fn")?.fn == false)
+        for wrong in ["", "ctrl+", "ctrl+ctrl+k", "hyper+cmd+k", "Ctrl+k", "ctrl+kk", "super+k", "fn+fn+k"] {
+            #expect(Shortcut(wrong) == nil, "\(wrong)")
         }
+    }
+
+    @Test func alwaysFileValuesRemovedFileKeysAndDataClashes() throws {
+        let catalog = Catalog(
+            file: "apps/sample.toml",
+            tables: [
+                CatalogTable(
+                    name: "editor", about: "",
+                    settings: [
+                        CatalogSetting(
+                            "wrap", "", .choice([CatalogChoice("off", [.remove]), .word("on", .boolean(true))]),
+                            [.file(["settings", "wrap"])])
+                    ]),
+                CatalogTable(name: "words", about: "", data: CatalogData(keys: "", values: "", into: ["settings"])),
+            ],
+            always: [
+                Catalog.Always(target: .file(["settings", "telemetry"]), value: .boolean(false)),
+                Catalog.Always(target: .domain("com.example.sample", "Seen"), value: .boolean(true)),
+            ])
+        var reader = try TableReader("[editor]\nwrap = \"off\"\n[words]\nwrap = 1\n", file: "apps/sample.toml")
+        let reading = catalog.read(&reader, home: "/Users/test")
+        let tables = catalog.tables(reading.files, &reader)
+        #expect(tables == ["settings": .table(["telemetry": .boolean(false), "wrap": .integer(1)])])
+        #expect(catalog.merged(reading.preferences, &reader).map(\.key) == ["Seen"])
+        #expect(reader.problems.isEmpty)
+        var clash = try TableReader("[editor]\nwrap = \"on\"\n[words]\nwrap = 1\n", file: "apps/sample.toml")
+        _ = catalog.tables(catalog.read(&clash, home: "/Users/test").files, &clash)
+        #expect(clash.problems.map(\.text) == [.setTwice("words.wrap", "editor.wrap")])
+    }
+
+    @Test func aCatalogAppStillListsItsExtensions() throws {
+        let app = AppConfig(
+            name: "sample", files: [AppConfigFile(".config/sample/settings.json", .json(table: "settings"))],
+            extensions: .vscodium, catalog: Catalog(file: "apps/sample.toml", tables: []))
+        var reader = try TableReader("[extensions]\nids = [\"a.b\"]\n", file: "apps/sample.toml")
+        #expect(app.read(&reader, home: "/Users/test").extensions == ["a.b"])
+        #expect(reader.problems.isEmpty)
     }
 
     @Test func theDocsListEveryTableAndWhereItWrites() throws {

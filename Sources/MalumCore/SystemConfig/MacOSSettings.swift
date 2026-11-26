@@ -148,7 +148,7 @@ struct MacOSSettings {
         // that's wrong, and they're left out of what the file sets: `run` adds them.
         let catalog = MacOSCatalog.catalog
         let curated = catalog.read(&reader, home: home).preferences
-        wanted.preferences = Array(catalog.merged(curated + raw, &reader).dropFirst(catalog.always.count))
+        wanted.preferences = Array(catalog.merged(curated + raw, &reader).dropFirst(catalog.alwaysPreferences.count))
         if reader.document[hostsTable] != nil {
             wanted.files[SystemFile.hosts.path] = SystemFile.hosts(hosts(&reader))
         }
