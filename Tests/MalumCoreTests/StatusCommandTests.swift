@@ -129,7 +129,7 @@ struct StatusCommandTests {
                 Message(.info, "managed app preferences: 2"),
                 Message(.info, "managed macOS settings: 1"),
                 Message(.info, "managed power settings: 2"),
-                Message(.warn, "lessbright on battery power is 0, Malum set it to 1, malum run sets it back"),
+                Message(.warn, "dim_screen on battery power is 0, Malum set it to 1, malum run sets it back"),
             ])
     }
 

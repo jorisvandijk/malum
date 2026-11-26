@@ -45,6 +45,12 @@ enum PreferenceScope: Sendable {
         }
     }
 
+    /// Whether `document`, a property list document, is already held by `current`. macOS's own
+    /// settings only need to hold what `macos.toml` asks for, since macOS adds keys to some of them.
+    func matches(_ document: String, _ current: Any?) -> Bool {
+        PlistMatch.matches(document, current, rule: self == .macOS ? .containing : .exact)
+    }
+
     /// What setting this scope's preferences is called in a message.
     var action: MessageText {
         switch self {

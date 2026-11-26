@@ -1,13 +1,15 @@
-/// The macOS settings part of system config: sets the preferences `macos.toml` in dots lists, by
-/// domain and the names macOS stores them under, then restarts what has to show them. It also
+/// The macOS settings part of system config: sets the preferences the curated tables in
+/// `macos.toml` in dots ask for, such as `[trackpad]`, then restarts what has to show them. It also
 /// writes the files only root can change (`/etc/hosts` and Touch ID for sudo), sets the power
 /// settings, removes the Apple apps it lists, sets the default apps, this Mac's name and boot
 /// sound, the size its own screen shows things at, and how soon a black screen asks for the password.
 @MainActor
 struct MacOSSettings {
-    /// The table of preferences, one table inside it for each domain.
+    /// The table of preferences by the names macOS stores them under, one table inside it for each
+    /// domain. It still works for one release, with a warning: the curated tables replace it.
     static let preferencesTable = "preferences"
     /// The table of preferences macOS keeps for this Mac only, one table inside it for each domain.
+    /// Like `[preferences]`, it still works for one release.
     static let currentHostTable = "current_host"
     /// The table of names this Mac looks up itself, each with its address.
     static let hostsTable = "hosts"
@@ -105,8 +107,9 @@ struct MacOSSettings {
             wanted.files, report: report)
         var changed: Set<String> = []
         let writer = AppPreferenceWriter(runner: runner, files: files, sudo: sudo, state: state, scope: .macOS)
+        let preferences = MacOSCatalog.always.map(\.preference) + wanted.preferences
         let set = await writer.write(
-            wanted.preferences.map { (Paths.macOSTOMLName, $0) }, keeping: [], changed: { changed.insert($0) },
+            preferences.map { (Paths.macOSTOMLName, $0) }, keeping: [], changed: { changed.insert($0) },
             report: report)
         await show(changed, report: report)
         let power = await PowerSettings(runner: runner, sudo: sudo, state: state).write(wanted.power, report: report)
@@ -135,13 +138,16 @@ struct MacOSSettings {
             known: [
                 preferencesTable, currentHostTable, hostsTable, sudoTable, PowerSettings.table, AppleApps.table,
                 DefaultApps.table, ComputerSettings.table, DisplaySettings.table, ScreenLockSettings.table,
-                StartupApps.table,
-                HomeFolders.table,
-            ])
+                StartupApps.table, HomeFolders.table,
+            ] + MacOSCatalog.tables.map(\.name))
         var wanted = Wanted()
-        wanted.preferences =
+        let raw =
             domains(preferencesTable, named: { $0 }, &reader)
             + domains(currentHostTable, named: Defaults.currentHost, &reader)
+        // The ones Malum always sets come first, so a key that asks for another value is the one
+        // that's wrong, and they're left out of what the file sets: `run` adds them.
+        let always = MacOSCatalog.always
+        wanted.preferences = Array(merged(always + MacOSCatalog.read(&reader) + raw, &reader).dropFirst(always.count))
         if reader.document[hostsTable] != nil {
             wanted.files[SystemFile.hosts.path] = SystemFile.hosts(hosts(&reader))
         }
@@ -188,11 +194,11 @@ struct MacOSSettings {
     }
 
     /// The preferences in each domain's table inside the table `name`, each in the domain `named`
-    /// gives for the table's key.
+    /// gives for the table's key, with a warning for each one, since the curated tables replace them.
     private static func domains(
         _ name: String, named domain: (String) -> String, _ reader: inout TableReader
-    ) -> [AppPreference] {
-        var preferences: [AppPreference] = []
+    ) -> [MacOSCatalog.Wanted] {
+        var preferences: [MacOSCatalog.Wanted] = []
         for (key, value) in reader.table(reader.document, name, at: []).sorted(by: { $0.key < $1.key }) {
             let path = [name, key]
             guard !key.hasPrefix("-") else {
@@ -201,7 +207,34 @@ struct MacOSSettings {
             }
             guard let table = reader.table(value, at: path) else { continue }
             let entries = reader.entries(table, at: path, expected: MessageText.plistValue, write: PlistText.document)
-            preferences += entries.map { AppPreference(domain: domain(key), key: $0.key, value: $0.value) }
+            for entry in entries {
+                let preference = AppPreference(domain: domain(key), key: entry.key, value: entry.value)
+                let entryPath = path + [entry.key]
+                let replacement = MacOSCatalog.setting(writing: entry.key, in: preference.domain)
+                reader.add(.warn, at: entryPath, .rawPreference(TableReader.dotted(entryPath), replacement))
+                preferences.append(MacOSCatalog.Wanted(path: entryPath, preference: preference))
+            }
+        }
+        return preferences
+    }
+
+    /// The preferences in `wanted`, each once, with an error in `reader` for each one two keys set to
+    /// different values, or one Malum always sets.
+    private static func merged(_ wanted: [MacOSCatalog.Wanted], _ reader: inout TableReader) -> [AppPreference] {
+        var first: [String: MacOSCatalog.Wanted] = [:]
+        var preferences: [AppPreference] = []
+        for item in wanted {
+            let id = item.preference.domain + "\n" + item.preference.key
+            guard let earlier = first[id] else {
+                first[id] = item
+                preferences.append(item.preference)
+                continue
+            }
+            guard earlier.preference.value != item.preference.value else { continue }
+            let path = TableReader.dotted(item.path)
+            let text: MessageText =
+                earlier.path.isEmpty ? .tilingAlwaysOff(path) : .setTwice(path, TableReader.dotted(earlier.path))
+            reader.add(.error, at: item.path, text)
         }
         return preferences
     }

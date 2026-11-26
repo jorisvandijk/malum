@@ -93,13 +93,17 @@ struct AppPreferenceWriter {
         }
         var outcome = Outcome()
         for preference in wanted {
-            guard !Self.same(preference.value, current[preference.key]) else {
+            guard let value = preference.value else {
+                await removeAbsent(preference, current: current, source: source, &outcome, report)
+                continue
+            }
+            guard !scope.matches(value, current[preference.key]) else {
                 outcome.keys.append(preference.key)
                 continue
             }
-            let result = await change(Defaults.write(domain, preference.key, preference.value), in: domain, report)
+            let result = await change(Defaults.write(domain, preference.key, value), in: domain, report)
             if let result, result.succeeded {
-                report(.preferenceSet(preference.key, in: domain, from: source))
+                report(.preferenceSet(preference.setting ?? preference.key, in: domain, from: source))
                 outcome.keys.append(preference.key)
                 outcome.changed = true
             } else {
@@ -110,17 +114,43 @@ struct AppPreferenceWriter {
         }
         let wantedKeys = Set(wanted.map(\.key))
         for key in known where !wantedKeys.contains(key) && current[key] != nil {
-            let result = await change(Defaults.delete(domain, key), in: domain, report)
-            if let result, result.succeeded {
-                report(.preferenceRemoved(key, from: domain, source: source))
-                outcome.changed = true
-            } else {
-                if let result { report(.preferenceNotRemoved(key, from: domain, reason: result.reason)) }
-                outcome.keys.append(key)
-                outcome.succeeded = false
-            }
+            await remove(key, from: domain, source: source, &outcome, report)
         }
         return outcome
+    }
+
+    /// Removes `preference`, which has to be absent, when `current` holds it. Malum doesn't keep
+    /// it in the record, since an absent preference has nothing to put back.
+    private func removeAbsent(
+        _ preference: AppPreference, current: [String: Any], source: String, _ outcome: inout Outcome,
+        _ report: (Message) -> Void
+    ) async {
+        guard current[preference.key] != nil else { return }
+        let domain = preference.domain
+        let result = await change(Defaults.delete(domain, preference.key), in: domain, report)
+        guard let result, result.succeeded else {
+            if let result { report(.preferenceNotRemoved(preference.key, from: domain, reason: result.reason)) }
+            outcome.succeeded = false
+            return
+        }
+        report(.preferenceSet(preference.setting ?? preference.key, in: domain, from: source))
+        outcome.changed = true
+    }
+
+    /// Removes the preference `key` from `domain`, which `source` doesn't set anymore, keeping it in
+    /// `outcome` when that fails.
+    private func remove(
+        _ key: String, from domain: String, source: String, _ outcome: inout Outcome, _ report: (Message) -> Void
+    ) async {
+        let result = await change(Defaults.delete(domain, key), in: domain, report)
+        if let result, result.succeeded {
+            report(.preferenceRemoved(key, from: domain, source: source))
+            outcome.changed = true
+        } else {
+            if let result { report(.preferenceNotRemoved(key, from: domain, reason: result.reason)) }
+            outcome.keys.append(key)
+            outcome.succeeded = false
+        }
     }
 
     /// The preferences in `domain`, none when it's a system-wide one without a file, or nil when
@@ -141,13 +171,5 @@ struct AppPreferenceWriter {
         guard Defaults.isSystemWide(domain) else { return await runner.run(command) }
         guard await sudo.authorize(for: .setSystemPreferences, report: report) else { return nil }
         return await runner.run(Sudo.asRoot(command))
-    }
-
-    /// Whether `document`, a property list document, holds the value `current`.
-    private static func same(_ document: String, _ current: Any?) -> Bool {
-        let data = Data(document.utf8)
-        guard let current, let value = try? PropertyListSerialization.propertyList(from: data, format: nil)  // Ours.
-        else { return false }
-        return NSArray(object: value).isEqual(to: [current])
     }
 }

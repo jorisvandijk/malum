@@ -50,7 +50,8 @@ struct AppPreferenceWriterTests {
         #expect(succeeded)
         #expect(
             runner.commands == [
-                Defaults.export(domain), Defaults.write(domain, "Hide Dock Icon", hideDockIcon(true).preference.value),
+                Defaults.export(domain),
+                Defaults.write(domain, "Hide Dock Icon", hideDockIcon(true).preference.value ?? ""),
             ])
         #expect(
             messages == [
@@ -89,6 +90,26 @@ struct AppPreferenceWriterTests {
                     .info,
                     "removed Hide Dock Icon from com.if.Amphetamine, apps/amphetamine.toml doesn't set it anymore"))
         #expect(managed.isEmpty)
+    }
+
+    @Test func absentPreferenceIsRemovedAndNotRecorded() async {
+        let style = AppPreference(domain: domain, key: "Style", value: nil, setting: "appearance.mode")
+        let runner = FakeRunner { _ in Self.export("<key>Style</key><string>Dark</string>") }
+        let (succeeded, messages) = await write([("amphetamine", style)], runner: runner)
+        #expect(succeeded)
+        #expect(runner.commands == [Defaults.export(domain), Defaults.delete(domain, "Style")])
+        #expect(
+            messages.first == Message(.info, "set appearance.mode in com.if.Amphetamine from apps/amphetamine.toml"))
+        #expect(managed.isEmpty)
+    }
+
+    @Test func absentPreferenceThatIsAbsentChangesNothing() async {
+        let style = AppPreference(domain: domain, key: "Style", value: nil)
+        let runner = FakeRunner { _ in Self.export() }
+        let (succeeded, messages) = await write([("amphetamine", style)], runner: runner)
+        #expect(succeeded)
+        #expect(runner.commands == [Defaults.export(domain)])
+        #expect(messages == [Message(.info, "every app preference is up to date")])
     }
 
     @Test func brokenAppKeepsItsPreferences() async {
