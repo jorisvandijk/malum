@@ -13,8 +13,8 @@ on:
       - ".swift-format"
       - "**/.swiftlint.yml"
       - ".github/workflows/test.yml"
-      - "docs/config.md"
-      - "docs/macos-settings.md"
+      # The tests check every config key has docs.
+      - "docs/**"
   workflow_dispatch:
 
 permissions:

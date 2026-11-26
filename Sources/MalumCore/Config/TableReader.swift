@@ -10,6 +10,10 @@ struct TableReader {
     /// What's wrong so far, in the order it was found.
     private(set) var problems: [ConfigProblem] = []
 
+    /// Called each time a reader checks a table for keys it doesn't know, with the table's path, the
+    /// keys it takes and the table. Only the test that every key has docs sets it.
+    @TaskLocal static var onKnownKeys: (@Sendable ([String], [String], ConfigTable) -> Void)?
+
     /// Parses `text`, the file `file`. A syntax error is thrown as a problem at its line and column.
     init(_ text: String, file: String) throws(ConfigProblem) {
         self.file = file
@@ -137,6 +141,7 @@ struct TableReader {
 
     /// Adds a warning for each key of `table`, found at `path`, that isn't in `known`.
     mutating func unknownKeys(_ table: ConfigTable, at path: [String], known: [String]) {
+        Self.onKnownKeys?(path, known, table)
         for key in table.keys.sorted() where !known.contains(key) {
             let isTable = if case .table? = table[key] { true } else { false }
             add(.warn, at: path + [key], .unknownKey(Self.dotted(path + [key]), isTable: isTable))

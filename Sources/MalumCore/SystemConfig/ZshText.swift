@@ -108,6 +108,7 @@ enum ZshText {
     private static func profile(_ table: ConfigTable, at path: [String], reader: inout TableReader) -> String? {
         var lines = ""
         let homebrew = reader.table(table, homebrewTable, at: path)
+        reader.unknownKeys(homebrew, at: path + [homebrewTable], known: [shellenv.key])
         lines += switches([shellenv], in: homebrew, at: path + [homebrewTable], reader: &reader)
         let paths = reader.table(table, pathTable, at: path)
         reader.unknownKeys(paths, at: path + [pathTable], known: [prependKey])

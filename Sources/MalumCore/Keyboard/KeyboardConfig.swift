@@ -38,17 +38,20 @@ struct KeyboardConfig: Equatable, Sendable {
         let hyperKey = Self.hyperKey(settings[hyperKeyKey], reader: &reader)
         let remaps = Self.remaps(reader.table(document, remapTable, at: []), hyperKey: hyperKey, reader: &reader)
         var bindings: [KeyBinding] = []
+        let fixed = [ConfigSchema.settingsTable, remapTable]
+        var tables: ConfigTable = [:]
         // `enabled` is reported by the config, which says it belongs in `malum.toml`.
-        let tables = document.filter {
-            ![ConfigSchema.settingsTable, remapTable, ConfigSchema.switchKey].contains($0.key)
-        }
-        for (name, value) in tables.sorted(by: { $0.key < $1.key }) {
-            guard SettingKind.table.accepts(value) || Modifier.modifiers(inTable: name) != nil else {
+        for (name, value) in document.sorted(by: { $0.key < $1.key }) where name != ConfigSchema.switchKey {
+            switch (Modifier.modifiers(inTable: name), SettingKind.table.accepts(value) || fixed.contains(name)) {
+            case (let modifiers?, _):
+                bindings += Self.bindings(inTable: name, of: modifiers, value, reader: &reader)
+            case (nil, true):
+                tables[name] = value
+            case (nil, false):
                 reader.add(.error, at: [name], .outsideSettings(name))
-                continue
             }
-            bindings += Self.bindings(inTable: name, value, reader: &reader)
         }
+        reader.unknownKeys(tables, at: [], known: fixed)
         let problems = reader.problemsByLine
         guard !reader.hasErrors else { return (nil, problems) }
         return (Self(hyperKey: hyperKey, remaps: remaps, bindings: bindings), problems)
@@ -81,14 +84,11 @@ struct KeyboardConfig: Equatable, Sendable {
         }
     }
 
-    /// The shortcuts in the table `name` at the top of the file, with `value` its contents, or none
-    /// when it isn't a table of modifiers written in their order.
-    private static func bindings(inTable name: String, _ value: ConfigValue, reader: inout TableReader) -> [KeyBinding]
-    {
-        guard let modifiers = Modifier.modifiers(inTable: name) else {
-            reader.unknownKeys([name: value], at: [], known: [])
-            return []
-        }
+    /// The shortcuts in the table `name` at the top of the file, which holds down `modifiers`, with
+    /// `value` its contents, or none when it isn't a table or the modifiers aren't in their order.
+    private static func bindings(
+        inTable name: String, of modifiers: Set<Modifier>, _ value: ConfigValue, reader: inout TableReader
+    ) -> [KeyBinding] {
         let spelling = Modifier.table(of: modifiers)
         guard spelling == name else {
             reader.add(.error, at: [name], .modifierOrder(name, spelling))

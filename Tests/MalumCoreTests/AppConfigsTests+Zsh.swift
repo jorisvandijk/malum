@@ -170,4 +170,10 @@ extension AppConfigsTests {
                 Message(.warn, "unknown setting plugins.colour"),
             ])
     }
+
+    @Test func unknownHomebrewSettingIsOnlyAWarning() throws {
+        let (files, problems) = try read("[homebrew]\nshellenv = true\nanalytics = false\n", app: "zsh")
+        #expect(files.map(\.path) == [".zprofile", ".zshrc"])
+        #expect(problems == [Message(.warn, "unknown setting homebrew.analytics")])
+    }
 }
