@@ -29,9 +29,8 @@ public final class TapSession: Sendable {
     }
 
     /// What to do with `event`. A shortcut to run also goes out on `actions`, and a hyper drag on
-    /// `drags`. Once the session has
-    /// ended, every event passes, so a callback that was already running holds nothing down that
-    /// no one lets go of.
+    /// `drags`. Once the session has ended, every event passes, so a callback that was already
+    /// running holds nothing down that no one lets go of.
     public func decide(_ event: TapEvent) -> TapDecision {
         if event == .switchedOff {
             switchOffs.add(1, ordering: .relaxed)
