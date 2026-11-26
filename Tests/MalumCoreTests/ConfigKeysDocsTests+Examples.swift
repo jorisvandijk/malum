@@ -60,7 +60,7 @@ extension ConfigKeysDocsTests {
             file: file, text: apps[app.name] ?? "",
             docs: [systemConfig(app.files.isEmpty ? "App preferences" : app.name)],
             read: { text in
-                do {
+                do throws(ConfigProblem) {
                     var reader = try TableReader(text, file: file)
                     _ = app.read(&reader)
                     return reader.problems
@@ -146,41 +146,53 @@ extension ConfigKeysDocsTests {
         "command-x": "[preferences]",
         "cursorcerer": "[preferences]",
         "oversight": "[preferences]",
-        "git": """
-            [settings]
-            [ignore]
-            patterns = [".DS_Store"]
-            [attributes]
-            lines = ["*.png binary"]
-            """,
+        "git": git,
         "kitty": "[theme]\n[settings]\n[keybindings]",
-        "librewolf": """
-            [settings]
-            [policies]
-            [user_chrome]
-            text = "#alltabs-button { display: none !important; }"
-            """,
-        "markedit": """
-            [preferences]
-            [settings]
-            [css]
-            text = "body { margin: 0; }"
-            [extensions]
-            ids = []
-            """,
+        "librewolf": libreWolf,
+        "markedit": markEdit,
         "micro": "[settings]\n[bindings]\n[colorschemes]",
-        "newsboat": """
-            [settings]
-            [keybindings]
-            [ignore_articles]
-            [feeds.News]
-            url = "https://example.com/feed.xml"
-            tags = ["news"]
-            """,
+        "newsboat": newsboat,
         "ssh": "[hosts]",
         "vscodium": "[settings]\n[argv]\n[extensions]\nids = []",
         "zsh": zsh,
     ]
+
+    /// `apps/git.toml`.
+    private static let git = """
+        [settings]
+        [ignore]
+        patterns = [".DS_Store"]
+        [attributes]
+        lines = ["*.png binary"]
+        """
+
+    /// `apps/librewolf.toml`.
+    private static let libreWolf = """
+        [settings]
+        [policies]
+        [user_chrome]
+        text = "#alltabs-button { display: none !important; }"
+        """
+
+    /// `apps/markedit.toml`.
+    private static let markEdit = """
+        [preferences]
+        [settings]
+        [css]
+        text = "body { margin: 0; }"
+        [extensions]
+        ids = []
+        """
+
+    /// `apps/newsboat.toml`.
+    private static let newsboat = """
+        [settings]
+        [keybindings]
+        [ignore_articles]
+        [feeds.News]
+        url = "https://example.com/feed.xml"
+        tags = ["news"]
+        """
 
     /// `apps/zsh.toml`.
     private static let zsh = """
