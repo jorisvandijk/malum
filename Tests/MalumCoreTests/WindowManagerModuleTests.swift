@@ -350,4 +350,16 @@ extension WindowManagerModuleTests {
         #expect(again.first?.frame == moved)
         #expect(moved != WindowLayout.slots(count: 2, in: visibleArea).first)
     }
+
+    @Test func takesHyperDrags() {
+        #expect(module().hotkeys.takesDrags)
+    }
+
+    @Test func hyperDragMovesTheBorderOfTheAppInFront() async throws {
+        let (module, windows) = try await kittyInFront()
+        module.drag(PointerDrag(.began, at: CGPoint(x: 700, y: 400)))
+        module.drag(PointerDrag(.moved, at: CGPoint(x: 700 + visibleArea.width * 0.1, y: 400)))
+        module.drag(PointerDrag(.ended, at: CGPoint(x: 700 + visibleArea.width * 0.1, y: 400)))
+        #expect(windows.first?.frame?.width == (visibleArea.width * 0.6).rounded(.down))
+    }
 }

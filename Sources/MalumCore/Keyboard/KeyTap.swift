@@ -1,9 +1,18 @@
+import Foundation
+
+// Linux's Foundation has the geometry types; on macOS they come from CoreGraphics.
+#if canImport(CoreGraphics)
+    import CoreGraphics
+#endif
+
 /// What the event tap does with each keyboard event: one event in, one decision out.
 ///
 /// The hyper key arrives as `KeyMapping.hyperTarget`. It's swallowed, and while it's held every
 /// other key gets all four modifiers, so other apps see a normal hyper combination. A shortcut a
 /// module handles runs once, never on repeat, and its key-up is swallowed too. hyper+tab opens the
-/// app switcher as cmd+tab does, and keeps it open until the hyper key is let go.
+/// app switcher as cmd+tab does, and keeps it open until the hyper key is let go. A click with the
+/// hyper key held, when a module takes drags, is swallowed with the drag that follows, which goes to
+/// that module instead; without hyper, clicks pass.
 ///
 /// It does no I/O, so the tap callback stays within its budget.
 struct KeyTap: Sendable {
@@ -22,6 +31,8 @@ struct KeyTap: Sendable {
     private var switching = false
     /// Keys whose key-down was swallowed, so their repeats and key-up are swallowed too.
     private var swallowed: Set<UInt16> = []
+    /// Where the pointer was last seen in a hyper drag, or nil when there's none.
+    private var dragLocation: CGPoint?
 
     /// Starts with nothing held, sending shortcuts to `registry`, with `hyperKey` from `keyboard.toml`.
     init(registry: HotkeyRegistry, hyperKey: Key?) {
@@ -38,11 +49,33 @@ struct KeyTap: Sendable {
             // Shift, to go back through the apps, must not look like cmd let go.
             guard switching else { return .pass }
             return .passAs(held.union(Self.switcher))
+        case .pointer(let drag):
+            return decide(drag)
         case .switchedOff:
             swallowed.removeAll()
-            guard letGo() else { return .pass }
-            return .closeSwitcher
+            // A drag and the app switcher never run together, so at most one is left to end.
+            if letGo() {
+                return .closeSwitcher
+            }
+            guard let location = dragLocation else { return .pass }
+            dragLocation = nil
+            return .drag(PointerDrag(.ended, at: location))
         }
+    }
+
+    /// What to do with `drag`: a drag that starts with the hyper key held goes to the module that
+    /// takes drags until the button is let go, even when hyper is let go first. Any other passes.
+    private mutating func decide(_ drag: PointerDrag) -> TapDecision {
+        switch drag.phase {
+        case .began:
+            guard hyperHeld, !switching, registry.takesDrags else { return .pass }
+        case .moved:
+            guard dragLocation != nil else { return .pass }
+        case .ended:
+            guard dragLocation != nil else { return .pass }
+        }
+        dragLocation = drag.phase == .ended ? nil : drag.location
+        return .drag(drag)
     }
 
     /// What to do with `press`.
@@ -60,7 +93,7 @@ struct KeyTap: Sendable {
             return .swallow
         }
         guard hyperHeld else { return .pass }
-        if !switching, press.keyCode == Key.tab.keyCode {
+        if !switching, dragLocation == nil, press.keyCode == Key.tab.keyCode {
             return openSwitcher(press)
         }
         return passHeld(press)

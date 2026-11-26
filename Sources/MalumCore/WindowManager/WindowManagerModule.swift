@@ -48,12 +48,12 @@ final class WindowManagerModule: Module {
     let permissions: Set<Permission> = [.accessibility]
     /// Its settings.
     var schema: ConfigSchema { WindowManagerConfig.schema }
-    /// It opens the apps the shortcuts in `keyboard.toml` name, and swallows the keys that hide and
-    /// minimise when `block_hide_minimize` is on.
+    /// It opens the apps the shortcuts in `keyboard.toml` name, swallows the keys that hide and
+    /// minimise when `block_hide_minimize` is on, and takes hyper drags, which move the borders.
     var hotkeys: HotkeyOffer {
         HotkeyOffer(
             actions: Set([Self.inspectAction, Self.toggleFloatAction] + Self.splitActions.map(\.name)),
-            fixedKeys: config.blocksHideMinimize ? Self.blockedKeys : [:], opensApps: true)
+            fixedKeys: config.blocksHideMinimize ? Self.blockedKeys : [:], opensApps: true, takesDrags: true)
     }
     /// Where the module is now.
     private(set) var status = ModuleStatus.off
@@ -79,6 +79,8 @@ final class WindowManagerModule: Module {
     /// How each app's area was shared out when it last quit, by bundle ID, so it comes back the same.
     /// Kept only while Malum runs.
     @ObservationIgnored private var splits: [String: Split] = [:]
+    /// The tracker of the app that was in front when a hyper drag started, until it ends.
+    @ObservationIgnored private weak var dragged: AppTracker?
     /// The last app raised for a shortcut, or the last window inspected, which tests wait for.
     @ObservationIgnored private(set) var raising: Task<Void, Never>?
 
@@ -148,6 +150,22 @@ final class WindowManagerModule: Module {
         case .module(let name):
             guard let move = Self.splitActions.first(where: { $0.name == name })?.move else { return }
             frontTracker?.resize(move, by: CGFloat(config.splitStep) / Self.percent)
+        }
+    }
+
+    /// Moves the borders between the windows of the app in front with a hyper drag. The drag stays
+    /// with that app until it ends, even if another one comes to the front meanwhile.
+    func drag(_ drag: PointerDrag) {
+        switch drag.phase {
+        case .began:
+            dragged?.endSplitDrag(at: drag.location)
+            dragged = frontTracker
+            dragged?.beginSplitDrag(at: drag.location)
+        case .moved:
+            dragged?.moveSplitDrag(to: drag.location)
+        case .ended:
+            dragged?.endSplitDrag(at: drag.location)
+            dragged = nil
         }
     }
 

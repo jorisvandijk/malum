@@ -7,11 +7,17 @@ public struct HotkeyOffer: Equatable, Sendable {
     let fixedKeys: [Hotkey: String]
     /// Whether it handles the shortcuts bound to an app's bundle ID.
     let opensApps: Bool
+    /// Whether it takes drags with the pointer while the hyper key is held.
+    let takesDrags: Bool
 
     /// Creates an offer, by default of nothing.
-    init(actions: Set<String> = [], fixedKeys: [Hotkey: String] = [:], opensApps: Bool = false) {
+    init(
+        actions: Set<String> = [], fixedKeys: [Hotkey: String] = [:], opensApps: Bool = false,
+        takesDrags: Bool = false
+    ) {
         self.actions = actions
         self.fixedKeys = fixedKeys
         self.opensApps = opensApps
+        self.takesDrags = takesDrags
     }
 }

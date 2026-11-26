@@ -13,4 +13,6 @@ public enum TapDecision: Equatable, Sendable {
     case openSwitcher(Set<Modifier>)
     /// Drop the event and let go of the cmd `openSwitcher` held, which picks the app.
     case closeSwitcher
+    /// Drop the event and hand this part of a hyper drag to the module that takes drags.
+    case drag(PointerDrag)
 }

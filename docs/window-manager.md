@@ -62,6 +62,8 @@ up = "split_taller"
 down = "split_shorter"
 ```
 
+You can also drag the borders: hold the hyper key and drag anywhere in the app in front. Moving sideways moves the border between the left window and the others. A drag that starts in the right column also moves the border between two of its windows nearest the pointer up or down. No exact hit on a border is needed, the windows follow while you drag, and the same limits hold. The click itself never reaches the app, and a click without the hyper key works as usual. Hyper+drag needs the [keyboard](keyboard.md) module, which catches the clicks, and isn't a binding in `keyboard.toml`.
+
 Each app keeps its own split, also after it quits and starts again. When the number of windows in the right column changes, their heights are shared out equally again. Malum forgets every split when it quits.
 
 Malum fills the screen with the menu bar. Other screens are left alone. When a display is plugged in, unplugged or rearranged, and when the Mac wakes, the windows are laid out again on the screen that has the menu bar then.

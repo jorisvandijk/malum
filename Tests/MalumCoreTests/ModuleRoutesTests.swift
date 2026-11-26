@@ -1,6 +1,12 @@
+import Foundation
 import Testing
 
 @testable import MalumCore
+
+// Linux's Foundation has the geometry types; on macOS they come from CoreGraphics.
+#if canImport(CoreGraphics)
+    import CoreGraphics
+#endif
 
 @Suite(.timeLimit(.minutes(1)))
 @MainActor
@@ -62,5 +68,19 @@ struct ModuleRoutesTests {
         #expect(routes.switchOn(["launcher"]))
         #expect(!routes.switchOn(["launcher"]))
         #expect(routes.switchedOn == ["launcher"])
+    }
+
+    @Test func dragGoesToTheRunningModuleThatTakesDrags() async throws {
+        let windows = RecordingModule(id: "window_manager")
+        windows.hotkeys = HotkeyOffer(takesDrags: true)
+        routes.add([launcher, windows])
+        let drag = PointerDrag(.began, at: .zero)
+        routes.drag(drag)
+        #expect(windows.calls.isEmpty)
+        try await launcher.start()
+        try await windows.start()
+        routes.drag(drag)
+        #expect(windows.calls == ["start", "drag \(drag)"])
+        #expect(launcher.calls == ["start"])
     }
 }
