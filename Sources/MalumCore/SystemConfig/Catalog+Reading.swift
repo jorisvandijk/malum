@@ -37,18 +37,24 @@ extension Catalog {
         for item in always {
             reading.add(.set(item.value), to: item.target, at: [], document: document)
         }
-        for table in tables where reader.document[table.name] != nil {
-            let fields = reader.table(reader.document, table.name, at: [])
+        for table in tables {
+            guard let fields = Self.fields(at: table.path, in: reader.document, &reader) else { continue }
             if let data = table.data {
                 reading.files += fields.sorted { $0.key < $1.key }.map {
-                    FileValue(path: [table.name, $0.key], target: data.into + [$0.key], value: $0.value)
+                    FileValue(path: table.path + [$0.key], target: data.into + [$0.key], value: $0.value)
                 }
                 continue
             }
-            reader.unknownKeys(fields, at: [table.name], known: table.settings.map(\.name))
+            if let entries = table.entries {
+                for item in entryWrites(fields, of: entries, at: table.path, &reader, home: home) {
+                    reading.add(item.write, to: item.target, at: item.path, document: document)
+                }
+                continue
+            }
+            reader.unknownKeys(fields, at: table.path, known: table.settings.map(\.name) + parts(of: table.path))
             for setting in table.settings {
                 guard let given = fields[setting.name] else { continue }
-                let path = [table.name, setting.name]
+                let path = table.path + [setting.name]
                 guard let writes = setting.writes(for: given, home: home) else {
                     reader.expect(path, setting.value)
                     continue
@@ -59,6 +65,80 @@ extension Catalog {
             }
         }
         return reading
+    }
+
+    /// One thing an entry of an entries table writes, with the key in dots that asks for it.
+    private struct EntryWrite {
+        /// The key that asks for it, such as `keys.github.file`.
+        let path: [String]
+        /// Where it's written.
+        let target: CatalogSetting.Target
+        /// What's written there.
+        let write: CatalogSetting.Write
+    }
+
+    /// What the entries in `fields`, the entries table at `path`, write, with an error in `reader`
+    /// for each setting an entry lacks or has wrong and a warning for each key it shouldn't have. A
+    /// path in the home folder is filled in with `home`.
+    private func entryWrites(
+        _ fields: ConfigTable, of entries: CatalogEntries, at path: [String], _ reader: inout TableReader,
+        home: String
+    ) -> [EntryWrite] {
+        var writes: [EntryWrite] = []
+        for (name, value) in fields.sorted(by: { $0.key < $1.key }) {
+            guard let entry = reader.table(value, at: path + [name]) else { continue }
+            writes += self.writes(of: entry, in: entries, at: path + [name], &reader, home: home)
+        }
+        return writes
+    }
+
+    /// What the entry `entry`, at `path`, writes, with the problems `entryWrites(_:of:at:_:home:)`
+    /// finds.
+    private func writes(
+        of entry: ConfigTable, in entries: CatalogEntries, at path: [String], _ reader: inout TableReader,
+        home: String
+    ) -> [EntryWrite] {
+        reader.unknownKeys(entry, at: path, known: entries.settings.map(\.name))
+        var wanted: [(setting: CatalogSetting, writes: [CatalogSetting.Write])] = []
+        var items: [String] = []
+        for setting in entries.settings {
+            guard let given = entry[setting.name] else {
+                reader.add(.error, at: path, .needs(TableReader.dotted(path), setting.name))
+                continue
+            }
+            guard let writes = setting.writes(for: given, home: home) else {
+                reader.expect(path + [setting.name], setting.value)
+                continue
+            }
+            if setting.name == entries.each { items = TableReader.texts(given) ?? [] }
+            wanted.append((setting, writes))
+        }
+        let item = entries.each.map(CatalogEntries.item)
+        return wanted.flatMap { setting, writes in
+            zip(setting.targets, writes).flatMap { target, write in
+                target.filled(item, with: items).map {
+                    EntryWrite(path: path + [setting.name], target: $0, write: write)
+                }
+            }
+        }
+    }
+
+    /// The table at `path` in `document`, or nil when it's missing. One that isn't a table is an
+    /// error in `reader`; a table it's a part of that isn't one is the error of that table.
+    private static func fields(at path: [String], in document: ConfigTable, _ reader: inout TableReader)
+        -> ConfigTable?
+    {
+        var fields = document
+        for (index, key) in path.enumerated() {
+            guard let value = fields[key] else { return nil }
+            guard index == path.count - 1 else {
+                guard case .table(let inner) = value else { return nil }
+                fields = inner
+                continue
+            }
+            return reader.table(value, at: path)
+        }
+        return fields
     }
 
     /// The preferences Malum always sets.
@@ -159,5 +239,14 @@ extension Catalog.Reading {
         case (.file, .remove), (.fileKeys, .remove):
             return
         }
+    }
+}
+
+extension CatalogSetting.Target {
+    /// The target once for each of `items`, with `item` in its path filled in by it, or the target
+    /// as it is when its path doesn't hold `item`.
+    fileprivate func filled(_ item: String?, with items: [String]) -> [Self] {
+        guard let item, case .file(let keys) = self, keys.contains(item) else { return [self] }
+        return items.map { each in .file(keys.map { $0 == item ? each : $0 }) }
     }
 }

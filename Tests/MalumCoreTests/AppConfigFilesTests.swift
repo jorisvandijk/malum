@@ -11,7 +11,7 @@ struct AppConfigFilesTests {
     private let backup = "/Users/test/.config/git/config.backup"
     private let header =
         "# Written by Malum from apps/git.toml in dots. Changes made here are overwritten.\n"
-    private let settings = "[settings.init]\ndefaultBranch = \"main\"\n"
+    private let settings = "[branches]\ndefault = \"main\"\n"
     private var written: String { header + "[init]\n\tdefaultBranch = \"main\"\n" }
 
     private func state(_ files: FakeFileSystem) -> StateFolder {
@@ -61,7 +61,7 @@ struct AppConfigFilesTests {
     @Test func changedSettingUpdatesTheFile() async {
         let files = FakeFileSystem(texts: [toml: settings])
         _ = await run(files)
-        try? files.write("[settings.init]\ndefaultBranch = \"trunk\"\n", to: toml)
+        try? files.write("[branches]\ndefault = \"trunk\"\n", to: toml)
         let (_, messages) = await run(files)
         #expect(messages == [Message(.info, "updated \(config) from apps/git.toml")])
         #expect(files.text(at: config) == header + "[init]\n\tdefaultBranch = \"trunk\"\n")
@@ -149,50 +149,52 @@ struct AppConfigFilesTests {
         #expect(files.text(at: settings) == "{\n    \"general.updateBehavior\": \"never\"\n}\n")
     }
 
+    /// newsboat's TOML, whose feeds go in a file of their own, and that file.
+    private let newsboat = "/Users/test/dots/apps/newsboat.toml"
+    private let feeds = "[feeds]\nExample = \"https://example.com/feed\"\n"
+    private let urls = "/Users/test/.config/newsboat/urls"
+
     @Test func droppedFileIsRemoved() async {
-        let files = FakeFileSystem(texts: [toml: "[ignore]\npatterns = [\"*.swp\"]\n"])
+        let files = FakeFileSystem(texts: [newsboat: feeds])
         _ = await run(files)
-        try? files.write("", to: toml)
+        try? files.write("", to: newsboat)
         let (succeeded, messages) = await run(files)
         #expect(succeeded)
-        #expect(
-            messages == [
-                Message(.info, "removed /Users/test/.config/git/ignore, apps/git.toml doesn't write it anymore")
-            ])
-        #expect(files.item(at: "/Users/test/.config/git/ignore") == nil)
-        #expect(managed(files)["/Users/test/.config/git/ignore"] == nil)
+        #expect(messages == [Message(.info, "removed \(urls), apps/newsboat.toml doesn't write it anymore")])
+        #expect(files.item(at: urls) == nil)
+        #expect(managed(files)[urls] == nil)
     }
 
     @Test func droppedFileChangedOutsideMalumStays() async {
-        let ignore = "/Users/test/.config/git/ignore"
-        let files = FakeFileSystem(texts: [toml: "[ignore]\npatterns = [\"*.swp\"]\n"])
+        let files = FakeFileSystem(texts: [newsboat: feeds])
         _ = await run(files)
-        try? files.write("mine\n", to: ignore)
-        try? files.remove(toml)
+        try? files.write("mine\n", to: urls)
+        try? files.remove(newsboat)
         try? files.createDirectory("/Users/test/dots/apps")
         let (_, messages) = await run(files)
         let warning: MessageText = """
-            \(ignore) isn't written from apps/git.toml anymore, but it was changed outside Malum, so it stays \
+            \(urls) isn't written from apps/newsboat.toml anymore, but it was changed outside Malum, so it stays \
             and Malum no longer manages it
             """
         #expect(
             messages == [
-                Message(.info, "removed \(config), apps/git.toml doesn't write it anymore"),
+                Message(
+                    .info, "removed /Users/test/.config/newsboat/config, apps/newsboat.toml doesn't write it anymore"),
                 Message(.warn, warning),
             ])
-        #expect(files.text(at: ignore) == "mine\n")
+        #expect(files.text(at: urls) == "mine\n")
         #expect(managed(files).isEmpty)
     }
 
     @Test func errorKeepsTheAppsFiles() async {
         let files = FakeFileSystem(texts: [toml: settings])
         _ = await run(files)
-        try? files.write("settings = 1\n", to: toml)
+        try? files.write("branches = 1\n", to: toml)
         let (succeeded, messages) = await run(files)
         #expect(!succeeded)
         #expect(
             messages == [
-                Message(.error, "apps/git.toml line 1: settings should be a table"),
+                Message(.error, "apps/git.toml line 1: branches should be a table"),
                 Message(.error, "couldn't write git's config files: fix \(toml) first"),
             ])
         #expect(files.text(at: config) == written)

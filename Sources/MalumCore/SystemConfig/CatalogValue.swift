@@ -21,6 +21,8 @@ enum CatalogValue: Equatable, Sendable {
     case seconds(ClosedRange<Int>)
     /// Whole minutes in `range`, written as they are.
     case minutes(ClosedRange<Int>)
+    /// A count in `range`, such as lines or downloads, written as it is.
+    case count(ClosedRange<Int>)
     /// A number of `unit`, whole or not, in `range`: written as a decimal number when `decimal`,
     /// otherwise as it is.
     case number(NumberUnit, ClosedRange<Double>, decimal: Bool)
@@ -28,8 +30,12 @@ enum CatalogValue: Equatable, Sendable {
     case percent
     /// A folder's full path.
     case folder
-    /// A path, `$HOME/` for one in the home folder, written with the home folder filled in.
-    case path
+    /// A path, `$HOME/` for one in the home folder, written with the home folder filled in and
+    /// `then` after it, such as newsboat's `/%n` for a folder per feed.
+    case path(then: String = "")
+    /// An app's bundle ID, such as `net.librewolf.librewolf`, written with `before` before it and
+    /// `after` after it, such as a command that opens a link in the app.
+    case app(before: String, after: String)
     /// Text that isn't empty, such as a font's or a theme's name, written as `form` says.
     case text(TextForm)
     /// A colour, `#rrggbb` in lowercase, written as it is.
@@ -39,6 +45,9 @@ enum CatalogValue: Equatable, Sendable {
     /// With `unset`, `fg` is optional too, and a missing one is written as `unset`, such as micro's
     /// `default` for the terminal's own text colour.
     case colorPair(join: String, unset: String? = nil)
+    /// A table of a text colour `fg` and a background `bg`, written to two targets, `fg` to the
+    /// first, for an app that keeps them under keys of their own, such as kitty's.
+    case colorPairKeys
     /// A shortcut in the shared syntax, such as `ctrl+option+k`, written as `style` says.
     case shortcut(ShortcutStyle)
     /// One shortcut in the shared syntax or a list of them, written as `style` says, for a target
@@ -46,6 +55,23 @@ enum CatalogValue: Equatable, Sendable {
     case shortcutKeys(ShortcutStyle)
     /// A list of items, each written as the target keeps it.
     case list(CatalogList)
+    /// A list of at least one of the words of `parts`, each written as its text and joined by
+    /// `join`, such as the columns of a list or kitty's layouts.
+    case parts([Part], join: String)
+
+    /// One word a `.parts` setting takes, and the text it writes.
+    struct Part: Equatable, Sendable {
+        /// The word, such as `title`.
+        let word: String
+        /// What it writes, such as newsboat's `%t`.
+        let text: String
+
+        /// The word `word`, which writes `text`.
+        init(_ word: String, _ text: String) {
+            self.word = word
+            self.text = text
+        }
+    }
 
     /// The percentages a `.percent` setting takes.
     static let percentRange = 0...100
@@ -81,6 +107,10 @@ enum CatalogValue: Equatable, Sendable {
             return isOn ? on : off
         case (.combinedFlag, _):
             return nil
+        case (.colorPairKeys, .table(let pair)):
+            return Self.pairKeys(pair).map { [.set(.string($0.fg)), .set(.string($0.bg))] }
+        case (.colorPairKeys, _):
+            return nil
         default:
             return single(given, home: home).map { Array(repeating: .set($0), count: targets) }
         }
@@ -96,7 +126,8 @@ enum CatalogValue: Equatable, Sendable {
             .boolean(!isOn)
         case (.flagAs(let on, let off), .boolean(let isOn)):
             isOn ? on : off
-        case (.milliseconds, .integer), (.seconds, .integer), (.minutes, .integer), (.percent, .integer):
+        case (.milliseconds, .integer), (.seconds, .integer), (.minutes, .integer), (.count, .integer),
+            (.percent, .integer):
             number(given)
         case (.number(_, let range, let decimal), _):
             Self.measure(given, in: range, decimal: decimal)
@@ -109,6 +140,8 @@ enum CatalogValue: Equatable, Sendable {
         case (.list(let list), _):
             TableReader.texts(given).flatMap { $0.count >= list.minimum ? $0.map(list.item).allPresent() : nil }
                 .map(ConfigValue.array)
+        case (.parts(let parts, let join), _):
+            Self.joined(given, parts, join: join).map { ConfigValue.string($0) }
         default:
             textual(given, home: home)
         }
@@ -121,7 +154,8 @@ enum CatalogValue: Equatable, Sendable {
         case (.milliseconds(let step, let range), .integer(let milliseconds)) where range.contains(milliseconds):
             .integer(Int((Double(milliseconds) / Double(step)).rounded()))
         case (.seconds(let range), .integer(let number)) where range.contains(number),
-            (.minutes(let range), .integer(let number)) where range.contains(number):
+            (.minutes(let range), .integer(let number)) where range.contains(number),
+            (.count(let range), .integer(let number)) where range.contains(number):
             given
         case (.percent, .integer(let percent)) where Self.percentRange.contains(percent):
             .float(Double(percent) / Self.percentScale)
@@ -136,8 +170,10 @@ enum CatalogValue: Equatable, Sendable {
         switch (self, given) {
         case (.folder, .string(let path)) where path.hasPrefix("/"):
             given
-        case (.path, .string(let path)):
-            Self.path(path, home: home).map { ConfigValue.string($0) }
+        case (.path(let then), .string(let path)):
+            Self.path(path, home: home).map { ConfigValue.string($0 + then) }
+        case (.app(let before, let after), .string(let bundleID)) where AppBundle.isBundleID(bundleID):
+            .string(before + bundleID + after)
         case (.text(let form), .string(let text)) where !text.isEmpty:
             form.value(text)
         case (.color, .string(let color)) where Self.isColor(color):
@@ -184,6 +220,22 @@ enum CatalogValue: Equatable, Sendable {
         return decimal ? .float(number) : given
     }
 
+    /// The text colour and background of `pair`, or nil when it isn't a table of the two.
+    private static func pairKeys(_ pair: ConfigTable) -> (fg: String, bg: String)? {
+        guard Set(pair.keys) == [PairKey.fg, PairKey.bg], case .string(let fg)? = pair[PairKey.fg],
+            case .string(let bg)? = pair[PairKey.bg], isColor(fg), isColor(bg)
+        else { return nil }
+        return (fg, bg)
+    }
+
+    /// The words in the list `given` as `parts` writes them, joined by `join`, or nil when it isn't
+    /// a list of at least one of them.
+    private static func joined(_ given: ConfigValue, _ parts: [Part], join: String) -> String? {
+        guard let words = TableReader.texts(given), !words.isEmpty else { return nil }
+        let texts = words.map { word in parts.first { $0.word == word }?.text }.allPresent()
+        return texts?.joined(separator: join)
+    }
+
     /// The colour pair `pair` as text, its colours joined by `join`, or nil when it isn't one. A
     /// missing text colour is written as `unset`, and is wrong when that's nil.
     private static func pair(_ pair: ConfigTable, join: String, unset: String?) -> String? {
@@ -218,13 +270,22 @@ enum CatalogValue: Equatable, Sendable {
             choices.count
         case .milliseconds(let step, let range):
             (range.upperBound - range.lowerBound) / step + 1
-        case .seconds(let range), .minutes(let range):
-            range.upperBound - range.lowerBound + 1
+        case .seconds(let range), .minutes(let range), .count(let range):
+            Self.wholeNumbers(in: range)
         case .percent:
             Self.percentRange.count
-        case .number, .folder, .path, .text, .color, .colorPair, .shortcut, .shortcutKeys, .list:
+        case .number, .folder, .path, .app, .text, .color, .colorPair, .colorPairKeys, .shortcut, .shortcutKeys,
+            .list, .parts:
             nil
         }
+    }
+}
+
+extension CatalogValue {
+    /// How many whole numbers `range` holds, or nil when there are more than `Int` counts.
+    private static func wholeNumbers(in range: ClosedRange<Int>) -> Int? {
+        let (span, overflow) = range.upperBound.subtractingReportingOverflow(range.lowerBound)
+        return overflow || span == Int.max ? nil : span + 1
     }
 }
 

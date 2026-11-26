@@ -69,7 +69,7 @@ struct AppConfig: Sendable {
             let appFiles = files.flatMap { $0.read(reader.document, app: name, reader: &reader) }
             return AppSettings(files: appFiles, preferences: preferences(&reader), extensions: extensionIDs(&reader))
         }
-        reader.unknownKeys(reader.document, at: [], known: catalog.tables.map(\.name) + extensionTables)
+        reader.unknownKeys(reader.document, at: [], known: catalog.topTables + extensionTables)
         let document = jsonPreferences ? PlistText.jsonData : PlistText.document
         let reading = catalog.read(&reader, home: home, document: document)
         let tables = catalog.tables(reading.files, &reader)

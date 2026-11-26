@@ -7,15 +7,48 @@ extension AppConfigsTests {
     @Test func newsboatWritesConfigAndFeeds() throws {
         let (files, problems) = try read(
             """
-            [settings]
-            auto-reload = true
-            browser = "open %u"
-            reload-time = 60
+            [shortcuts]
+            down = "j"
+            next_feed = "shift+j"
+            close = ["h", "ctrl+q"]
 
-            [keybindings]
-            J = "next-feed articlelist"
+            [browser]
+            app = "net.librewolf.librewolf"
 
-            [ignore_articles]
+            [reload]
+            auto_reload = true
+            interval_minutes = 60
+
+            [lists]
+            article_columns = ["number", "flags", "date", "feed", "title"]
+            date_parts = ["month", "day"]
+            sort_feeds_by = "last_updated"
+
+            [downloads]
+            folder = "$HOME/Downloads/newsboat"
+
+            [notifications]
+            when = "new_articles"
+            """, app: "newsboat")
+        #expect(problems.isEmpty)
+        #expect(
+            files == [
+                AppFile(
+                    ".config/newsboat/config",
+                    Self.header(of: "newsboat") + "articlelist-format \"%4i %f %D %?T?|%-17T|? %t\"\n"
+                        + "auto-reload yes\nbrowser \"open -b net.librewolf.librewolf %u\"\n"
+                        + "datetime-format \"%b %d\"\ndownload-path \"/Users/test/Downloads/newsboat/%n\"\n"
+                        + "feed-sort-order \"lastupdated\"\n"
+                        + "notify-always no\nnotify-program \"terminal-notifier -title 'Newsboat' -message\"\nnotify-screen yes\n"
+                        + "reload-time 60\n\n"
+                        + "bind-key J next-feed articlelist\nbind-key ^Q quit\nbind-key h quit\nbind-key j down\n")
+            ])
+    }
+
+    @Test func newsboatWritesIgnoredArticlesAndFeedsAsTheyAre() throws {
+        let (files, problems) = try read(
+            """
+            [ignored_articles]
             "*" = ["title =~ \\"sponsored\\"", "author = \\"bot\\""]
 
             [feeds]
@@ -27,9 +60,7 @@ extension AppConfigsTests {
             files == [
                 AppFile(
                     ".config/newsboat/config",
-                    Self.header(of: "newsboat") + "auto-reload yes\nbrowser \"open %u\"\nreload-time 60\n\n"
-                        + "bind-key J next-feed articlelist\n\n"
-                        + "ignore-article * \"title =~ \\\"sponsored\\\"\"\n"
+                    Self.header(of: "newsboat") + "ignore-article * \"title =~ \\\"sponsored\\\"\"\n"
                         + "ignore-article * \"author = \\\"bot\\\"\"\n"),
                 AppFile(
                     ".config/newsboat/urls",
@@ -38,9 +69,50 @@ extension AppConfigsTests {
             ])
     }
 
+    @Test func newsboatWithoutNotificationsWritesNoProgram() throws {
+        let (files, _) = try read("[notifications]\nwhen = \"never\"\n", app: "newsboat")
+        #expect(
+            files == [
+                AppFile(".config/newsboat/config", Self.header(of: "newsboat") + "notify-always no\nnotify-screen no\n")
+            ])
+    }
+
     @Test func newsboatWithoutFeedsWritesNoUrlsFile() throws {
         let (files, _) = try read("", app: "newsboat")
         #expect(files == [AppFile(".config/newsboat/config", Self.header(of: "newsboat"))])
+    }
+
+    @Test func newsboatsWrongValuesAndOldTablesAreProblems() throws {
+        let (files, problems) = try read(
+            """
+            [settings]
+            auto-reload = true
+
+            [shortcuts]
+            down = "cmd+j"
+
+            [browser]
+            app = "open -a LibreWolf"
+
+            [lists]
+            article_columns = ["number", "subject"]
+            """, app: "newsboat")
+        #expect(files == [AppFile(".config/newsboat/config", Self.header(of: "newsboat"))])
+        #expect(
+            problems == [
+                Message(.warn, "unknown table settings"),
+                Message(
+                    .error,
+                    MessageText(
+                        "shortcuts.down should be a shortcut: modifiers cmd, ctrl, option, shift, fn or hyper, then "
+                            + "a key, joined by +, such as \"ctrl+option+k\", or a list of them")),
+                Message(.error, "browser.app should be an app's bundle ID, such as \"net.librewolf.librewolf\""),
+                Message(
+                    .error,
+                    MessageText(
+                        "lists.article_columns should be a list of at least one of \"number\", \"flags\", \"date\", "
+                            + "\"feed\", \"author\" or \"title\"")),
+            ])
     }
 
     @Test func wrongFeedsAreErrors() throws {

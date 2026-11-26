@@ -41,20 +41,20 @@ enum AppConfigs {
         AppConfig(name: "cursorcerer", domain: AppCatalogs.Domain.cursorcerer, catalog: AppCatalogs.cursorcerer),
         AppConfig(
             name: "git",
-            files: [
-                AppConfigFile(".config/git/config", .ini(table: "settings"), always: true),
-                AppConfigFile(".config/git/ignore", .list(table: "ignore", key: "patterns")),
-                AppConfigFile(".config/git/attributes", .list(table: "attributes", key: "lines")),
-            ]),
+            files: [AppConfigFile(".config/git/config", .ini(table: AppCatalogs.gitSections), always: true)],
+            catalog: AppCatalogs.git),
         AppConfig(
             name: "kitty",
             files: [
-                // The theme comes first, so a setting wins over it.
                 AppConfigFile(
                     ".config/kitty/kitty.conf",
-                    .lines([LineBlock("theme"), LineBlock("settings"), LineBlock("keybindings", prefix: "map")]),
+                    .lines([
+                        LineBlock(AppCatalogs.kittyTheme), LineBlock(AppCatalogs.kittySettings),
+                        LineBlock(AppCatalogs.kittyShortcuts, prefix: "map"),
+                    ]),
                     always: true)
-            ]),
+            ],
+            catalog: AppCatalogs.kitty),
         AppConfig(
             name: "librewolf",
             policies: "/Library/Preferences/net.librewolf.librewolf",
@@ -95,14 +95,19 @@ enum AppConfigs {
                 AppConfigFile(
                     ".config/newsboat/config",
                     .lines([
-                        LineBlock("settings", quoted: .double), LineBlock("keybindings", prefix: "bind-key"),
-                        LineBlock("ignore_articles", prefix: "ignore-article", quoted: .double),
+                        LineBlock(AppCatalogs.newsboatSettings, quoted: .double),
+                        LineBlock(AppCatalogs.newsboatShortcuts, prefix: "bind-key"),
+                        LineBlock(AppCatalogs.newsboatIgnored, prefix: "ignore-article", quoted: .double),
                     ]),
                     always: true),
-                AppConfigFile(".config/newsboat/urls", .feeds(table: "feeds")),
-            ]),
+                AppConfigFile(".config/newsboat/urls", .feeds(table: AppCatalogs.newsboatFeeds)),
+            ],
+            catalog: AppCatalogs.newsboat),
         AppConfig(name: "oversight", domain: AppCatalogs.Domain.oversight, catalog: AppCatalogs.oversight),
-        AppConfig(name: "ssh", files: [AppConfigFile(".ssh/config", .sections(table: "hosts", keyword: "Host"))]),
+        AppConfig(
+            name: "ssh",
+            files: [AppConfigFile(".ssh/config", .sections(table: AppCatalogs.sshHosts, keyword: "Host"))],
+            catalog: AppCatalogs.ssh),
         AppConfig(
             name: "vscodium",
             files: [

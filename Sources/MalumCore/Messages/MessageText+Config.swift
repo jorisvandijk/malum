@@ -1,5 +1,10 @@
 /// The words for what's wrong in one of Malum's TOML files in dots.
 extension MessageText {
+    /// The table at `path`, written dotted, lacks the key `key` it needs.
+    static func needs(_ path: String, _ key: String) -> MessageText {
+        "\(path) needs \(key)"
+    }
+
     /// The key at `path`, written dotted, should be `expected`, such as `SettingKind.string`.
     static func shouldBe(_ path: String, _ expected: some CustomStringConvertible) -> MessageText {
         "\(path) should be \(expected.description)"
