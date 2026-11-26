@@ -120,6 +120,6 @@ split_step = 5
 
 - `frame`: `"visible"` fills the screen below the menu bar and outside the Dock, and `"full"` fills the whole screen.
 - `block_hide_minimize`: swallows cmd+H, cmd+M and cmd+option+M, which would hide an app or minimise a window.
-- `split_step`: how far the split keys move a border, in percent of the area, a whole number from 1 to 25. Anything else is a config error at its line, and 5 is used.
+- `split_step`: how far the split keys move a border, in percent of the area, a whole number from 1 to 25. Anything else is a config error at its line.
 
 Every key is optional, and the values above are the defaults. The [config reference](config.md) lists them all.
