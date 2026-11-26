@@ -13,7 +13,8 @@ enum AppCatalogs {
         static let oversight = "com.objective-see.oversight"
     }
 
-    /// The longest idle time Cursorcerer takes before it hides the pointer, an hour.
+    /// The longest idle time Malum takes before Cursorcerer hides the pointer, an hour. Cursorcerer
+    /// documents no limit of its own; a longer wait is the same as never hiding it.
     private static let longestIdleSeconds = 3600
 
     /// `apps/amphetamine.toml`. Malum always keeps the first menu bar icon and sessions that last
