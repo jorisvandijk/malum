@@ -24,8 +24,8 @@ final class WindowManagerModule: Module {
     public static let inspectAction = WindowManagerConfig.inspectAction
     /// The action that floats the focused window, or puts it back in its place, for `keyboard.toml`.
     public static let toggleFloatAction = WindowManagerConfig.toggleFloatAction
-    /// The actions that move the borders between the windows, for `keyboard.toml`, in the order
-    /// they're offered, with the way each moves them.
+    /// The actions that move the borders between the windows, for `keyboard.toml`, with the way each
+    /// moves them.
     static let splitActions: [(name: String, move: SplitMove)] = [
         (WindowManagerConfig.splitLeftAction, .left), (WindowManagerConfig.splitRightAction, .right),
         (WindowManagerConfig.splitTallerAction, .taller), (WindowManagerConfig.splitShorterAction, .shorter),

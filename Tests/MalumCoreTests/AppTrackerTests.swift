@@ -265,6 +265,17 @@ struct AppTrackerTests {
         #expect(tracker.split == split)
     }
 
+    @Test func splitShorterGivesTheFocusedWindowsHeightAway() {
+        let windows = [FakeAppWindow(), FakeAppWindow(), FakeAppWindow()]
+        watched.current = windows
+        let tracker = tracker()
+        tracker.reconcile()
+        watched.focused = windows[2]
+        tracker.resize(.shorter, by: 0.1)
+        #expect(tracker.split.rowShares(count: 2) == [0.6, 0.4])
+        #expect(windows[1].frame == WindowLayout.slots(count: 3, in: area, split: tracker.split)[1])
+    }
+
     @Test func splitTallerLeavesTheLeftWindowAndASingleWindowAlone() {
         let first = FakeAppWindow()
         let second = FakeAppWindow()

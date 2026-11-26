@@ -62,7 +62,7 @@ up = "split_taller"
 down = "split_shorter"
 ```
 
-Each app keeps its own split, also after it quits and starts again. A window opening or closing in the right column shares its height out equally again. Malum forgets every split when it quits.
+Each app keeps its own split, also after it quits and starts again. When the number of windows in the right column changes, their heights are shared out equally again. Malum forgets every split when it quits.
 
 Malum fills the screen with the menu bar. Other screens are left alone. When a display is plugged in, unplugged or rearranged, and when the Mac wakes, the windows are laid out again on the screen that has the menu bar then.
 
