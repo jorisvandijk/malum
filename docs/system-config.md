@@ -664,7 +664,6 @@ It changes nothing when the Mac already asks after that delay. Changing it takes
 [info] the screen asks for your password as soon as it goes black now, from macos.toml
 ```
 
-<<<<<<< HEAD
 ### Startup apps
 
 `apps` in `[startup]` lists apps, by bundle ID, that the menu bar app opens each time it starts, for apps that don't start at login by themselves. An app that already runs is left alone. Malum itself isn't a login item: its login agent starts it.
@@ -687,7 +686,8 @@ show = ["Documents", "Downloads", "Git", "Pictures"]
 
 ```
 [info] hid ~/Movies in Finder, from macos.toml
-=======
+```
+
 ## Web apps
 
 `webapps.toml`, at the top of your dots folder, turns sites into apps of their own. Each table is one web app, named by the app:
@@ -707,7 +707,6 @@ An app is built again when its site or icon changes, or after Malum is updated. 
 
 ```
 [info] made the web app Frigate
->>>>>>> 20e7ee1 (Make the web apps in malum run)
 ```
 
 ## Status
