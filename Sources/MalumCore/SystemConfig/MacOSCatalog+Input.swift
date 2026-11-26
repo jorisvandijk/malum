@@ -1,6 +1,3 @@
-// swiftlint:disable no_magic_numbers
-// Lookup tables: each row names the steps macOS counts key repeat in.
-
 /// The tables about the pointer, the trackpad, the keyboard and typing.
 extension MacOSCatalog {
     /// The two domains macOS keeps the trackpad's settings in: the built-in one and the Magic Trackpad.
@@ -76,4 +73,3 @@ extension MacOSCatalog {
                 [.global("NSAutomaticQuoteSubstitutionEnabled")]),
         ])
 }
-// swiftlint:enable no_magic_numbers

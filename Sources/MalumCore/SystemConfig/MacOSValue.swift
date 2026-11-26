@@ -77,7 +77,7 @@ enum MacOSValue: Sendable {
         case .choice(let choices):
             choices.count
         case .milliseconds(let step, let range):
-            (range.upperBound - range.lowerBound) / step + 1
+            stride(from: range.lowerBound, through: range.upperBound, by: step).count
         case .percent:
             Self.percentRange.count
         case .folder, .list:

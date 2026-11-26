@@ -7,7 +7,7 @@ import Testing
 struct MacOSCatalogTests {
     /// The preferences `toml` asks for, as `domain key = value`, with `-` for one that has to be
     /// absent, and the problems found.
-    private func read(_ toml: String) -> (preferences: [String], problems: [Message]) {
+    func read(_ toml: String) -> (preferences: [String], problems: [Message]) {
         let (wanted, problems) = MacOSSettings.read(toml)
         let preferences = (wanted?.preferences ?? []).map { preference in
             "\(preference.domain) \(preference.key) = \(preference.value.map(Self.element) ?? "-")"
@@ -242,45 +242,6 @@ struct MacOSCatalogTests {
                     .error, "macos.toml line 7: screen_capture.folder should be a folder's full path, starting with /"),
                 Message(.warn, "macos.toml line 9: unknown setting trackpad.force_touch"),
             ])
-    }
-
-    @Test func everyWordOfEveryChoiceIsAccepted() {
-        for table in MacOSCatalog.tables {
-            for setting in table.settings {
-                guard case .choice(let choices) = setting.value else { continue }
-                for choice in choices {
-                    let (preferences, problems) = read("[\(table.name)]\n\(setting.name) = \"\(choice.word)\"\n")
-                    let name = "\(table.name).\(setting.name) = \(choice.word)"
-                    #expect(problems.isEmpty, "\(name)")
-                    #expect(preferences.count == choice.writes.filter { $0 != .leave }.count, "\(name)")
-                }
-            }
-        }
-    }
-
-    @Test func rawAndCuratedSettingWritingTheSameValueIsOnlyTheRawWarning() {
-        let (preferences, problems) = read(
-            "[pointer]\nnatural_scrolling = false\n[preferences.NSGlobalDomain]\n\"com.apple.swipescrolldirection\" = false\n"
-        )
-        #expect(problems.map(\.level) == [.warn])
-        #expect(preferences == ["NSGlobalDomain com.apple.swipescrolldirection = <false/>"])
-    }
-
-    @Test func everyPowerSettingWritesItsPmsetName() {
-        let flags = PowerSetting.all.filter { $0.kind == .flag }.map { "\($0.name) = true" }
-        let minutes = PowerSetting.all.filter { $0.kind == .minutes }.map { "\($0.name) = 5" }
-        let (wanted, problems) = MacOSSettings.read(
-            "[power.battery]\n" + (flags + minutes).joined(separator: "\n") + "\n")
-        #expect(problems.isEmpty)
-        #expect(Set(wanted?.power[.battery]?.keys.map { $0 } ?? []) == Set(PowerSetting.all.map(\.pmset)))
-    }
-
-    @Test func rawKeysFindTheirCuratedName() {
-        #expect(MacOSCatalog.setting(writing: "KeyRepeat", in: "NSGlobalDomain") == "keyboard.repeat_interval_ms")
-        #expect(
-            MacOSCatalog.setting(writing: "Clicking", in: "com.apple.AppleMultitouchTrackpad")
-                == "trackpad.tap_to_click")
-        #expect(MacOSCatalog.setting(writing: "mineffect", in: "com.apple.dock") == nil)
     }
 
     @Test func docsListEveryTableAndSetting() {
