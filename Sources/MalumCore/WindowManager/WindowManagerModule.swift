@@ -52,7 +52,7 @@ final class WindowManagerModule: Module {
     /// minimise when `block_hide_minimize` is on.
     var hotkeys: HotkeyOffer {
         HotkeyOffer(
-            actions: [Self.inspectAction, Self.toggleFloatAction] + Self.splitActions.map(\.name),
+            actions: Set([Self.inspectAction, Self.toggleFloatAction] + Self.splitActions.map(\.name)),
             fixedKeys: config.blocksHideMinimize ? Self.blockedKeys : [:], opensApps: true)
     }
     /// Where the module is now.
