@@ -240,36 +240,9 @@ split_window = "cmd+b"
 
 ### LibreWolf
 
-`apps/librewolf.toml` writes LibreWolf's settings and look into its profile, `~/Library/Application Support/LibreWolf/Profiles/default`, and sets its policies for every user of the Mac. LibreWolf reads all of it when it starts: quit and reopen it after a run. Install LibreWolf itself with the `librewolf` cask.
+`apps/librewolf.toml` writes LibreWolf's settings to its profile, `~/Library/Application Support/LibreWolf/Profiles/default`, as `user.js` and `chrome/userChrome.css`, and sets its add-ons, bookmarks, search engines and uBlock Origin's filters as policies in `/Library/Preferences/net.librewolf.librewolf`, for every user of the Mac, so a run that changes them asks for your password. LibreWolf reads all of it when it starts: quit and reopen it after a run. Install LibreWolf itself with the `librewolf` cask. Every table and setting it takes is in the [librewolf reference](apps/librewolf.md).
 
-```toml
-[settings]
-"sidebar.verticalTabs" = true
-"toolkit.legacyUserProfileCustomizations.stylesheets" = true
-
-[user_chrome]
-text = '''
-#alltabs-button { display: none !important; }
-'''
-
-[policies]
-EnterprisePoliciesEnabled = true
-DisableTelemetry = true
-
-[policies.ExtensionSettings."uBlock0@raymondhill.net"]
-installation_mode = "force_installed"
-install_url = "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi"
-
-[[policies.SearchEngines.Add]]
-Name = "Startpage"
-URLTemplate = "https://www.startpage.com/search?q={searchTerms}"
-```
-
-- `[settings]`: preferences, as you'd find them in `about:config`, as `"name" = value`. Names have dots, so quote them. Each is written to the profile's `user.js` as `user_pref("name", value);`, which LibreWolf applies every time it starts. A value is text, a number, or `true` or `false`.
-- `[user_chrome]`: `text` is written to the profile's `chrome/userChrome.css` as it is, to change LibreWolf's own interface. LibreWolf only reads it when `toolkit.legacyUserProfileCustomizations.stylesheets` is `true` in `[settings]`.
-- `[policies]`: [Mozilla's enterprise policies](https://mozilla.github.io/policy-templates/), by their own names: add-ons, search engines, bookmarks, and settings for add-ons such as uBlock Origin's filters. They're set in the system-wide preferences `/Library/Preferences/net.librewolf.librewolf`, like the [app preferences](#app-preferences) but for every user, so a run that changes them asks for your password. Set `EnterprisePoliciesEnabled = true`, or LibreWolf ignores the rest. `defaults read /Library/Preferences/net.librewolf.librewolf` shows what's set, and `about:policies` in LibreWolf shows what it took.
-
-The profile is always called `default`. When `~/Library/Application Support/LibreWolf/profiles.ini` is missing, Malum writes one that makes LibreWolf start with it, and when the profile has no `compatibility.ini`, Malum writes the one LibreWolf leaves in a profile it has used, so LibreWolf takes the profile on its first start instead of making a new one. Both are for LibreWolf in `/Applications`, where the cask puts it. After that the files are LibreWolf's: Malum doesn't change, record or remove them. `user.js` and `userChrome.css` are only written when their table has something in it.
+The profile is always called `default`. When `~/Library/Application Support/LibreWolf/profiles.ini` is missing, Malum writes one that makes LibreWolf start with it, and when the profile has no `compatibility.ini`, Malum writes the one LibreWolf leaves in a profile it has used, so LibreWolf takes the profile on its first start instead of making a new one. After that both files are LibreWolf's: Malum doesn't change, record or remove them.
 
 ### MarkEdit
 

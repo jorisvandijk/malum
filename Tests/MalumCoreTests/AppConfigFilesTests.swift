@@ -258,7 +258,7 @@ struct AppConfigFilesTests {
         let (_, messages) = await run(files)
         #expect(messages.first == Message(.info, "wrote \(ini) from apps/librewolf.toml"))
         #expect(files.text(at: ini)?.contains("Path=Profiles/default\n") == true)
-        #expect(managed(files).isEmpty)
+        #expect(managed(files).keys.allSatisfy { !$0.hasSuffix(".ini") })
         try? files.write("[General]\n", to: ini)
         let (succeeded, again) = await run(files)
         #expect(succeeded)

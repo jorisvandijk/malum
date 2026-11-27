@@ -8,8 +8,6 @@ public enum WebAppList {
     private static let urlKey = "url"
     /// A web app's icon.
     private static let iconKey = "icon"
-    /// The addresses a web app opens.
-    private static let schemes = ["http://", "https://"]
     /// The icon files Malum turns into the app's icon.
     private static let iconExtensions = [".png", ".\(WebApp.iconExtension)"]
 
@@ -43,7 +41,7 @@ public enum WebAppList {
             reader.add(.error, at: path, .noBundleIDLetters(name))
             return nil
         }
-        guard case .string(let url) = fields[urlKey], schemes.contains(where: url.lowercased().hasPrefix) else {
+        guard case .string(let url) = fields[urlKey], WebAddress.url(url) != nil else {
             reader.expect(path + [urlKey], MessageText.webAddress)
             return nil
         }

@@ -160,16 +160,17 @@ extension Catalog {
     }
 
     /// The tables the app's files are written from, holding `values`, each once, with an error in
-    /// `reader` for each key two settings set to different values, or one Malum always sets.
+    /// `reader` for each key two settings set to different values, or one Malum always sets, put in
+    /// the app's form by `arrange` when the catalog has it.
     func tables(_ values: [FileValue], _ reader: inout TableReader) -> ConfigTable {
         let kept = once(
             values, id: { TableReader.dotted($0.target) }, path: \.path, same: { $0.value == $1.value },
             &reader)
         var tables: ConfigTable = [:]
         for value in kept {
-            Self.put(value.value, at: value.target[...], in: &tables)
+            tables.set(value.value, at: value.target)
         }
-        return tables
+        return arrange?(tables, &reader) ?? tables
     }
 
     /// `items`, each `id` once, with an error in `reader` for each one that asks for something
@@ -194,19 +195,6 @@ extension Catalog {
             reader.add(.error, at: path(item), text)
         }
         return kept
-    }
-
-    /// Puts `value` at `path` in `table`, making the tables on the way.
-    private static func put(_ value: ConfigValue, at path: ArraySlice<String>, in table: inout ConfigTable) {
-        guard let key = path.first else { return }
-        guard path.count > 1 else {
-            table[key] = value
-            return
-        }
-        var inner: ConfigTable
-        if case .table(let existing)? = table[key] { inner = existing } else { inner = [:] }
-        put(value, at: path.dropFirst(), in: &inner)
-        table[key] = .table(inner)
     }
 }
 

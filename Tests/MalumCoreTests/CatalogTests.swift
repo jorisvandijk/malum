@@ -193,6 +193,34 @@ struct CatalogTests {
         #expect(reader.problems.isEmpty)
     }
 
+    @Test func theDocsNameAPolicyByItsDomain() throws {
+        let app = AppConfig(
+            name: "sample", policies: "/Library/Preferences/com.example.sample",
+            catalog: Catalog(
+                file: "apps/sample.toml",
+                tables: [
+                    CatalogTable(
+                        name: "search", about: "Search.",
+                        settings: [
+                            CatalogSetting(
+                                "engine", "The engine.", .text(.plain), [.file(["policies", "Search", "Default"])])
+                        ])
+                ]))
+        let page = AppDocs.page(app, try #require(app.catalog))
+        #expect(page.contains("- Writes: `/Library/Preferences/com.example.sample` `Search.Default`"))
+    }
+
+    @Test func aPathReachesIntoNestedTables() {
+        var table: ConfigTable = [:]
+        table.set(.integer(1), at: ["a", "b", "c"])
+        #expect(table.value(at: ["a", "b", "c"]) == .integer(1))
+        #expect(table.value(at: ["a", "x"]) == nil)
+        table.set(nil, at: ["x", "y"])
+        #expect(table["x"] == nil)
+        table.set(nil, at: ["a", "b", "c"])
+        #expect(table.value(at: ["a", "b"]) == .table([:]))
+    }
+
     @Test func theDocsListEveryTableAndWhereItWrites() throws {
         let page = AppDocs.page(Self.app, try #require(Self.app.catalog))
         #expect(page.contains("# sample settings reference"))
@@ -207,7 +235,8 @@ struct CatalogTests {
     @Test func everyAppsCatalogWritesFilesTheAppHasAndPagesAreMade() {
         for app in AppConfigs.all + [Self.app] {
             guard let catalog = app.catalog else { continue }
-            let tables = Set(app.files.flatMap(\.tables))
+            // Policies are written as preferences, from the table the catalog puts them in.
+            let tables = Set(app.files.flatMap(\.tables) + (app.policies == nil ? [] : [AppConfig.policiesTable]))
             let targets = catalog.tables.flatMap(\.settings).flatMap(\.targets) + catalog.always.map(\.target)
             for case .file(let path) in targets {
                 #expect(path.first.map(tables.contains) == true, "\(app.name) \(path)")

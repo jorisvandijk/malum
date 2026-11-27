@@ -57,6 +57,9 @@ public enum AppDocs {
             (path, keyPerShortcut) = (table, value)
         }
         guard let table = path.first else { return "" }
+        if table == AppConfig.policiesTable, let policies = app.policies {
+            return "`\(policies)` `\(path.dropFirst().joined(separator: "."))`"
+        }
         var places: [String] = []
         var inner = Array(path.dropFirst())
         for file in app.files where file.tables.contains(table) {

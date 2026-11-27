@@ -15,7 +15,8 @@ struct AppConfig: Sendable {
     /// The preferences domain the table `preferences` is written to, such as `com.if.Amphetamine`,
     /// or nil when the app has none.
     let domain: String?
-    /// The system-wide preferences domain the table `policies` is written to, such as
+    /// The system-wide preferences domain the table `policies` is written to, or with a catalog the
+    /// table its settings put there, such as
     /// `/Library/Preferences/net.librewolf.librewolf`, or nil when the app has none.
     let policies: String?
     /// The files the app gets.
@@ -74,8 +75,17 @@ struct AppConfig: Sendable {
         let reading = catalog.read(&reader, home: home, document: document)
         let tables = catalog.tables(reading.files, &reader)
         let appFiles = files.flatMap { $0.read(tables, app: name, reader: &reader) }
-        let preferences = catalog.merged(reading.preferences, &reader)
+        let preferences = catalog.merged(reading.preferences, &reader) + policies(in: tables)
         return AppSettings(files: appFiles, preferences: preferences, extensions: extensionIDs(&reader))
+    }
+
+    /// The policies a catalog's settings put in the table `policies` of `tables`, each one a
+    /// system-wide preference, none when the app has no policies.
+    private func policies(in tables: ConfigTable) -> [AppPreference] {
+        guard let policies, case .table(let table)? = tables[Self.policiesTable] else { return [] }
+        return table.keys.sorted().compactMap { key in
+            table[key].flatMap(PlistText.document).map { AppPreference(domain: policies, key: key, value: $0) }
+        }
     }
 
     /// The tables of preferences the app has, each with the domain it's written to.

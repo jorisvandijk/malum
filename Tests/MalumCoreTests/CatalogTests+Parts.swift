@@ -29,6 +29,24 @@ extension CatalogTests {
         #expect(parts.description == "a list of at least one of \"day\" or \"month\"")
     }
 
+    @Test func partsWithANoneWordTakeAnEmptyList() {
+        let parts = CatalogValue.parts([CatalogValue.Part("history", "history")], join: ",", none: "none")
+        #expect(written(parts, .array([])) == [.string("none")])
+        #expect(written(parts, .array([.string("history")])) == [.string("history")])
+        #expect(parts.description == "a list of any of \"history\"")
+    }
+
+    @Test func aListOfPartsIsWrittenAsAListAndMayRepeatAWord() {
+        let parts = CatalogValue.partList([
+            CatalogValue.Part("space", "spring"), CatalogValue.Part("back", "back-button"),
+        ])
+        #expect(
+            written(parts, .array([.string("space"), .string("back"), .string("space")]))
+                == [.array([.string("spring"), .string("back-button"), .string("spring")])])
+        #expect(written(parts, .array([])) == nil)
+        #expect(written(parts, .array([.string("home")])) == nil)
+    }
+
     @Test func anAppIsWrittenByItsBundleIDInsideItsCommand() {
         let app = CatalogValue.app(before: "open -b ", after: " %u")
         #expect(written(app, .string("net.librewolf.librewolf")) == [.string("open -b net.librewolf.librewolf %u")])
