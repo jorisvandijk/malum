@@ -6,7 +6,7 @@ Every table and setting `webapps.toml` takes. A setting you leave out takes its 
 
 ## `[apps.<name>]`
 
-Sites that get an app of their own in `~/Applications`.
+Sites that get an app of their own, in the Applications folder in your home folder.
 
 - Names: the app's name, such as "Frigate", which names `Frigate.app`
 - Each one needs every setting below but `icon`.

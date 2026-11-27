@@ -18,7 +18,8 @@ public enum WebAppList {
         file: Paths.webAppsTOMLName,
         tables: [
             CatalogTable(
-                name: appsTable, about: "Sites that get an app of their own in `~/Applications`.",
+                name: appsTable,
+                about: "Sites that get an app of their own, in the Applications folder in your home folder.",
                 entries: CatalogEntries(
                     keys: "the app's name, such as \"Frigate\", which names `Frigate.app`",
                     settings: [

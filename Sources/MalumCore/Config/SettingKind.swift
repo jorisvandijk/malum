@@ -12,7 +12,7 @@ public enum SettingKind: Sendable {
     case strings
     /// A table, which the module checks itself.
     case table
-    /// A list of tables, such as `[[float]]`, which the module checks itself.
+    /// A list of tables, such as `[[server]]`, which the module checks itself.
     case tables
 
     /// Whether `value` is of this kind.
