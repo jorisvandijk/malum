@@ -86,3 +86,14 @@ Whether VSCodium sends a report when it crashes.
 
 - Value: true or false
 - Writes: `$HOME/.vscode-oss/argv.json` `enable-crash-reporter`
+
+## `[assistant]`
+
+The coding assistant extension in `[extensions]`.
+
+### `hide_onboarding`
+
+Whether the extension skips the welcome screen it shows at first.
+
+- Value: true or false
+- Writes: `$HOME/Library/Application Support/VSCodium/User/settings.json` `claudeCode.hideOnboarding`

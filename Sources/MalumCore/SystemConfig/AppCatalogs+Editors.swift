@@ -77,6 +77,13 @@ extension AppCatalogs {
                         "send_crash_reports", "Whether VSCodium sends a report when it crashes.", .flag,
                         [.file(["argv", "enable-crash-reporter"])]),
                 ]),
+            CatalogTable(
+                name: "assistant", about: "The coding assistant extension in `[extensions]`.",
+                settings: [
+                    CatalogSetting(
+                        "hide_onboarding", "Whether the extension skips the welcome screen it shows at first.",
+                        .flag, [vscodium("claudeCode.hideOnboarding")])
+                ]),
         ])
 
     // MARK: - MarkEdit
