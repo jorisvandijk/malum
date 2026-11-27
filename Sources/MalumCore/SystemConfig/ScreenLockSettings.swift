@@ -5,9 +5,9 @@
 @MainActor
 struct ScreenLockSettings {
     /// The table of the screen lock's settings.
-    static let table = "screen_lock"
+    nonisolated static let table = "screen_lock"
     /// The key that holds the seconds before the password is asked, 0 for right away.
-    static let delayKey = "delay"
+    nonisolated static let delayKey = "delay_seconds"
 
     /// Runs `sysadminctl`.
     private let runner: any CommandRunner
@@ -20,14 +20,9 @@ struct ScreenLockSettings {
         self.sudo = sudo
     }
 
-    /// The seconds in `[screen_lock]`, or nil when it sets none, adding a problem to `reader` when
-    /// it's wrong.
-    static func read(_ reader: inout TableReader) -> Int? {
-        guard let value = reader.onlyKey(delayKey, of: table) else { return nil }
-        guard case .integer(let seconds) = value, seconds >= 0 else {
-            reader.expect([table, delayKey], MessageText.lockDelay)
-            return nil
-        }
+    /// The seconds in `[screen_lock]`, from `own`, the tables the catalog read from `macos.toml`, or nil when it sets none.
+    static func read(_ own: ConfigTable) -> Int? {
+        guard case .integer(let seconds)? = own.value(at: [table, delayKey]) else { return nil }
         return seconds
     }
 

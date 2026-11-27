@@ -27,14 +27,15 @@ struct WindowManagerConfigTests {
 
     @Test func everySettingIsRead() {
         let text = """
-            [settings]
+            [windows]
             frame = "full"
-            block_hide_minimize = false
+            allow_hide_minimize = true
+            split_step_percent = 10
 
-            [[float]]
+            [floating_windows.settings]
             app = "com.apple.systempreferences"
 
-            [[float]]
+            [floating_windows.picture_in_picture]
             app = "org.mozilla.librewolf"
             title = "^Picture-in-Picture$"
             """
@@ -45,77 +46,73 @@ struct WindowManagerConfigTests {
                 == WindowManagerConfig(
                     frame: .full, blocksHideMinimize: false,
                     floats: [
-                        FloatRule(app: "com.apple.systempreferences", title: nil),
                         FloatRule(app: "org.mozilla.librewolf", title: "^Picture-in-Picture$"),
-                    ]))
+                        FloatRule(app: "com.apple.systempreferences", title: nil),
+                    ], splitStep: 10))
     }
 
-    @Test func settingsCanBeInConfig() {
+    @Test func settingsInConfigAreErrors() {
         var config = Config(schemas: [module: WindowManagerConfig.schema])
-        let text = "[window_manager]\nframe = \"full\"\n\n[[window_manager.float]]\napp = \"com.apple.finder\"\n"
-        let report = config.load(text, from: path)
-        #expect(report.problems.isEmpty)
-        let table = config.moduleSettings[module]?.table ?? [:]
-        let read = WindowManagerConfig.read(table) { _, _ in }
-        #expect(read == WindowManagerConfig(frame: .full, floats: [FloatRule(app: "com.apple.finder", title: nil)]))
+        let report = config.load("[window_manager]\nenabled = true\nframe = \"full\"\n", from: path)
+        #expect(
+            report.problems == [ConfigProblem(.error, line: 3, .unknownKey("window_manager.frame", isTable: false))])
     }
 
-    @Test func unknownFrameIsAnErrorAtItsLine() {
-        let (config, problems) = load("[settings]\nframe = \"half\"\n")
+    @Test func wrongValuesAreErrorsAtTheirLines() {
+        let (config, problems) = load("[windows]\nframe = \"half\"\nsplit_step_percent = 30\n")
         #expect(config == nil)
         #expect(
-            problems == [
-                ConfigProblem(.error, file: fileName, line: 2, .shouldBe("settings.frame", MessageText.screenFrame))
+            problems.map(\.message) == [
+                Message(.error, "window_manager.toml line 2: windows.frame should be \"visible\" or \"full\""),
+                Message(
+                    .error,
+                    "window_manager.toml line 3: windows.split_step_percent should be a whole number from 1 to 25"),
             ])
     }
 
-    @Test func badFloatRulesAreErrorsAtTheirOwnLines() {
+    @Test func badFloatingWindowsAreErrorsAtTheirOwnLines() {
         let text = """
-            [[float]]
+            [floating_windows.finder]
             app = "com.apple.finder"
 
-            [[float]]
+            [floating_windows.empty]
             app = ""
 
-            [[float]]
+            [floating_windows.librewolf]
             app = "org.mozilla.librewolf"
             title = "(unclosed"
             size = 3
+
+            [floating_windows.nothing]
+            title = "^A$"
             """
         let (config, problems) = load(text)
         #expect(config == nil)
         #expect(
             problems == [
-                ConfigProblem(.error, file: fileName, line: 5, .notBundleID("float.1.app")),
-                ConfigProblem(.error, file: fileName, line: 9, .shouldBe("float.2.title", MessageText.titlePattern)),
-                ConfigProblem(.error, file: fileName, line: 10, .unknownKey("float.2.size", isTable: false)),
+                ConfigProblem(
+                    .error, file: fileName, line: 5,
+                    .shouldBe("floating_windows.empty.app", CatalogValue.app(before: "", after: ""))),
+                ConfigProblem(
+                    .error, file: fileName, line: 9,
+                    .shouldBe("floating_windows.librewolf.title", MessageText.titlePattern)),
+                ConfigProblem(
+                    .warn, file: fileName, line: 10, .unknownKey("floating_windows.librewolf.size", isTable: false)),
+                ConfigProblem(.error, file: fileName, line: 12, .needs("floating_windows.nothing", "app")),
             ])
     }
 
-    @Test func problemInConfigNamesTheWholePath() {
-        var config = Config(schemas: [module: WindowManagerConfig.schema])
-        let report = config.load("[window_manager]\nframe = \"half\"\n", from: path)
-        #expect(
-            report.problems == [
-                ConfigProblem(.error, line: 2, .shouldBe("window_manager.frame", MessageText.screenFrame))
-            ])
-    }
-
-    @Test func floatThatIsNotAListOfTablesIsAnError() {
-        let (config, problems) = load("float = [\"com.apple.finder\"]\n")
-        #expect(config == nil)
-        #expect(problems == [ConfigProblem(.error, file: fileName, line: 1, .shouldBe("float", SettingKind.tables))])
-    }
-
-    @Test func splitStepIsReadAndOneOutOfRangeIsAnError() {
-        #expect(load("[settings]\nsplit_step = 10\n").config?.splitStep == 10)
-        #expect(load("").config?.splitStep == 5)
-        let (config, problems) = load("[settings]\nsplit_step = 30\n")
-        #expect(config == nil)
-        #expect(WindowManagerConfig.read(["split_step": .integer(30)]) { _, _ in }.splitStep == 5)
+    @Test func oldLayoutIsUnknown() {
+        let (_, problems) = load("[settings]\nframe = \"full\"\n\n[[float]]\napp = \"com.apple.finder\"\n")
         #expect(
             problems == [
-                ConfigProblem(.error, file: fileName, line: 2, .shouldBe("settings.split_step", MessageText.splitStep))
+                ConfigProblem(.warn, file: fileName, line: 1, .unknownKey("settings", isTable: true)),
+                ConfigProblem(.warn, file: fileName, line: 4, .unknownKey("float", isTable: false)),
             ])
+    }
+
+    @Test func splitStepDefaultsToFive() {
+        #expect(load("").config?.splitStep == 5)
+        #expect(WindowManagerConfig.read([:]) { _, _ in }.splitStep == 5)
     }
 }

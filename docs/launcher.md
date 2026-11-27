@@ -14,8 +14,8 @@ enabled = true
 It needs no permission. Its action is `launcher`, which you bind to a key in `keyboard.toml`:
 
 ```toml
-[hyper]
-space = "launcher"
+[shortcuts]
+"hyper+space" = "launcher"
 ```
 
 The [keyboard page](keyboard.md) explains the shortcuts.

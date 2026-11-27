@@ -20,7 +20,7 @@ struct KeyboardModuleTests {
     private let launcher = RecordingModule(id: "launcher")
     let logWriter = RecordingLogWriter()
     /// caps lock as the hyper key, and the launcher on hyper+space.
-    private let launcherKey = "[settings]\nhyper_key = \"caps_lock\"\n\n[hyper]\nspace = \"launcher\"\n"
+    private let launcherKey = "[hyper]\nkey = \"caps_lock\"\n\n[shortcuts]\n\"hyper+space\" = \"launcher\"\n"
     private var marker: String { "\(paths.stateDirectory)/\(KeyRemapper.markerName)" }
 
     /// The module, off, running its commands through `runner`.
@@ -44,7 +44,7 @@ struct KeyboardModuleTests {
     }
 
     @Test func startCatchesKeysAndSetsTheHyperKey() async throws {
-        let text = "[settings]\nhyper_key = \"caps_lock\"\n"
+        let text = "[hyper]\nkey = \"caps_lock\"\n"
         let keyboard = module()
         keyboard.apply(settings(text))
         try await keyboard.start()
@@ -64,7 +64,7 @@ struct KeyboardModuleTests {
 
     @Test func appKeysWarnThatNothingOpensApps() async throws {
         let keyboard = module()
-        keyboard.apply(settings("[hyper]\nf = \"com.apple.finder\"\n"))
+        keyboard.apply(settings("[shortcuts]\n\"hyper+f\" = \"com.apple.finder\"\n"))
         try await keyboard.start()
         let problem = ConfigProblem(.warn, file: Paths.moduleTOMLName(KeyboardConfig.module), line: 2, .noAppOpener)
         #expect(keyboard.status == .degraded(reason: problem.message.text.description))
@@ -73,7 +73,7 @@ struct KeyboardModuleTests {
     @Test func refusedTapFailsWithoutRemapping() async throws {
         catcher.refuses = true
         let keyboard = module()
-        keyboard.apply(settings("[settings]\nhyper_key = \"caps_lock\"\n"))
+        keyboard.apply(settings("[hyper]\nkey = \"caps_lock\"\n"))
         await #expect(throws: KeyboardError.tapRefused) { try await keyboard.start() }
         #expect(runner.commands.isEmpty)
         #expect(keyboard.status == .failed(reason: KeyboardError.tapRefused.text.description))
@@ -82,14 +82,14 @@ struct KeyboardModuleTests {
     @Test func failedRemapStopsTheTap() async throws {
         let failing = FakeRunner { _ in CommandResult(status: 1, errors: "denied") }
         let keyboard = module(runner: failing)
-        keyboard.apply(settings("[settings]\nhyper_key = \"caps_lock\"\n"))
+        keyboard.apply(settings("[hyper]\nkey = \"caps_lock\"\n"))
         await #expect(throws: KeyRemapError.unset(reason: "denied")) { try await keyboard.start() }
         #expect(!catcher.isRunning)
     }
 
     @Test func stopLetsGoAndUndoesTheRemaps() async throws {
         let keyboard = module()
-        keyboard.apply(settings("[settings]\nhyper_key = \"caps_lock\"\n"))
+        keyboard.apply(settings("[hyper]\nkey = \"caps_lock\"\n"))
         try await keyboard.start()
         await keyboard.stop()
         #expect(!catcher.isRunning)
@@ -102,7 +102,7 @@ struct KeyboardModuleTests {
         let keyboard = module()
         keyboard.apply(settings(""))
         try await keyboard.start()
-        let text = "[settings]\nhyper_key = \"caps_lock\"\n"
+        let text = "[hyper]\nkey = \"caps_lock\"\n"
         keyboard.apply(settings(text))
         await keyboard.stop()
         #expect(catcher.starts == 2)
@@ -118,7 +118,7 @@ struct KeyboardModuleTests {
 
     @Test func secureInputShowsWithTheAppThatHoldsIt() async throws {
         let keyboard = module()
-        keyboard.apply(settings("[settings]\nhyper_key = \"caps_lock\"\n"))
+        keyboard.apply(settings("[hyper]\nkey = \"caps_lock\"\n"))
         try await keyboard.start()
         keyboardState.secureInput = .on(app: "Terminal")
         keyboard.check()
@@ -138,7 +138,7 @@ struct KeyboardModuleTests {
                 "HIDKeyboardModifierMappingDst": try #require(escape.hidUsages.first),
             ]
         ]
-        keyboard.apply(settings("[settings]\nhyper_key = \"caps_lock\"\n"))
+        keyboard.apply(settings("[hyper]\nkey = \"caps_lock\"\n"))
         try await keyboard.start()
         #expect(keyboard.status == .degraded(reason: MessageText.hyperKeySwapped(caps).description))
     }
@@ -151,7 +151,7 @@ struct KeyboardModuleTests {
     }
 
     @Test func resumeKeepsTheTapAndSetsTheRemapsAgain() async throws {
-        let text = "[settings]\nhyper_key = \"caps_lock\"\n"
+        let text = "[hyper]\nkey = \"caps_lock\"\n"
         let keyboard = module()
         keyboard.apply(settings(text))
         try await keyboard.start()
@@ -168,7 +168,7 @@ struct KeyboardModuleTests {
     }
 
     @Test func tapSwitchedOffIsStartedAgain() async throws {
-        let text = "[settings]\nhyper_key = \"caps_lock\"\n"
+        let text = "[hyper]\nkey = \"caps_lock\"\n"
         let keyboard = module()
         keyboard.apply(settings(text))
         try await keyboard.start()
@@ -181,7 +181,7 @@ struct KeyboardModuleTests {
     }
 
     @Test func switchedOffTapThatIsRefusedUndoesTheRemapsAndFails() async throws {
-        let text = "[settings]\nhyper_key = \"caps_lock\"\n"
+        let text = "[hyper]\nkey = \"caps_lock\"\n"
         let keyboard = module()
         keyboard.apply(settings(text))
         try await keyboard.start()
@@ -195,7 +195,7 @@ struct KeyboardModuleTests {
     }
 
     @Test func refusedResumeUndoesTheRemapsAndFails() async throws {
-        let text = "[settings]\nhyper_key = \"caps_lock\"\n"
+        let text = "[hyper]\nkey = \"caps_lock\"\n"
         let keyboard = module()
         keyboard.apply(settings(text))
         try await keyboard.start()
@@ -208,8 +208,8 @@ struct KeyboardModuleTests {
     }
 
     @Test func failedRemapWhileRunningUndoesTheRemapsAndStopsTheTap() async throws {
-        let first = "[settings]\nhyper_key = \"caps_lock\"\n"
-        let second = "[settings]\nhyper_key = \"caps_lock\"\n\n[remap]\nescape = \"grave\"\n"
+        let first = "[hyper]\nkey = \"caps_lock\"\n"
+        let second = "[hyper]\nkey = \"caps_lock\"\n\n[remaps]\nescape = \"grave\"\n"
         let refused = Hidutil.set(try mapping(second))
         let failing = FakeRunner { command in
             guard command == refused else { return CommandResult(status: 0) }

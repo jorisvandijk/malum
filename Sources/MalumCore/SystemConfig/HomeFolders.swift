@@ -5,9 +5,9 @@
 @MainActor
 struct HomeFolders {
     /// The table of home folders.
-    static let table = "home_folders"
+    nonisolated static let table = "home_folders"
     /// The key in `[home_folders]` that lists the folders to show.
-    private static let showKey = "show"
+    nonisolated static let showKey = "show"
 
     /// Hides and shows the folders.
     private let runner: any CommandRunner
@@ -23,11 +23,9 @@ struct HomeFolders {
         self.paths = paths
     }
 
-    /// The names in `[home_folders] show`, or nil when there's no such table, adding a problem to
-    /// `reader` when it's wrong.
-    static func read(_ reader: inout TableReader) -> [String]? {
-        guard reader.document[table] != nil else { return nil }
-        return reader.onlyList(showKey, of: table, check: Paths.isPlainName, problem: MessageText.notPlainName)
+    /// The names in `[home_folders] show`, from `own`, the tables the catalog read from `macos.toml`, or nil when it sets none.
+    static func read(_ own: ConfigTable) -> [String]? {
+        own.value(at: [table, showKey]).flatMap(TableReader.texts)
     }
 
     /// Shows the folders in `shown` and hides every other one, leaving them all when it's nil.

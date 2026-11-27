@@ -19,8 +19,8 @@ paste = true
 The module needs Accessibility, to paste. Its action is `clipboard`, which you bind to a key in `keyboard.toml`:
 
 ```toml
-[hyper]
-h = "clipboard"
+[shortcuts]
+"hyper+h" = "clipboard"
 ```
 
 ## What it keeps

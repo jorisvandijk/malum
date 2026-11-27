@@ -6,11 +6,11 @@ import Foundation
 @MainActor
 struct ComputerSettings {
     /// The table of this Mac's own settings.
-    static let table = "computer"
+    nonisolated static let table = "computer"
     /// The key that names this Mac.
-    static let hostnameKey = "hostname"
+    nonisolated static let hostnameKey = "hostname"
     /// The key that says whether the Mac plays a sound when it starts up.
-    static let bootSoundKey = "boot_sound"
+    nonisolated static let bootSoundKey = "boot_sound"
     /// The longest name the local network takes.
     private static let longestHostname = 63
 
@@ -33,19 +33,14 @@ struct ComputerSettings {
         self.sudo = sudo
     }
 
-    /// The settings in `[computer]`, adding a problem to `reader` for each one that's wrong.
-    static func read(_ reader: inout TableReader) -> Wanted {
-        let computer = reader.table(reader.document, table, at: [])
-        reader.unknownKeys(computer, at: [table], known: [hostnameKey, bootSoundKey])
+    /// The settings in `[computer]`, from `own`, the tables the catalog read from `macos.toml`, adding a problem to `reader`
+    /// for a name that's wrong.
+    static func read(_ own: ConfigTable, _ reader: inout TableReader) -> Wanted {
         var wanted = Wanted()
-        if let value = computer[hostnameKey] {
-            wanted.hostname = hostname(value, &reader)
+        if case .string(let name)? = own.value(at: [table, hostnameKey]) {
+            wanted.hostname = hostname(name, &reader)
         }
-        if let value = computer[bootSoundKey] {
-            guard case .boolean(let on) = value else {
-                reader.expect([table, bootSoundKey], SettingKind.boolean)
-                return wanted
-            }
+        if case .boolean(let on)? = own.value(at: [table, bootSoundKey]) {
             wanted.bootSound = on
         }
         return wanted
@@ -67,12 +62,8 @@ struct ComputerSettings {
 
     /// The name in `value`, or nil with a problem added to `reader` when it isn't one the local
     /// network takes: letters, digits and dashes, not starting or ending with a dash.
-    private static func hostname(_ value: ConfigValue, _ reader: inout TableReader) -> String? {
+    private static func hostname(_ name: String, _ reader: inout TableReader) -> String? {
         let path = [table, hostnameKey]
-        guard case .string(let name) = value else {
-            reader.expect(path, SettingKind.string)
-            return nil
-        }
         let allowed = name.allSatisfy { ($0.isASCII && ($0.isLetter || $0.isNumber)) || $0 == "-" }
         let fits = !name.isEmpty && name.count <= longestHostname
         guard allowed && fits && !name.hasPrefix("-") && !name.hasSuffix("-") else {

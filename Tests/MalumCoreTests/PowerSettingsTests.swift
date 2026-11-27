@@ -114,7 +114,7 @@ struct PowerSettingsTests {
                 Message(
                     .warn,
                     """
-                    screen_off_min on battery power isn't set from macos.toml anymore, but it was changed outside \
+                    screen_off_minutes on battery power isn't set from macos.toml anymore, but it was changed outside \
                     Malum, so it stays and Malum no longer manages it
                     """),
                 Message(

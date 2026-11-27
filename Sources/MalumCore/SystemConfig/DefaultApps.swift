@@ -7,19 +7,33 @@ import Foundation
 @MainActor
 struct DefaultApps {
     /// The table of default apps.
-    static let table = "default_apps"
+    nonisolated static let table = "default_apps"
 
     /// The bundle ID of each app `macos.toml` names, by its key in `[default_apps]`.
     typealias Wanted = [String: String]
 
-    /// What the app of each key in `[default_apps]` opens.
-    private static let targets: [String: [OpenTarget]] = [
-        "browser": ["http", "https"].map(OpenTarget.scheme)
-            + ["public.html", "public.xhtml"].map(OpenTarget.contentType),
-        "video": [
-            "public.mpeg-4", "com.apple.quicktime-movie", "public.avi", "org.matroska.mkv", "public.3gpp",
-            "public.mpeg", "com.microsoft.windows-media-wmv",
-        ].map(OpenTarget.contentType),
+    /// One key `[default_apps]` takes: what its app opens.
+    struct Kind: Sendable {
+        /// The key, such as `browser`.
+        let key: String
+        /// What its app opens, in a sentence for the docs.
+        let about: String
+        /// What its app opens.
+        let targets: [OpenTarget]
+    }
+
+    /// Every key `[default_apps]` takes, in the order the docs show them.
+    nonisolated static let kinds = [
+        Kind(
+            key: "browser", about: "The app that opens web links (`http`, `https`) and web pages.",
+            targets: ["http", "https"].map(OpenTarget.scheme)
+                + ["public.html", "public.xhtml"].map(OpenTarget.contentType)),
+        Kind(
+            key: "video", about: "The app that opens video files.",
+            targets: [
+                "public.mpeg-4", "com.apple.quicktime-movie", "public.avi", "org.matroska.mkv", "public.3gpp",
+                "public.mpeg", "com.microsoft.windows-media-wmv",
+            ].map(OpenTarget.contentType)),
     ]
 
     /// Says which app opens what, and changes it.
@@ -30,22 +44,12 @@ struct DefaultApps {
         self.handlers = handlers
     }
 
-    /// The apps in `[default_apps]`, adding a problem to `reader` for each one that's wrong.
-    static func read(_ reader: inout TableReader) -> Wanted {
-        let apps = reader.table(reader.document, table, at: [])
-        reader.unknownKeys(apps, at: [table], known: targets.keys.sorted())
+    /// The apps in `[default_apps]`, from `own`, the tables the catalog read from `macos.toml`.
+    static func read(_ own: ConfigTable) -> Wanted {
         var wanted: Wanted = [:]
-        for (key, value) in apps.sorted(by: { $0.key < $1.key }) where targets[key] != nil {
-            let path = [table, key]
-            guard case .string(let bundleID) = value else {
-                reader.expect(path, SettingKind.string)
-                continue
-            }
-            guard AppBundle.isBundleID(bundleID) else {
-                reader.add(.error, at: path, .notBundleID(TableReader.dotted(path)))
-                continue
-            }
-            wanted[key] = bundleID
+        for kind in kinds {
+            guard case .string(let bundleID)? = own.value(at: [table, kind.key]) else { continue }
+            wanted[kind.key] = bundleID
         }
         return wanted
     }
@@ -60,7 +64,7 @@ struct DefaultApps {
                 succeeded = false
                 continue
             }
-            let targets = (Self.targets[key] ?? []).filter(handlers.isKnown)
+            let targets = (Self.kinds.first { $0.key == key }?.targets ?? []).filter(handlers.isKnown)
             succeeded = await set(bundleID, at: app, for: targets, report) && succeeded
         }
         return succeeded

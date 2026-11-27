@@ -22,7 +22,7 @@ struct Hotkey: Hashable, Sendable {
         guard let last = words.last, let key = Key.named(last) else { return nil }
         var modifiers: Set<Modifier> = []
         for word in words.dropLast() {
-            let held = word == Modifier.hyperTable ? Set(Modifier.allCases) : Modifier(rawValue: word).map { [$0] }
+            let held = word == Modifier.hyper ? Set(Modifier.allCases) : Modifier(rawValue: word).map { [$0] }
             guard let held, modifiers.isDisjoint(with: held) else { return nil }
             modifiers.formUnion(held)
         }

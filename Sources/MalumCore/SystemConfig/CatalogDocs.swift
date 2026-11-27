@@ -13,7 +13,9 @@ enum CatalogDocs {
         }
         if let entries = table.entries {
             let name = "\(table.name).\(CatalogEntries.item("name"))"
-            return heading(name, table.about) + "\n- Names: \(entries.keys)\n- Each one needs every setting below.\n"
+            let optional = entries.optional.map { "`\($0)`" }.joined(separator: ", ")
+            let needs = optional.isEmpty ? "every setting below" : "every setting below but \(optional)"
+            return heading(name, table.about) + "\n- Names: \(entries.keys)\n- Each one needs \(needs).\n"
                 + settings(entries.settings, place: place)
         }
         return heading(table.name, table.about) + settings(table.settings, place: place)

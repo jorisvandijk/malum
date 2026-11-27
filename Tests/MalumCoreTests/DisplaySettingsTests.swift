@@ -50,7 +50,7 @@ struct DisplaySettingsTests {
 
     @Test func resolutionThatIsntTextReportsLine() {
         let (_, problems) = read("[display]\nresolution = 1710\n")
-        #expect(problems == [Message(.error, "macos.toml line 2: display.resolution should be text in quotes")])
+        #expect(problems == [Message(.error, "macos.toml line 2: display.resolution should be text that isn't empty")])
     }
 
     @Test func unknownKeyReportsLine() {

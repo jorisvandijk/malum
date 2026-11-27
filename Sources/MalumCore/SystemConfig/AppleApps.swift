@@ -6,9 +6,9 @@ import Foundation
 @MainActor
 struct AppleApps {
     /// The table of Apple apps.
-    static let table = "apple_apps"
+    nonisolated static let table = "apple_apps"
     /// The key in `[apple_apps]` that lists the apps to remove.
-    static let removeKey = "remove"
+    nonisolated static let removeKey = "remove"
     /// Where the Apple apps are.
     private static let folder = Paths.systemApplications
     /// What every Apple app's bundle ID starts with.
@@ -29,9 +29,9 @@ struct AppleApps {
         self.sudo = sudo
     }
 
-    /// The names of the apps in `[apple_apps] remove`, adding a problem to `reader` when it's wrong.
-    static func read(_ reader: inout TableReader) -> [String] {
-        reader.onlyList(removeKey, of: table, check: Paths.isPlainName, problem: MessageText.notPlainName)
+    /// The names of the apps in `[apple_apps] remove`, from `own`, the tables the catalog read from `macos.toml`.
+    static func read(_ own: ConfigTable) -> [String] {
+        own.value(at: [table, removeKey]).flatMap(TableReader.texts) ?? []
     }
 
     /// Removes each app in `names` that's in `/Applications`. Says whether everything worked.

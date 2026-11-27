@@ -7,10 +7,11 @@ enum MacOSCatalog {
         file: Paths.macOSTOMLName, tables: tables, always: alwaysSet, alwaysConflict: MessageText.tilingAlwaysOff)
 
     /// Every curated table, in the order the docs show them.
-    static let tables: [CatalogTable] = [
-        appearance, menuBar, clock, sound, pointer, trackpad, keyboard, text, finder, desktop, dock, screenCapture,
-        siri, gameCenter,
-    ]
+    static let tables: [CatalogTable] =
+        [
+            appearance, menuBar, clock, sound, pointer, trackpad, keyboard, text, finder, desktop, dock, screenCapture,
+            siri, gameCenter,
+        ] + systemTables
 
     /// The preferences Malum always sets, whatever `macos.toml` says: macOS's own window tiling is
     /// off, since Malum's window manager does that.
@@ -22,10 +23,4 @@ enum MacOSCatalog {
 
     /// The domain of the desktop, Stage Manager and window tiling.
     static let windowManager = "com.apple.WindowManager"
-
-    /// The curated setting that writes the preference `key` in `domain`, as `table.name`, or nil
-    /// when none does.
-    static func setting(writing key: String, in domain: String) -> String? {
-        catalog.setting(writing: .domain(domain, key))
-    }
 }

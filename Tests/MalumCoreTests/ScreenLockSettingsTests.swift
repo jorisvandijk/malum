@@ -57,20 +57,20 @@ struct ScreenLockSettingsTests {
     }
 
     @Test func readsTheDelay() {
-        let (seconds, problems) = read("[screen_lock]\ndelay = 0\n")
+        let (seconds, problems) = read("[screen_lock]\ndelay_seconds = 0\n")
         #expect(problems.isEmpty)
         #expect(seconds == 0)
     }
 
     @Test(arguments: ["-1", "\"immediate\"", "true"])
     func delayThatIsntSecondsReportsLine(text: String) {
-        let (seconds, problems) = read("[screen_lock]\ndelay = \(text)\n")
+        let (seconds, problems) = read("[screen_lock]\ndelay_seconds = \(text)\n")
         #expect(seconds == nil)
         #expect(
             problems == [
                 Message(
-                    .error, "macos.toml line 2: screen_lock.delay should be a whole number of seconds, 0 for right away"
-                )
+                    .error,
+                    "macos.toml line 2: screen_lock.delay_seconds should be \(CatalogValue.seconds(0...Int.max))")
             ])
     }
 

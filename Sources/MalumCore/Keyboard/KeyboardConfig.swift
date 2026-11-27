@@ -5,10 +5,6 @@ struct KeyboardConfig: Equatable, Sendable {
 
     /// The keyboard module's id, which names its file in dots.
     static let module = "keyboard"
-    /// The key under `[settings]` that names the hyper key.
-    private static let hyperKeyKey = "hyper_key"
-    /// The table of key remaps.
-    private static let remapTable = "remap"
 
     /// The key that holds every modifier down, or nil when there's none.
     let hyperKey: Key?
@@ -24,7 +20,7 @@ struct KeyboardConfig: Equatable, Sendable {
         self.bindings = bindings
     }
 
-    /// Reads `text`, the contents of `keyboard.toml`.
+    /// Reads `text`, the contents of `keyboard.toml`, through `KeyboardCatalog`.
     static func read(_ text: String) -> Reading {
         var reader: TableReader
         do {
@@ -32,42 +28,28 @@ struct KeyboardConfig: Equatable, Sendable {
         } catch {
             return (nil, [error])
         }
-        let document = reader.document
-        let settings = reader.table(document, ConfigSchema.settingsTable, at: [])
-        reader.unknownKeys(settings, at: [ConfigSchema.settingsTable], known: [hyperKeyKey])
-        let hyperKey = Self.hyperKey(settings[hyperKeyKey], reader: &reader)
-        let remaps = Self.remaps(reader.table(document, remapTable, at: []), hyperKey: hyperKey, reader: &reader)
-        var bindings: [KeyBinding] = []
+        let catalog = KeyboardCatalog.catalog
         // `enabled` is reported by the config, which says it belongs in `malum.toml`.
-        let tables = document.filter {
-            ![ConfigSchema.settingsTable, remapTable, ConfigSchema.switchKey].contains($0.key)
+        reader.unknownKeys(
+            reader.document.filter { $0.key != ConfigSchema.switchKey }, at: [], known: catalog.topTables)
+        let own = catalog.own(&reader, home: "")
+        var hyperKey: Key?
+        if case .string(let name)? = own.value(at: [KeyboardCatalog.hyperTable, KeyboardCatalog.hyperKey]) {
+            hyperKey = Key.named(name)
         }
-        for (name, value) in tables.sorted(by: { $0.key < $1.key }) {
-            guard SettingKind.table.accepts(value) || Modifier.modifiers(inTable: name) != nil else {
-                reader.add(.error, at: [name], .outsideSettings(name))
-                continue
-            }
-            bindings += Self.bindings(inTable: name, value, reader: &reader)
-        }
+        let remaps = Self.remaps(own, hyperKey: hyperKey, reader: &reader)
+        let bindings = Self.bindings(own, reader: &reader)
         let problems = reader.problemsByLine
         guard !reader.hasErrors else { return (nil, problems) }
         return (Self(hyperKey: hyperKey, remaps: remaps, bindings: bindings), problems)
     }
 
-    /// The hyper key named by `value`, or nil when it's left out or isn't a key that can be one.
-    private static func hyperKey(_ value: ConfigValue?, reader: inout TableReader) -> Key? {
-        guard let value else { return nil }
-        guard case .string(let name) = value, let key = Key.named(name), key.canBeHyper else {
-            reader.expect([ConfigSchema.settingsTable, hyperKeyKey], MessageText.hyperKeyName)
-            return nil
-        }
-        return key
-    }
-
-    /// The remaps in `table`, each written as `pressed = "types_as"`. The hyper key can't be one.
-    private static func remaps(_ table: ConfigTable, hyperKey: Key?, reader: inout TableReader) -> [KeyRemap] {
-        table.sorted { $0.key < $1.key }.compactMap { name, value in
-            let path = [remapTable, name]
+    /// The remaps in `[remaps]` of `own`, the tables the catalog read, each written as
+    /// `pressed = "types_as"`. The hyper key can't be one.
+    private static func remaps(_ own: ConfigTable, hyperKey: Key?, reader: inout TableReader) -> [KeyRemap] {
+        let table = reader.table(own, KeyboardCatalog.remapsTable, at: [])
+        return table.sorted { $0.key < $1.key }.compactMap { name, value in
+            let path = [KeyboardCatalog.remapsTable, name]
             guard let from = Self.key(named: name, at: path, reader: &reader) else { return nil }
             guard case .string(let target) = value, let to = Key.named(target) else {
                 reader.expect(path, MessageText.keyName)
@@ -81,25 +63,25 @@ struct KeyboardConfig: Equatable, Sendable {
         }
     }
 
-    /// The shortcuts in the table `name` at the top of the file, with `value` its contents, or none
-    /// when it isn't a table of modifiers written in their order.
-    private static func bindings(inTable name: String, _ value: ConfigValue, reader: inout TableReader) -> [KeyBinding]
-    {
-        guard let modifiers = Modifier.modifiers(inTable: name) else {
-            reader.unknownKeys([name: value], at: [], known: [])
-            return []
-        }
-        let spelling = Modifier.table(of: modifiers)
-        guard spelling == name else {
-            reader.add(.error, at: [name], .modifierOrder(name, spelling))
-            return []
-        }
-        guard let table = reader.table(value, at: [name]) else { return [] }
-        return table.sorted { $0.key < $1.key }.compactMap { keyName, value in
-            let path = [name, keyName]
-            guard let key = Self.key(named: keyName, at: path, reader: &reader) else { return nil }
+    /// The shortcuts in `[shortcuts]` of `own`, the tables the catalog read, each written as
+    /// `"modifiers+key" = "action"`. A shortcut written twice, in any order of its modifiers, is an
+    /// error.
+    private static func bindings(_ own: ConfigTable, reader: inout TableReader) -> [KeyBinding] {
+        let table = reader.table(own, KeyboardCatalog.shortcutsTable, at: [])
+        var first: [Hotkey: [String]] = [:]
+        return table.sorted { $0.key < $1.key }.compactMap { written, value in
+            let path = [KeyboardCatalog.shortcutsTable, written]
+            guard let hotkey = Hotkey(written) else {
+                reader.add(.error, at: path, .notShortcut(TableReader.dotted(path)))
+                return nil
+            }
+            if let earlier = first[hotkey] {
+                reader.add(.error, at: path, .setTwice(TableReader.dotted(path), TableReader.dotted(earlier)))
+                return nil
+            }
+            first[hotkey] = path
             guard let action = Self.action(value, at: path, reader: &reader) else { return nil }
-            return KeyBinding(hotkey: Hotkey(modifiers: modifiers, key: key), action: action)
+            return KeyBinding(hotkey: hotkey, action: action, written: written)
         }
     }
 

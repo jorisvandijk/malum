@@ -67,6 +67,14 @@ extension Catalog {
         return reading
     }
 
+    /// The tables Malum's own code reads, from what the curated tables in `reader`'s file ask for,
+    /// for a file whose settings Malum acts on itself, such as `keyboard.toml`, with the problems
+    /// `read(_:home:document:)` and `tables(_:_:)` find. A path in the home folder is filled in with
+    /// `home`.
+    func own(_ reader: inout TableReader, home: String) -> ConfigTable {
+        tables(read(&reader, home: home).files, &reader)
+    }
+
     /// One thing an entry of an entries table writes, with the key in dots that asks for it.
     private struct EntryWrite {
         /// The key that asks for it, such as `keys.github.file`.
@@ -103,7 +111,9 @@ extension Catalog {
         var items: [String] = []
         for setting in entries.settings {
             guard let given = entry[setting.name] else {
-                reader.add(.error, at: path, .needs(TableReader.dotted(path), setting.name))
+                if !entries.optional.contains(setting.name) {
+                    reader.add(.error, at: path, .needs(TableReader.dotted(path), setting.name))
+                }
                 continue
             }
             guard let writes = setting.writes(for: given, home: home) else {
@@ -114,9 +124,10 @@ extension Catalog {
             wanted.append((setting, writes))
         }
         let item = entries.each.map(CatalogEntries.item)
+        let name = path.last ?? ""
         return wanted.flatMap { setting, writes in
             zip(setting.targets, writes).flatMap { target, write in
-                target.filled(item, with: items).map {
+                target.filled(CatalogEntries.entry, with: [name]).flatMap { $0.filled(item, with: items) }.map {
                     EntryWrite(path: path + [setting.name], target: $0, write: write)
                 }
             }

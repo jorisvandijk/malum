@@ -41,7 +41,7 @@ struct StartupAppsTests {
         let messages = await open("[startup]\napps = [\"not an id\"]\n", apps: apps)
         #expect(apps.calls.isEmpty)
         #expect(
-            messages == [Message(.error, "macos.toml line 2: startup.apps: a bundle ID can't be empty or hold spaces")])
+            messages == [Message(.error, "macos.toml line 2: startup.apps should be \(CatalogValue.list(.apps))")])
     }
 
     @Test func appThatWontOpenIsAWarning() async {

@@ -6,12 +6,10 @@ import Testing
 struct HotkeyRegistryTests {
     /// A `keyboard.toml` with a module's action, an app and a cmd shortcut.
     private static let text = """
-        [cmd]
-        h = "hide_all"
-
-        [hyper]
-        f = "com.apple.finder"
-        space = "launcher"
+        [shortcuts]
+        "cmd+h" = "hide_all"
+        "hyper+f" = "com.apple.finder"
+        "hyper+space" = "launcher"
         """
 
     /// The registry for `text` and the modules in `offers`, with those in `switchedOn` running.
@@ -74,25 +72,27 @@ struct HotkeyRegistryTests {
     }
 
     @Test func bindingOnAFixedKeyIsAnErrorAtItsLine() throws {
-        let registry = try registry("[cmd]\nm = \"launcher\"\n", offers: offers())
+        let registry = try registry("[shortcuts]\n\"cmd+m\" = \"launcher\"\n", offers: offers())
         #expect(
             registry.problems == [
-                ConfigProblem(.error, file: "keyboard.toml", line: 2, "cmd.m: cmd+m is taken by window_manager")
+                ConfigProblem(
+                    .error, file: "keyboard.toml", line: 2, "shortcuts.\"cmd+m\": cmd+m is taken by window_manager")
             ])
         #expect(registry.target(for: try hotkey([.cmd], "m"))?.module == "window_manager")
     }
 
     @Test func actionNoModuleOffersIsAnErrorAtItsLine() throws {
-        let registry = try registry("[hyper]\nh = \"clipboard_history\"\n", offers: offers())
+        let registry = try registry("[shortcuts]\n\"hyper+h\" = \"clipboard_history\"\n", offers: offers())
         #expect(
             registry.problems == [
-                ConfigProblem(.error, file: "keyboard.toml", line: 2, "hyper.h: no module offers clipboard_history")
+                ConfigProblem(
+                    .error, file: "keyboard.toml", line: 2, "shortcuts.\"hyper+h\": no module offers clipboard_history")
             ])
         #expect(registry.target(for: try hotkey(hyper, "h")) == nil)
     }
 
     @Test func switchedOffModuleWarnsOnceAndGetsNoKeys() throws {
-        let text = "[hyper]\nl = \"launcher\"\nspace = \"launcher\"\n"
+        let text = "[shortcuts]\n\"hyper+l\" = \"launcher\"\n\"hyper+space\" = \"launcher\"\n"
         let registry = try registry(text, offers: offers(), switchedOn: ["window_manager"])
         #expect(
             registry.problems == [
@@ -102,13 +102,14 @@ struct HotkeyRegistryTests {
     }
 
     @Test func fixedKeyOfASwitchedOffModuleIsFree() throws {
-        let registry = try registry("[cmd]\nm = \"launcher\"\n", offers: offers(), switchedOn: ["launcher"])
+        let registry = try registry(
+            "[shortcuts]\n\"cmd+m\" = \"launcher\"\n", offers: offers(), switchedOn: ["launcher"])
         #expect(registry.target(for: try hotkey([.cmd], "m"))?.module == "launcher")
         #expect(registry.problems.isEmpty)
     }
 
     @Test func appsWithNoModuleToOpenThemWarnOnce() throws {
-        let text = "[hyper]\nb = \"com.bitwarden.desktop\"\nf = \"com.apple.finder\"\n"
+        let text = "[shortcuts]\n\"hyper+b\" = \"com.bitwarden.desktop\"\n\"hyper+f\" = \"com.apple.finder\"\n"
         let registry = try registry(text, offers: ["launcher": HotkeyOffer(actions: ["launcher"])])
         #expect(
             registry.problems == [

@@ -12,11 +12,11 @@ import Testing
 struct TapSessionTests {
     /// The launcher on hyper+space, with caps lock as the hyper key.
     private static let text = """
-        [settings]
-        hyper_key = "caps_lock"
-
         [hyper]
-        space = "launcher"
+        key = "caps_lock"
+
+        [shortcuts]
+        "hyper+space" = "launcher"
         """
 
     /// What hyper+space runs.

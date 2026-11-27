@@ -27,46 +27,69 @@ struct WindowManagerConfig: Equatable, Sendable {
     static let stackPreviousAction = "stack_previous"
     /// How far the split keys move a border when nothing is set, in percent of the area.
     static let defaultSplitStep = 5
-    /// The steps `split_step` can be, in percent of the area.
+    /// The steps `split_step_percent` can be, in percent of the area.
     static let splitSteps = 1...25
+    /// The table of how windows fill the screen and what apps may do with them.
+    static let windowsTable = "windows"
     /// The key of the part of the screen windows fill.
-    private static let frameKey = "frame"
-    /// The key that blocks cmd+H, cmd+M and cmd+option+M.
-    private static let blockKey = "block_hide_minimize"
+    static let frameKey = "frame"
+    /// The key that lets cmd+H, cmd+M and cmd+option+M through.
+    static let allowKey = "allow_hide_minimize"
     /// The key of how far the split keys move a border.
-    private static let splitStepKey = "split_step"
-    /// The list of float rules.
-    private static let floatKey = "float"
-    /// A float rule's app.
-    private static let appKey = "app"
-    /// A float rule's title pattern.
-    private static let titleKey = "title"
+    static let splitStepKey = "split_step_percent"
+    /// The table of windows left alone, by a name the person chooses.
+    static let floatTable = "floating_windows"
+    /// A floating window's app.
+    static let appKey = "app"
+    /// A floating window's title pattern.
+    static let titleKey = "title"
 
-    /// The window manager's settings, checked by `read` on top of their kinds.
+    /// The window manager's settings in `malum.toml`: only the switch, since the rest goes in
+    /// `window_manager.toml`, which `catalog` reads.
     static let schema = ConfigSchema(
-        about: "Run or raise apps, windows filling the screen, and floating windows. "
-            + "See [window manager](window-manager.md).",
-        settings: [
-            frameKey: Setting(
-                .string,
-                "The part of the screen windows fill: \"\(ScreenFrame.visible.rawValue)\" (below the menu bar and "
-                    + "outside the Dock) or \"\(ScreenFrame.full.rawValue)\" (the whole screen).",
-                default: .string(ScreenFrame.visible.rawValue)),
-            blockKey: Setting(
-                .boolean, "Swallows cmd+H, cmd+M and cmd+option+M, which would hide an app or minimise a window.",
-                default: .boolean(true)),
-            splitStepKey: Setting(
-                .integer,
-                "How far `split_left`, `split_right`, `split_taller` and `split_shorter` move a border, "
-                    + "in percent of the area: a whole number from \(splitSteps.lowerBound) to "
-                    + "\(splitSteps.upperBound).",
-                default: .integer(defaultSplitStep)),
-            floatKey: Setting(
-                .tables,
-                "Apps whose windows are left alone, each with `app` (a bundle ID) and an optional `title`, "
-                    + "a pattern that only matching windows float by."),
-        ],
-        settingsCheck: .windowManager)
+        about: "Run or raise apps, windows filling the screen, and floating windows. Its settings go in "
+            + "`\(Paths.moduleTOMLName(module))`: see [window manager](window-manager.md).",
+        settings: [:], fileCheck: .windowManager)
+
+    /// The catalog of `window_manager.toml`.
+    static let catalog = Catalog(
+        file: Paths.moduleTOMLName(module),
+        tables: [
+            CatalogTable(
+                name: windowsTable, about: "How windows fill the screen, and what apps may do with them.",
+                settings: [
+                    CatalogSetting(
+                        frameKey,
+                        "The part of the screen windows fill: `visible` is below the menu bar and outside the "
+                            + "Dock, `full` the whole screen.",
+                        .choice(ScreenFrame.allCases.map { .word($0.rawValue, .string($0.rawValue)) }),
+                        [.own(windowsTable, frameKey)]),
+                    CatalogSetting(
+                        allowKey,
+                        "Lets cmd+H, cmd+M and cmd+option+M hide an app or minimise a window. Left off, the window "
+                            + "manager swallows them, since a hidden app or a minimised window leaves a gap.",
+                        .flag, [.own(windowsTable, allowKey)]),
+                    CatalogSetting(
+                        splitStepKey,
+                        "How far `split_left`, `split_right`, `split_taller` and `split_shorter` move a border, "
+                            + "in percent of the area. \(defaultSplitStep) when it's left out.",
+                        .count(splitSteps), [.own(windowsTable, splitStepKey)]),
+                ]),
+            CatalogTable(
+                name: floatTable, about: "Windows the window manager leaves alone.",
+                entries: CatalogEntries(
+                    keys: "what floats, such as \"password_prompts\"",
+                    settings: [
+                        CatalogSetting(
+                            appKey, "The app, by bundle ID.", .app(before: "", after: ""),
+                            [.own(floatTable, CatalogEntries.entry, appKey)]),
+                        CatalogSetting(
+                            titleKey,
+                            "A pattern for the window's title, such as \"^Picture-in-Picture$\": only windows "
+                                + "whose title matches float. Left out, every window of the app floats.",
+                            .text(.plain), [.own(floatTable, CatalogEntries.entry, titleKey)]),
+                    ], optional: [titleKey])),
+        ])
 
     /// The part of the screen windows fill.
     let frame: ScreenFrame
@@ -88,62 +111,54 @@ struct WindowManagerConfig: Equatable, Sendable {
         self.splitStep = splitStep
     }
 
-    /// Reads `table`, whose kinds `schema` has checked, sending each error to `report`. A value with
-    /// an error takes its default, and a float rule with one is left out.
+    /// Reads `text`, the contents of `window_manager.toml`, through `catalog`: the tables it gave,
+    /// or nil when an error stops it, and every problem found.
+    static func read(file text: String) -> (table: ConfigTable?, problems: [ConfigProblem]) {
+        var reader: TableReader
+        do {
+            reader = try TableReader(text, file: Paths.moduleTOMLName(module))
+        } catch {
+            return (nil, [error])
+        }
+        // `enabled` is reported by the config, which says it belongs in `malum.toml`.
+        reader.unknownKeys(
+            reader.document.filter { $0.key != ConfigSchema.switchKey }, at: [], known: catalog.topTables)
+        let own = catalog.own(&reader, home: "")
+        _ = read(own) { path, text in reader.add(.error, at: path, text(TableReader.dotted(path))) }
+        let problems = reader.problemsByLine
+        return (reader.hasErrors ? nil : own, problems)
+    }
+
+    /// Reads `table`, the tables `catalog` read, whose kinds it has checked, sending each error to
+    /// `report`. A float rule with an error is left out.
     static func read(_ table: ConfigTable, report: Report) -> Self {
         var frame = ScreenFrame.visible
-        if case .string(let name)? = table[frameKey] {
-            if let named = ScreenFrame(rawValue: name) {
-                frame = named
-            } else {
-                report([frameKey]) { .shouldBe($0, MessageText.screenFrame) }
-            }
+        if case .string(let name)? = table.value(at: [windowsTable, frameKey]), let named = ScreenFrame(rawValue: name)
+        {
+            frame = named
         }
-        let floats = floatRules(table[floatKey], report: report)
+        var splitStep = defaultSplitStep
+        if case .integer(let step)? = table.value(at: [windowsTable, splitStepKey]) {
+            splitStep = step
+        }
+        let allows = table.value(at: [windowsTable, allowKey]) == .boolean(true)
         return Self(
-            frame: frame, blocksHideMinimize: boolean(table[blockKey]),
-            floats: floats, splitStep: splitStep(table[splitStepKey], report: report))
+            frame: frame, blocksHideMinimize: !allows, floats: floatRules(table[floatTable], report: report),
+            splitStep: splitStep)
     }
 
-    /// The split step in `value`, or the default when it's not set or out of range.
-    private static func splitStep(_ value: ConfigValue?, report: Report) -> Int {
-        guard case .integer(let step)? = value else { return defaultSplitStep }
-        guard splitSteps.contains(step) else {
-            report([splitStepKey]) { .shouldBe($0, MessageText.splitStep) }
-            return defaultSplitStep
-        }
-        return step
-    }
-
-    /// The value of a switch that's on unless it says false.
-    private static func boolean(_ value: ConfigValue?) -> Bool {
-        value != .boolean(false)
-    }
-
-    /// The float rules in `value`, a list of tables, leaving out each one with a problem.
+    /// The float rules in `value`, a table of them by name, leaving out each one with a problem.
     private static func floatRules(_ value: ConfigValue?, report: Report) -> [FloatRule] {
-        guard case .array(let items)? = value else { return [] }
-        return items.enumerated().compactMap { index, item in
-            guard case .table(let rule) = item else { return nil }
-            return floatRule(rule, at: [floatKey, String(index)], report: report)
+        guard case .table(let rules)? = value else { return [] }
+        return rules.sorted { $0.key < $1.key }.compactMap { name, rule in
+            guard case .table(let fields) = rule, case .string(let app)? = fields[appKey] else { return nil }
+            guard let value = fields[titleKey] else { return FloatRule(app: app, title: nil) }
+            guard case .string(let title) = value, compiles(title) else {
+                report([floatTable, name, titleKey]) { .shouldBe($0, MessageText.titlePattern) }
+                return nil
+            }
+            return FloatRule(app: app, title: title)
         }
-    }
-
-    /// The float rule `rule`, found at `path`, or nil when its app or its title has a problem.
-    private static func floatRule(_ rule: ConfigTable, at path: [String], report: Report) -> FloatRule? {
-        for key in rule.keys.sorted() where ![appKey, titleKey].contains(key) {
-            report(path + [key]) { .unknownKey($0, isTable: false) }
-        }
-        guard case .string(let app)? = rule[appKey], AppBundle.isBundleID(app) else {
-            report(path + [appKey]) { .notBundleID($0) }
-            return nil
-        }
-        guard let value = rule[titleKey] else { return FloatRule(app: app, title: nil) }
-        guard case .string(let title) = value, compiles(title) else {
-            report(path + [titleKey]) { .shouldBe($0, MessageText.titlePattern) }
-            return nil
-        }
-        return FloatRule(app: app, title: title)
     }
 
     /// Whether `pattern` is one `Regex` takes.

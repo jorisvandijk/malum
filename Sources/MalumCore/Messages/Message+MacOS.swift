@@ -186,23 +186,8 @@ extension Message {
     }
 }
 
-/// The words for problems with the curated tables of a catalog and the raw preferences in `macos.toml`.
+/// The words for problems with the curated tables of a catalog.
 extension MessageText {
-    /// The raw preference at `path`, written dotted, still works for one release; `replacement`
-    /// is the curated setting that writes it, if there's one.
-    static func rawPreference(_ path: String, _ replacement: String?) -> MessageText {
-        let instead: MessageText =
-            replacement.map { "use \($0) instead" } ?? "it has no curated name yet, see \(MacOSDocs.path)"
-        return "\(path) is a raw macOS preference, which stops working in the next release: \(instead)"
-    }
-
-    /// The power setting at `path`, written dotted, goes by the name `pmset` gives it, which still
-    /// works for one release; `replacement` is the name to use, if there's one.
-    static func rawPowerSetting(_ path: String, _ replacement: String?) -> MessageText {
-        let instead: MessageText = replacement.map { "use \($0) instead" } ?? "it has no curated name yet"
-        return "\(path) is a raw pmset name, which stops working in the next release: \(instead)"
-    }
-
     /// The keys at `path` and `other`, written dotted, set the same setting to different values.
     static func setTwice(_ path: String, _ other: String) -> MessageText {
         "\(path) sets the same setting as \(other), to something else"

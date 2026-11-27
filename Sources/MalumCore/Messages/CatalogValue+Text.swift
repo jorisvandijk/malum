@@ -20,8 +20,6 @@ extension CatalogValue: CustomStringConvertible {
             "a number of \(unit.words) from \(Self.plain(range.lowerBound)) to \(Self.plain(range.upperBound))"
         case .percent:
             "a whole number from \(Self.percentRange.lowerBound) to \(Self.percentRange.upperBound)"
-        case .folder:
-            "a folder's full path, starting with /"
         case .path:
             "a path, starting with \(Self.homePrefix) in your home folder or / outside it"
         case .app:
@@ -88,6 +86,10 @@ extension CatalogList: CustomStringConvertible {
             "a list of folders' full paths, such as \"/Users/you/Downloads\""
         case .hosts:
             "a list of at least one host name or pattern, such as \"github.com\" or \"*.example.com\""
+        case .apps:
+            "a list of apps' bundle IDs, such as \"net.librewolf.librewolf\""
+        case .names:
+            "a list of names, each not empty, not starting with a dot and without /, such as \"Documents\""
         }
     }
 }

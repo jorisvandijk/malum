@@ -59,7 +59,7 @@ extension MacOSSettingsTests {
             [power.battery]
             dim_screen = false
             [power.charger]
-            screen_off_min = "never"
+            screen_off_minutes = "never"
             [power.ups]
             dim_screen = false
             """)
@@ -68,35 +68,18 @@ extension MacOSSettingsTests {
             problems.map(\.message) == [
                 Message(
                     .error,
-                    "macos.toml line 4: power.charger.screen_off_min should be a whole number of minutes, 0 or more"),
+                    "macos.toml line 4: power.charger.screen_off_minutes should be a whole number of minutes, 0 or more"
+                ),
                 Message(.warn, "macos.toml line 5: unknown table power.ups"),
             ])
         #expect(
             MacOSSettings.read("[power.battery]\ndim_screen = true\n").wanted?.power == [.battery: ["lessbright": 1]])
     }
 
-    @Test func rawAndCuratedPowerNamesClashing() {
-        let (wanted, problems) = MacOSSettings.read("[power.battery]\nsleep_min = 5\nsleep = 10\n")
-        #expect(wanted == nil)
-        #expect(
-            problems.map(\.message).contains(
-                Message(
-                    .error,
-                    "macos.toml line 2: power.battery.sleep_min sets the same setting as power.battery.sleep, to something else"
-                )))
-    }
-
-    @Test func rawPowerNamesStillWorkWithAWarning() {
+    @Test func pmsetNamesAreUnknown() {
         let (wanted, problems) = MacOSSettings.read("[power.battery]\nlessbright = 0\n")
-        #expect(wanted?.power == [.battery: ["lessbright": 0]])
+        #expect(wanted == MacOSSettings.Wanted())
         #expect(
-            problems.map(\.message) == [
-                Message(
-                    .warn,
-                    """
-                    macos.toml line 2: power.battery.lessbright is a raw pmset name, which stops working in the next \
-                    release: use power.battery.dim_screen instead
-                    """)
-            ])
+            problems.map(\.message) == [Message(.warn, "macos.toml line 2: unknown setting power.battery.lessbright")])
     }
 }

@@ -50,13 +50,19 @@ struct HomeFoldersTests {
         #expect(messages == [Message(.warn, "couldn't hide ~/Movies in Finder: chflags: Operation not permitted")])
     }
 
-    @Test func listIsReadFromMacOSToml() throws {
-        var reader = try TableReader("[home_folders]\nshow = [\"Documents\", \"Git\"]\n", file: "macos.toml")
-        #expect(HomeFolders.read(&reader) == ["Documents", "Git"])
-        var missing = try TableReader("", file: "macos.toml")
-        #expect(HomeFolders.read(&missing) == nil)
-        var wrong = try TableReader("[home_folders]\nshow = [\"a/b\"]\n", file: "macos.toml")
-        #expect(HomeFolders.read(&wrong) == [])
-        #expect(wrong.hasErrors)
+    @Test func listIsReadFromMacOSToml() {
+        #expect(
+            MacOSSettings.read("[home_folders]\nshow = [\"Documents\", \"Git\"]\n").wanted?.homeFolders == [
+                "Documents", "Git",
+            ])
+        #expect(MacOSSettings.read("").wanted?.homeFolders == nil)
+        #expect(MacOSSettings.read("[home_folders]\n").wanted?.homeFolders == nil)
+        let wrong = MacOSSettings.read("[home_folders]\nshow = [\"a/b\"]\n")
+        #expect(wrong.wanted == nil)
+        #expect(
+            wrong.problems.map(\.message) == [
+                Message(
+                    .error, "macos.toml line 2: home_folders.show should be \(CatalogValue.list(.names))")
+            ])
     }
 }

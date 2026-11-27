@@ -15,15 +15,13 @@ struct KeyTapTests {
 
     /// A `keyboard.toml` with a module's action on hyper, one on ctrl+shift, and an app.
     private static let text = """
-        [settings]
-        hyper_key = "caps_lock"
-
-        [ctrl_shift]
-        v = "clipboard_history"
-
         [hyper]
-        f = "com.apple.finder"
-        space = "launcher"
+        key = "caps_lock"
+
+        [shortcuts]
+        "ctrl+shift+v" = "clipboard_history"
+        "hyper+f" = "com.apple.finder"
+        "hyper+space" = "launcher"
         """
 
     /// Every modifier, which the hyper key holds.

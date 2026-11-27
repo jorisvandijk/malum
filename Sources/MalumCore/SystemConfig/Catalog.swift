@@ -50,15 +50,6 @@ struct Catalog: Sendable {
     func parts(of path: [String]) -> [String] {
         tables.compactMap { $0.path.dropLast() == path[...] ? $0.path.last : nil }
     }
-
-    /// The curated setting that writes `target`, as `table.name`, or nil when none does.
-    func setting(writing target: CatalogSetting.Target) -> String? {
-        for table in tables {
-            guard let setting = table.settings.first(where: { $0.targets.contains(target) }) else { continue }
-            return TableReader.dotted([table.name, setting.name])
-        }
-        return nil
-    }
 }
 
 /// One curated table in a file in dots, such as `[trackpad]`, and the settings it takes. A data
@@ -110,16 +101,31 @@ struct CatalogTable: Sendable {
 }
 
 /// What each entry of an entries table holds, such as a key in `[keys.github]` of
-/// `apps/ssh.toml`: a table by a name the person chooses, which needs every one of `settings`. A
-/// target of a setting may hold `item(each)`, written once for each item of the entry's list
-/// setting `each`, such as once for each host a key is for.
+/// `apps/ssh.toml`: a table by a name the person chooses, which needs every one of `settings` but
+/// the `optional` ones. A target of a setting may hold `item(each)`, written once for each item of
+/// the entry's list setting `each`, such as once for each host a key is for, and `entry`, written as
+/// the entry's name.
 struct CatalogEntries: Sendable {
     /// What an entry's name is, for the docs, such as "a name for the key".
     let keys: String
-    /// The settings each entry needs.
+    /// The settings each entry takes.
     let settings: [CatalogSetting]
     /// The list setting whose items fill in `item(each)` in the targets, or nil when none does.
     let each: String?
+    /// The settings an entry may leave out.
+    let optional: [String]
+
+    /// What stands in a target for the entry's name.
+    static let entry = "<entry>"
+
+    /// Entries named as `keys` says, each taking `settings`, which may leave out the `optional`
+    /// ones, with `item(each)` in a target filled in by each item of the list setting `each`.
+    init(keys: String, settings: [CatalogSetting], each: String? = nil, optional: [String] = []) {
+        self.keys = keys
+        self.settings = settings
+        self.each = each
+        self.optional = optional
+    }
 
     /// What stands in a target for each item of the list setting `name`.
     static func item(_ name: String) -> String {

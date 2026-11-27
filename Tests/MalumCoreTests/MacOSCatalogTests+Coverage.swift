@@ -34,12 +34,4 @@ extension MacOSCatalogTests {
         #expect(problems.isEmpty)
         #expect(Set(wanted?.power[.battery]?.keys.map { $0 } ?? []) == Set(PowerSetting.all.map(\.pmset)))
     }
-
-    @Test func rawKeysFindTheirCuratedName() {
-        #expect(MacOSCatalog.setting(writing: "KeyRepeat", in: "NSGlobalDomain") == "keyboard.repeat_interval_ms")
-        #expect(
-            MacOSCatalog.setting(writing: "Clicking", in: "com.apple.AppleMultitouchTrackpad")
-                == "trackpad.tap_to_click")
-        #expect(MacOSCatalog.setting(writing: "mineffect", in: "com.apple.dock") == nil)
-    }
 }

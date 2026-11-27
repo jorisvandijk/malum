@@ -14,7 +14,7 @@ public struct Key: Hashable, Sendable {
     /// The key's HID usages, page included. A key sent on more than one page has each, the first
     /// being the one a remap turns other keys into.
     let hidUsages: [UInt64]
-    /// Whether `hyper_key` can be this key.
+    /// Whether `[hyper] key` can be this key.
     let canBeHyper: Bool
 
     /// Creates the key `name` on the keyboard page, with its virtual key code and its usage on that page.
@@ -40,7 +40,7 @@ public struct Key: Hashable, Sendable {
         byCode[keyCode]
     }
 
-    /// The keys `hyper_key` can be, in the order `all` lists them.
+    /// The keys `[hyper] key` can be, in the order `all` lists them.
     static var hyperKeys: [Key] { all.filter(\.canBeHyper) }
 
     /// Every key, by name.

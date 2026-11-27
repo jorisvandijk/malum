@@ -110,10 +110,10 @@ struct ConfigModuleFileTests {
     @Test func moduleThatChecksItsOwnFileGetsItsProblemsAtTheirLines() {
         var config = Config(schemas: ["keyboard": ConfigSchema(about: "Keys.", settings: [:], fileCheck: .keyboard)])
         let file = "/dots/keyboard.toml"
-        let keyboard = "[hyper]\nf = \"com.apple.finder\"\n\n[shift_ctrl]\na = \"launcher\"\n"
+        let keyboard = "[shortcuts]\n\"hyper+f\" = \"com.apple.finder\"\n\n[remaps]\nenter = \"tab\"\n"
         let report = config.load("", from: path, moduleFiles: ["keyboard": .text(path: file, keyboard)])
         #expect(report.problems == KeyboardConfig.read(keyboard).problems)
-        #expect(report.problems.map(\.line) == [4])
+        #expect(report.problems.map(\.line) == [5])
         #expect(report.kept == ["keyboard"])
     }
 
@@ -132,11 +132,11 @@ struct ConfigModuleFileTests {
 
     @Test func moduleThatChecksItsOwnFileTakesItWhole() {
         var config = Config(schemas: ["keyboard": ConfigSchema(about: "Keys.", settings: [:], fileCheck: .keyboard)])
-        let keyboard = "[settings]\nhyper_key = \"caps_lock\"\n\n[hyper]\nf = \"com.apple.finder\"\n"
+        let keyboard = "[hyper]\nkey = \"caps_lock\"\n\n[shortcuts]\n\"hyper+f\" = \"com.apple.finder\"\n"
         let file = "/dots/keyboard.toml"
         let report = config.load("", from: path, moduleFiles: ["keyboard": .text(path: file, keyboard)])
         #expect(report.problems.isEmpty)
-        #expect(config.settings["keyboard"]?["settings"] == .table(["hyper_key": .string("caps_lock")]))
+        #expect(config.settings["keyboard"]?["hyper"] == .table(["key": .string("caps_lock")]))
     }
 
     @Test func moduleFileTextIsHandedOverAsChecked() {

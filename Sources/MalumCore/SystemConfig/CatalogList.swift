@@ -10,6 +10,10 @@ enum CatalogList: Equatable, Sendable {
     case dockFolders
     /// Host names or patterns, such as ssh's, each without spaces.
     case hosts
+    /// Apps by their bundle IDs, such as the ones to open at start.
+    case apps
+    /// Names of files or folders, such as apps in `/Applications` without `.app`.
+    case names
 
     /// A keyboard layout's ID and the name macOS keeps it under, by the word `macos.toml` uses.
     struct Layout: Sendable {
@@ -86,6 +90,10 @@ enum CatalogList: Equatable, Sendable {
             Self.tile(item, kind: Kind.folderTile)
         case .hosts:
             item.isEmpty || item.contains(where: \.isWhitespace) ? nil : .string(item)
+        case .apps:
+            AppBundle.isBundleID(item) ? .string(item) : nil
+        case .names:
+            Paths.isPlainName(item) ? .string(item) : nil
         }
     }
 

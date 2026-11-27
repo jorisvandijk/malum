@@ -63,8 +63,7 @@ struct AppleAppsTests {
         #expect(bad == nil)
         #expect(
             problems.map(\.message) == [
-                Message(
-                    .error, "macos.toml line 2: apple_apps.remove: the name can't be empty, start with a dot or hold /"),
+                Message(.error, "macos.toml line 2: apple_apps.remove should be \(CatalogValue.list(.names))"),
                 Message(.warn, "macos.toml line 3: unknown setting apple_apps.keep"),
             ])
     }

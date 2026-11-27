@@ -12,9 +12,8 @@ struct DefaultAppsTests {
 
     /// Reads `text` as `macos.toml`: what `[default_apps]` sets and every problem.
     private func read(_ text: String) -> (DefaultApps.Wanted, [Message]) {
-        guard var reader = try? TableReader(text, file: Paths.macOSTOMLName) else { return ([:], []) }
-        let wanted = DefaultApps.read(&reader)
-        return (wanted, reader.problems.map(\.message))
+        let (wanted, problems) = MacOSSettings.read(text)
+        return (wanted?.defaultApps ?? [:], problems.map(\.message))
     }
 
     /// Sets `wanted` through `handlers`, and gives back whether it worked and what it said.
@@ -35,8 +34,12 @@ struct DefaultAppsTests {
         #expect(wanted.isEmpty)
         #expect(
             problems.sorted { $0.description < $1.description } == [
-                Message(.error, "macos.toml line 2: default_apps.browser should be text in quotes"),
-                Message(.error, "macos.toml line 3: default_apps.video: a bundle ID can't be empty or hold spaces"),
+                Message(
+                    .error,
+                    "macos.toml line 2: default_apps.browser should be \(CatalogValue.app(before: "", after: ""))"),
+                Message(
+                    .error, "macos.toml line 3: default_apps.video should be \(CatalogValue.app(before: "", after: ""))"
+                ),
                 Message(.warn, "macos.toml line 4: unknown setting default_apps.mail"),
             ])
     }

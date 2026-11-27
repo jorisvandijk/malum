@@ -18,31 +18,34 @@ The module needs Accessibility. Until it's granted, the module waits, and the [m
 ## keyboard.toml
 
 ```toml
-[settings]
-hyper_key = "caps_lock"
+[hyper]
+key = "caps_lock"
 
-[remap]
+[remaps]
 grave = "delete_forward"
 non_us_backslash = "grave"
 
-[hyper]
-f = "com.apple.finder"
-return = "net.kovidgoyal.kitty"
+[shortcuts]
+"hyper+f" = "com.apple.finder"
+"hyper+return" = "net.kovidgoyal.kitty"
+"ctrl+cmd+h" = "clipboard"
 ```
 
-### [settings] hyper_key
+The [keyboard.toml reference](keyboard-settings.md) lists every table and the values each takes.
+
+### [hyper] key
 
 The key that holds ctrl, option, cmd and shift down together while you hold it. One of `caps_lock`, `left_option`, `right_option`, `right_command` or `f13` to `f20`. Leave it out for no hyper key.
 
 Other apps see the hyper key as all four modifiers, so a shortcut such as hyper+k works in any app that lets you set one. Hyper+tab opens the app switcher, as cmd+tab does. With the [window manager](window-manager.md#adjusting-the-split) on, hyper+drag moves the borders between an app's windows, and that click doesn't reach the app.
 
-### [remap]
+### [remaps]
 
 Each line makes the key on the left type as the key on the right, on every keyboard, while Malum runs. Remaps are undone when the module stops or Malum quits, and at the next start after a crash. The hyper key can't be remapped.
 
-### Shortcut tables
+### [shortcuts]
 
-One table per set of modifiers, each a flat list of keys and what they do. Name a table after its modifiers joined in the order `ctrl`, `option`, `cmd`, `shift`, such as `[ctrl]`, `[ctrl_shift]`, `[option_cmd]` or `[cmd_shift]`. All four together is `[hyper]`. A table in another order is a config error that names the right spelling.
+Each line is a shortcut and what it does. A shortcut is its modifiers, `ctrl`, `option`, `cmd`, `shift`, or `hyper` for all four, then a key name, joined by `+` and in quotes: `"hyper+f"`, `"ctrl+shift+v"`. The modifiers can come in any order, and the same shortcut written twice is a config error. Every file in dots writes a shortcut this way.
 
 The value is what the key does:
 
@@ -60,7 +63,7 @@ Malum sets the hyper key and the remaps again when the Mac wakes from sleep, whe
 The module's line in the [menu bar](menu-bar.md) warns, as `degraded`, about what keeps your keys from working:
 
 - **Secure input:** while a password field or an app such as Terminal with Secure Keyboard Entry has secure input on, macOS hands no keys to Malum, so no shortcut works. The line names the app that holds it, and goes back to `running` once it lets go.
-- **Modifier Keys:** System Settings > Keyboard > Keyboard Shortcuts > Modifier Keys can change a key on one keyboard, such as caps lock to escape. When it changes your `hyper_key`, the hyper key doesn't work on that keyboard. Set that key back to itself there.
+- **Modifier Keys:** System Settings > Keyboard > Keyboard Shortcuts > Modifier Keys can change a key on one keyboard, such as caps lock to escape. When it changes your hyper key, the hyper key doesn't work on that keyboard. Set that key back to itself there.
 
 Taking away Accessibility stops the module and undoes the hyper key and the remaps, so no key is left dead. It starts again once you grant it (see [permissions](permissions.md)). When you take it away and give it back within a few seconds, Malum notices that macOS switched off its key catching and starts it again. When the module can't catch keys or set the remaps while it runs, it shows as `failed` and undoes the hyper key and the remaps, so your hyper key types as itself until the next change to `keyboard.toml` or the next wake.
 

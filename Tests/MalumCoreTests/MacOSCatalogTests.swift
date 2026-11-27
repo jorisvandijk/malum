@@ -79,7 +79,7 @@ struct MacOSCatalogTests {
             [finder]
             view = "list"
             [menu_bar]
-            hide = "always"
+            show = "never"
             [dock]
             show = "never"
             """)
@@ -113,7 +113,7 @@ struct MacOSCatalogTests {
 
     @Test func numbersAreTranslated() {
         let (preferences, problems) = read(
-            "[keyboard]\nrepeat_delay_ms = 450\nrepeat_interval_ms = 35\n[sound]\nalert_volume = 50\n")
+            "[keyboard]\nrepeat_delay_ms = 450\nrepeat_interval_ms = 35\n[sound]\nalert_volume_percent = 50\n")
         #expect(problems.isEmpty)
         #expect(
             preferences == [
@@ -168,18 +168,12 @@ struct MacOSCatalogTests {
             ])
     }
 
-    @Test func rawAndCuratedSettingClashing() {
-        let (_, problems) = read(
-            "[pointer]\nnatural_scrolling = true\n[preferences.NSGlobalDomain]\n\"com.apple.swipescrolldirection\" = false\n"
-        )
-        #expect(
-            problems.last
-                == Message(
-                    .error,
-                    """
-                    macos.toml line 4: preferences.NSGlobalDomain."com.apple.swipescrolldirection" sets the same \
-                    setting as pointer.natural_scrolling, to something else
-                    """))
+    @Test func foldersInTheHomeFolderStartWithHome() {
+        let (preferences, problems) = read("[screen_capture]\nfolder = \"$HOME/Pictures\"\n")
+        #expect(problems.isEmpty)
+        #expect(preferences == ["com.apple.screencapture location = <string>/Users/test/Pictures</string>"])
+        let (_, full) = read("[screen_capture]\nfolder = \"/Users/test/Pictures\"\n")
+        #expect(full.map(\.level) == [.error])
     }
 
     @Test func wrongValuesSayWhatTheyShouldBe() {
@@ -209,7 +203,11 @@ struct MacOSCatalogTests {
                     "us_international", "abc", "british", "dutch", "german", "french", "dvorak" or "colemak"
                     """),
                 Message(
-                    .error, "macos.toml line 7: screen_capture.folder should be a folder's full path, starting with /"),
+                    .error,
+                    """
+                    macos.toml line 7: screen_capture.folder should be a path, starting with $HOME/ in your home \
+                    folder or / outside it
+                    """),
                 Message(.warn, "macos.toml line 9: unknown setting trackpad.force_touch"),
             ])
     }
