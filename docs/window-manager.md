@@ -11,7 +11,7 @@ The switch lives in `malum.toml`:
 enabled = true
 ```
 
-The settings go either in the same table or in `window_manager.toml` (plain settings under `[settings]`, float rules as `[[float]]`), at the top of your dots folder, next to `malum.toml`. Use one or the other: settings in both places are a config error. Saving the file puts it to work straight away.
+Everything else goes in `window_manager.toml`, at the top of your dots folder, next to `malum.toml`. Settings in a `[window_manager]` table besides `enabled` are a config error. Saving the file puts it to work straight away.
 
 The module needs Accessibility. Until it's granted, the module waits, and the [menu bar](menu-bar.md) offers to open the page in System Settings (see [permissions](permissions.md)).
 
@@ -20,9 +20,9 @@ The module needs Accessibility. Until it's granted, the module waits, and the [m
 A shortcut in `keyboard.toml` whose value is a bundle ID opens that app:
 
 ```toml
-[hyper]
-f = "com.apple.finder"
-return = "net.kovidgoyal.kitty"
+[shortcuts]
+"hyper+f" = "com.apple.finder"
+"hyper+return" = "net.kovidgoyal.kitty"
 ```
 
 Pressing it starts the app when it isn't running. When it is, Malum shows it if it's hidden, brings it to the front, opens a new window when it has none, and brings back a minimised window when every window is minimised. Pressing it again while the app is already in front does nothing.
@@ -52,14 +52,14 @@ Four actions move the borders between an app's windows:
 - `split_left` and `split_right` move the border between the left window and the others.
 - `split_taller` and `split_shorter` make the focused window in the right column taller or shorter, taking room from or giving it to the windows above and below.
 
-Each press moves a border by `split_step`, 5% of the area unless set otherwise. Neither column gets narrower than 20% of the area, and no window in the right column gets shorter than 20% of its height (less when so many windows share it that 20% each wouldn't fit). The left window always fills the height, so `split_taller` and `split_shorter` do nothing on it. With one window, nothing moves. Bind them in `keyboard.toml`:
+Each press moves a border by `split_step_percent` in `[windows]`, 5% of the area unless set otherwise. Neither column gets narrower than 20% of the area, and no window in the right column gets shorter than 20% of its height (less when so many windows share it that 20% each wouldn't fit). The left window always fills the height, so `split_taller` and `split_shorter` do nothing on it. With one window, nothing moves. Bind them in `keyboard.toml`:
 
 ```toml
-[hyper]
-left = "split_left"
-right = "split_right"
-up = "split_taller"
-down = "split_shorter"
+[shortcuts]
+"hyper+left" = "split_left"
+"hyper+right" = "split_right"
+"hyper+up" = "split_taller"
+"hyper+down" = "split_shorter"
 ```
 
 You can also drag the borders: hold the hyper key and drag anywhere in the app in front. Moving sideways moves the border between the left window and the others. A drag that starts in the right column also moves the border between two of its windows nearest the pointer up or down. No exact hit on a border is needed, the windows follow while you drag, and the same limits hold. The click itself never reaches the app, and a click without the hyper key works as usual. Hyper+drag needs the [keyboard](keyboard.md) module, which catches the clicks, and isn't a binding in `keyboard.toml`.
@@ -71,10 +71,10 @@ Each app keeps its own split, also after it quits and starts again. When the num
 The action `toggle_stack` stacks the windows of the app in front: each fills the whole area, on top of each other, with the focused one in front. The same key splits them again, with the split they had. `stack_next` and `stack_previous` bring the next or previous window to the front and give it the focus, oldest first and going round at either end, so with two windows either key switches between them. Bind them in `keyboard.toml`:
 
 ```toml
-[hyper]
-l = "toggle_stack"
-comma = "stack_previous"
-period = "stack_next"
+[shortcuts]
+"hyper+l" = "toggle_stack"
+"hyper+comma" = "stack_previous"
+"hyper+period" = "stack_next"
 ```
 
 The hyper key holds shift too, so hyper+comma is hyper+< and hyper+period is hyper+>.
@@ -85,32 +85,32 @@ Malum fills the screen with the menu bar. Other screens are left alone. When a d
 
 ## Hiding and minimising
 
-A hidden app or a minimised window would leave a gap, so the window manager swallows cmd+H (hide), cmd+M (minimise) and cmd+option+M (minimise all) while `block_hide_minimize` is on, which it is by default. The keys are caught by the [keyboard](keyboard.md) module, so they only work this way while it's on too. A shortcut in `keyboard.toml` on one of these keys is a config error, since the window manager has them.
+A hidden app or a minimised window would leave a gap, so the window manager swallows cmd+H (hide), cmd+M (minimise) and cmd+option+M (minimise all) unless `allow_hide_minimize` in `[windows]` is on, which it isn't by default. The keys are caught by the [keyboard](keyboard.md) module, so they only work this way while it's on too. A shortcut in `keyboard.toml` on one of these keys is a config error, since the window manager has them.
 
 ## Floating windows
 
-A floating window is left where it is. Dialogs, panels, sheets, modal windows, windows of a fixed size and native fullscreen windows always float. Float rules add more:
+A floating window is left where it is. Dialogs, panels, sheets, modal windows, windows of a fixed size and native fullscreen windows always float. `[floating_windows]` adds more, each by a name you choose:
 
 ```toml
 # Every window of this app floats.
-[[float]]
+[floating_windows.system_settings]
 app = "com.apple.systempreferences"
 
 # Only windows whose title matches the pattern float.
-[[float]]
+[floating_windows.picture_in_picture]
 app = "org.mozilla.librewolf"
 title = "^Picture-in-Picture$"
 ```
 
-`app` is a bundle ID, and `title` is a regular expression. A title that isn't a valid expression is a config error at its line, and only that rule is left out.
+`app` is a bundle ID, and `title` is a regular expression. A title that isn't a valid expression is a config error at its line, and only that one is left out.
 
 ### Floating a window by hand
 
 The action `toggle_float` floats the focused window of the app in front: it's centred at a little over half the size of the area, and the app's other windows fill the space it left. The same key puts it back in the place it came from. Windows that float anyway, such as dialogs, are left as they are. Bind it in `keyboard.toml`:
 
 ```toml
-[hyper]
-t = "toggle_float"
+[shortcuts]
+"hyper+t" = "toggle_float"
 ```
 
 A window floated this way stays floating until it's toggled back or closed, also when Malum lays the windows out again.
@@ -120,8 +120,8 @@ A window floated this way stays floating until it's toggled back or closed, also
 The window manager's action `inspect_window` shows what Malum sees in a window, which helps when writing a float rule. Bind it to a key in `keyboard.toml`:
 
 ```toml
-[hyper]
-i = "inspect_window"
+[shortcuts]
+"hyper+i" = "inspect_window"
 ```
 
 The key dims the screens a little and shows a crosshair. Click any window to see its app, bundle ID, title, role and subrole, frame (size and top left corner, in points from the top left of the screen with the menu bar), workspace (the keys that raise its app) and whether the window manager manages it, or why it floats. The click doesn't reach the window. Esc cancels. Copy puts the whole report on the clipboard, and esc closes it. Inspecting changes nothing.
@@ -129,14 +129,14 @@ The key dims the screens a little and shows a crosshair. Click any window to see
 ## window_manager.toml
 
 ```toml
-[settings]
+[windows]
 frame = "visible"
-block_hide_minimize = true
-split_step = 5
+allow_hide_minimize = false
+split_step_percent = 5
 ```
 
 - `frame`: `"visible"` fills the screen below the menu bar and outside the Dock, and `"full"` fills the whole screen.
-- `block_hide_minimize`: swallows cmd+H, cmd+M and cmd+option+M, which would hide an app or minimise a window.
-- `split_step`: how far the split keys move a border, in percent of the area, a whole number from 1 to 25. Anything else is a config error at its line.
+- `allow_hide_minimize`: lets cmd+H, cmd+M and cmd+option+M hide an app or minimise a window.
+- `split_step_percent`: how far the split keys move a border, in percent of the area, a whole number from 1 to 25. Anything else is a config error at its line.
 
-Every key is optional, and the values above are the defaults. The [config reference](config.md) lists them all.
+Every key is optional, and the values above are the defaults. The [window_manager.toml reference](window-manager-settings.md) lists them all, with `[floating_windows]`.

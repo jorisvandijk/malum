@@ -11,7 +11,7 @@ public struct ConfigSchema: Equatable, Sendable {
 
     /// The key that switches a module on or off.
     public static let switchKey = "enabled"
-    /// The table a module's own file holds its plain settings in. Lists of tables, such as `[[float]]`,
+    /// The table a module's own file holds its plain settings in. Lists of tables, such as `[[server]]`,
     /// keep their own headings.
     public static let settingsTable = "settings"
     /// The setting that switches a module on or off. Every module is off until it's set.

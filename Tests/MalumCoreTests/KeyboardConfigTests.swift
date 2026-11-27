@@ -12,19 +12,17 @@ struct KeyboardConfigTests {
     @Test func exampleLayoutIsRead() throws {
         let reading = KeyboardConfig.read(
             """
-            [settings]
-            hyper_key = "caps_lock"
+            [hyper]
+            key = "caps_lock"
 
-            [remap]
+            [remaps]
             grave = "delete_forward"
             fn = "left_control"
 
-            [hyper]
-            f = "com.apple.finder"
-            space = "launcher"
-
-            [ctrl_shift]
-            return = "net.kovidgoyal.kitty"
+            [shortcuts]
+            "hyper+f" = "com.apple.finder"
+            "hyper+space" = "launcher"
+            "shift+ctrl+return" = "net.kovidgoyal.kitty"
             """)
         let hyper = Set(Modifier.allCases)
         let expected = KeyboardConfig(
@@ -34,11 +32,11 @@ struct KeyboardConfigTests {
                 KeyRemap(from: try key("grave"), to: try key("delete_forward")),
             ],
             bindings: [
-                KeyBinding(
-                    hotkey: Hotkey(modifiers: [.ctrl, .shift], key: try key("return")),
-                    action: .app("net.kovidgoyal.kitty")),
                 KeyBinding(hotkey: Hotkey(modifiers: hyper, key: try key("f")), action: .app("com.apple.finder")),
                 KeyBinding(hotkey: Hotkey(modifiers: hyper, key: try key("space")), action: .module("launcher")),
+                KeyBinding(
+                    hotkey: Hotkey(modifiers: [.ctrl, .shift], key: try key("return")),
+                    action: .app("net.kovidgoyal.kitty"), written: "shift+ctrl+return"),
             ])
         #expect(reading.config == expected)
         #expect(reading.problems.isEmpty)
@@ -58,87 +56,114 @@ struct KeyboardConfigTests {
     }
 
     @Test func hyperKeyThatCantBeOneIsAnError() {
-        let reading = KeyboardConfig.read("[settings]\nhyper_key = \"a\"\n")
+        let reading = KeyboardConfig.read("[hyper]\nkey = \"a\"\n")
         #expect(reading.config == nil)
         #expect(
             reading.problems.map(\.message) == [
                 Message(
                     .error,
                     """
-                    keyboard.toml line 2: settings.hyper_key should be one of "f13", "f14", "f15", "f16", "f17", "f18", \
-                    "f19", "f20", "caps_lock", "left_option", "right_option", "right_command"
+                    keyboard.toml line 2: hyper.key should be "f13", "f14", "f15", "f16", "f17", "f18", "f19", "f20", \
+                    "caps_lock", "left_option", "right_option" or "right_command"
                     """)
             ])
     }
 
-    @Test func tableInAnotherOrderNamesTheRightSpelling() {
+    @Test func shortcutThatIsntOneIsAnError() {
         let reading = KeyboardConfig.read(
-            "[shift_ctrl]\na = \"launcher\"\n\n[cmd_shift_option_ctrl]\nb = \"launcher\"\n")
+            "[shortcuts]\n\"ctrl+\" = \"launcher\"\n\"super+a\" = \"launcher\"\n\"ctrl+ctrl+a\" = \"launcher\"\n")
         #expect(reading.config == nil)
+        let shortcut = "a shortcut is modifiers and a key name joined by +, such as \"hyper+b\" or \"ctrl+cmd+h\""
         #expect(
             reading.problems.map(\.message) == [
-                Message(.error, "keyboard.toml line 1: shift_ctrl should be written ctrl_shift"),
-                Message(.error, "keyboard.toml line 4: cmd_shift_option_ctrl should be written hyper"),
+                Message(.error, "keyboard.toml line 2: shortcuts.\"ctrl+\": \(shortcut)"),
+                Message(.error, "keyboard.toml line 3: shortcuts.\"super+a\": \(shortcut)"),
+                Message(.error, "keyboard.toml line 4: shortcuts.\"ctrl+ctrl+a\": \(shortcut)"),
             ])
     }
 
-    @Test func unknownTableIsOnlyAWarning() {
-        let reading = KeyboardConfig.read("[hyper]\na = \"launcher\"\n\n[control]\nb = \"launcher\"\n")
-        #expect(reading.config?.bindings.count == 1)
-        #expect(reading.problems.map(\.message) == [Message(.warn, "keyboard.toml line 4: unknown table control")])
-    }
-
-    @Test func unknownKeyNamesAreErrorsAtTheirLines() {
-        let reading = KeyboardConfig.read("[remap]\nenter = \"tab\"\ngrave = \"bksp\"\n\n[hyper]\nesc = \"launcher\"\n")
+    @Test func shortcutWrittenTwiceIsAnError() {
+        let reading = KeyboardConfig.read(
+            "[shortcuts]\n\"ctrl+cmd+h\" = \"clipboard\"\n\"cmd+ctrl+h\" = \"launcher\"\n")
         #expect(reading.config == nil)
         #expect(
             reading.problems.map(\.message) == [
-                Message(.error, "keyboard.toml line 2: remap.enter: enter isn't a key name"),
-                Message(.error, "keyboard.toml line 3: remap.grave should be a key name, such as \"caps_lock\""),
-                Message(.error, "keyboard.toml line 6: hyper.esc: esc isn't a key name"),
+                Message(
+                    .error,
+                    """
+                    keyboard.toml line 2: shortcuts."ctrl+cmd+h" sets the same setting as shortcuts."cmd+ctrl+h", \
+                    to something else
+                    """)
+            ])
+    }
+
+    @Test func unknownTablesAndKeysAreOnlyWarnings() {
+        let reading = KeyboardConfig.read(
+            "[shortcuts]\n\"hyper+a\" = \"launcher\"\n\n[ctrl]\nb = \"launcher\"\n\n[hyper]\nside = \"left\"\n")
+        #expect(reading.config?.bindings.count == 1)
+        #expect(
+            reading.problems.map(\.message) == [
+                Message(.warn, "keyboard.toml line 4: unknown table ctrl"),
+                Message(.warn, "keyboard.toml line 8: unknown setting hyper.side"),
+            ])
+    }
+
+    @Test func unknownKeyNamesAreErrorsAtTheirLines() {
+        let reading = KeyboardConfig.read(
+            "[remaps]\nenter = \"tab\"\ngrave = \"bksp\"\n\n[shortcuts]\n\"hyper+esc\" = \"launcher\"\n")
+        #expect(reading.config == nil)
+        #expect(
+            reading.problems.map(\.message) == [
+                Message(.error, "keyboard.toml line 2: remaps.enter: enter isn't a key name"),
+                Message(.error, "keyboard.toml line 3: remaps.grave should be a key name, such as \"caps_lock\""),
+                Message(
+                    .error,
+                    """
+                    keyboard.toml line 6: shortcuts."hyper+esc": a shortcut is modifiers and a key name joined by +, \
+                    such as "hyper+b" or "ctrl+cmd+h"
+                    """),
             ])
     }
 
     @Test func remappingTheHyperKeyIsAnError() {
-        let reading = KeyboardConfig.read("[settings]\nhyper_key = \"caps_lock\"\n\n[remap]\ncaps_lock = \"escape\"\n")
+        let reading = KeyboardConfig.read("[hyper]\nkey = \"caps_lock\"\n\n[remaps]\ncaps_lock = \"escape\"\n")
         #expect(reading.config == nil)
         #expect(
             reading.problems.map(\.message) == [
                 Message(
                     .error,
-                    "keyboard.toml line 5: remap.caps_lock: caps_lock is the hyper key, so it can't be remapped too")
+                    "keyboard.toml line 5: remaps.caps_lock: caps_lock is the hyper key, so it can't be remapped too")
             ])
     }
 
     @Test func actionThatIsntTextOrIsEmptyIsAnError() {
-        let reading = KeyboardConfig.read("[hyper]\na = 3\nb = \"\"\nc = \"com.example app\"\n")
+        let reading = KeyboardConfig.read(
+            "[shortcuts]\n\"hyper+a\" = 3\n\"hyper+b\" = \"\"\n\"hyper+c\" = \"com.example app\"\n")
         #expect(reading.config == nil)
+        let action = "should be an app's bundle ID or a module's action, such as \"launcher\""
         #expect(
             reading.problems.map(\.message) == [
+                Message(.error, "keyboard.toml line 2: shortcuts.\"hyper+a\" \(action)"),
+                Message(.error, "keyboard.toml line 3: shortcuts.\"hyper+b\" \(action)"),
                 Message(
-                    .error,
-                    "keyboard.toml line 2: hyper.a should be an app's bundle ID or a module's action, such as \"launcher\""
-                ),
-                Message(
-                    .error,
-                    "keyboard.toml line 3: hyper.b should be an app's bundle ID or a module's action, such as \"launcher\""
-                ),
-                Message(.error, "keyboard.toml line 4: hyper.c: a bundle ID can't be empty or hold spaces"),
+                    .error, "keyboard.toml line 4: shortcuts.\"hyper+c\": a bundle ID can't be empty or hold spaces"),
             ])
     }
 
-    @Test func hyperKeyOutsideItsHeadingIsAnError() {
-        let reading = KeyboardConfig.read("hyper_key = \"caps_lock\"\n")
-        #expect(reading.config == nil)
+    @Test func oldLayoutIsUnknown() {
+        let reading = KeyboardConfig.read("[settings]\nhyper_key = \"caps_lock\"\n\n[remap]\ngrave = \"tab\"\n")
+        #expect(reading.config == KeyboardConfig())
         #expect(
             reading.problems.map(\.message) == [
-                Message(.error, "keyboard.toml line 1: hyper_key goes under [settings]")
+                Message(.warn, "keyboard.toml line 1: unknown table settings"),
+                Message(.warn, "keyboard.toml line 4: unknown table remap"),
             ])
     }
 
-    @Test func modifierTableThatIsntATableIsAnError() {
-        let reading = KeyboardConfig.read("hyper = \"launcher\"\n")
+    @Test func tableThatIsntATableIsAnError() {
+        let reading = KeyboardConfig.read("shortcuts = \"launcher\"\n")
         #expect(reading.config == nil)
-        #expect(reading.problems.map(\.message) == [Message(.error, "keyboard.toml line 1: hyper should be a table")])
+        #expect(
+            reading.problems.map(\.message) == [Message(.error, "keyboard.toml line 1: shortcuts should be a table")])
     }
 }

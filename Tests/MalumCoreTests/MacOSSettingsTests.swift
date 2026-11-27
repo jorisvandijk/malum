@@ -36,65 +36,18 @@ struct MacOSSettingsTests {
         return (try? InstalledRecord.read(from: state)) ?? InstalledRecord()
     }
 
-    @Test func rawDomainsStillWorkWithAWarning() {
+    @Test func rawPreferenceTablesAreUnknown() {
         let (wanted, problems) = MacOSSettings.read(
             """
             [preferences.NSGlobalDomain]
             KeyRepeat = 2
-            [preferences."com.apple.finder"]
-            ShowPathbar = true
             [current_host."com.apple.controlcenter"]
             Timer = 8
             """)
-        let raw = "is a raw macOS preference, which stops working in the next release:"
+        #expect(wanted == MacOSSettings.Wanted())
         #expect(
             problems.map(\.message) == [
-                Message(
-                    .warn,
-                    "macos.toml line 2: preferences.NSGlobalDomain.KeyRepeat \(raw) use keyboard.repeat_interval_ms instead"
-                ),
-                Message(
-                    .warn,
-                    "macos.toml line 4: preferences.\"com.apple.finder\".ShowPathbar \(raw) use finder.show_path_bar instead"
-                ),
-                Message(
-                    .warn,
-                    "macos.toml line 6: current_host.\"com.apple.controlcenter\".Timer \(raw) use menu_bar.show_timer instead"
-                ),
-            ])
-        #expect(
-            wanted?.preferences.map { "\($0.domain) \($0.key)" } == [
-                "NSGlobalDomain KeyRepeat", "com.apple.finder ShowPathbar",
-                "com.apple.controlcenter (current host) Timer",
-            ])
-    }
-
-    @Test func rawPreferenceWithoutACuratedNameSaysSo() {
-        let (_, problems) = MacOSSettings.read("[preferences.\"com.apple.dock\"]\nmineffect = \"scale\"\n")
-        #expect(
-            problems.map(\.message) == [
-                Message(
-                    .warn,
-                    """
-                    macos.toml line 2: preferences."com.apple.dock".mineffect is a raw macOS preference, which stops \
-                    working in the next release: it has no curated name yet, see docs/macos-settings.md
-                    """)
-            ])
-    }
-
-    @Test func badDomainsAreErrors() {
-        let (wanted, problems) = MacOSSettings.read(
-            """
-            [preferences."-g"]
-            KeyRepeat = 2
-            [preferences]
-            NSGlobalDomain = 2
-            """)
-        #expect(wanted == nil)
-        #expect(
-            problems.map(\.message) == [
-                Message(.error, "macos.toml line 1: preferences.-g: a preferences domain can't start with -"),
-                Message(.error, "macos.toml line 4: preferences.NSGlobalDomain should be a table"),
+                Message(.warn, "unknown table current_host"), Message(.warn, "unknown table preferences"),
             ])
     }
 
@@ -114,7 +67,7 @@ struct MacOSSettingsTests {
 
     @Test func brokenFileTouchesNothing() async {
         let runner = FakeRunner()
-        let files = FakeFileSystem(texts: [file: "[preferences.\"com.apple.dock\"]\nautohide = 1979-05-27\n"])
+        let files = FakeFileSystem(texts: [file: "[dock]\nshow = 1979-05-27\n"])
         let (succeeded, messages) = await run(files, runner: runner)
         #expect(!succeeded)
         #expect(runner.commands.isEmpty)
@@ -170,20 +123,6 @@ struct MacOSSettingsTests {
             })
     }
 
-    @Test func turningWindowTilingOnIsAnError() {
-        let (wanted, problems) = MacOSSettings.read(
-            "[preferences.\"com.apple.WindowManager\"]\nEnableTilingByEdgeDrag = true\n")
-        #expect(wanted == nil)
-        #expect(
-            problems.map(\.message).last
-                == Message(
-                    .error,
-                    """
-                    macos.toml line 2: preferences."com.apple.WindowManager".EnableTilingByEdgeDrag can't be set: \
-                    Malum always turns macOS's window tiling off, its window manager tiles
-                    """))
-    }
-
     @Test func dockAppsWithKeysMacOSAddedAreUpToDate() async {
         let apps = """
             <key>persistent-apps</key><array><dict><key>GUID</key><integer>42</integer><key>tile-data</key><dict>\
@@ -206,7 +145,7 @@ struct MacOSSettingsTests {
             mode = "dark"
             accent_color = "pink"
             [menu_bar]
-            hide = "always"
+            show = "never"
             show_spotlight = false
             [pointer]
             natural_scrolling = false

@@ -16,6 +16,7 @@ on:
       - "docs/config.md"
       - "docs/macos-settings.md"
       - "docs/apps/**"
+      - "docs/*-settings.md"
   workflow_dispatch:
 
 permissions:
@@ -96,6 +97,6 @@ jobs:
           if [ -n "$(git status --porcelain -- docs)" ]; then
             git status --short -- docs
             git diff -- docs
-            echo "docs/config.md, docs/macos-settings.md or docs/apps/ is out of date: run 'swift run MalumDocs' and commit it."
+            echo "docs/config.md, a docs/*-settings.md page or docs/apps/ is out of date: run 'swift run MalumDocs' and commit it."
             exit 1
           fi

@@ -155,23 +155,17 @@ struct RunCommandTests {
         }
         let (succeeded, messages) = await run(
             switchedOn, runner: runner,
-            more: ["/Users/test/dots/macos.toml": "[preferences.\"com.apple.dock\"]\nautohide = true\n"])
+            more: ["/Users/test/dots/macos.toml": "[clock]\nshow_am_pm = true\n"])
         #expect(succeeded)
         #expect(
             messages == [
                 Message(.info, "nothing to install: \(packages) doesn't exist"),
                 Message(.info, "no app config files to write: /Users/test/dots/apps doesn't exist"),
-                Message(
-                    .warn,
-                    """
-                    macos.toml line 2: preferences."com.apple.dock".autohide is a raw macOS preference, which \
-                    stops working in the next release: use dock.show instead
-                    """),
                 Message(.info, "set EnableTilingByEdgeDrag in com.apple.WindowManager from macos.toml"),
                 Message(.info, "set EnableTopTilingByEdgeDrag in com.apple.WindowManager from macos.toml"),
                 Message(.info, "set EnableTilingOptionAccelerator in com.apple.WindowManager from macos.toml"),
-                Message(.info, "set autohide in com.apple.dock from macos.toml"),
-                Message(.info, "restarted Dock to use the new settings"),
+                Message(.info, "set clock.show_am_pm in com.apple.menuextra.clock from macos.toml"),
+                Message(.info, "restarted ControlCenter to use the new settings"),
                 Message(
                     .info, "some macOS settings, such as key repeat, take full effect after you log out and back in"),
                 Message(.info, "system_config is done"),

@@ -65,9 +65,9 @@ struct WindowManagerModuleTests {
         #expect(keys[minimiseAll] != nil)
     }
 
-    @Test func blockHideMinimizeOffSwallowsNothing() {
+    @Test func allowingHideMinimizeSwallowsNothing() {
         let module = module()
-        module.apply(["block_hide_minimize": .boolean(false)])
+        module.apply(["windows": .table(["allow_hide_minimize": .boolean(true)])])
         #expect(module.hotkeys.fixedKeys.isEmpty)
         #expect(module.hotkeys.opensApps)
     }
@@ -94,7 +94,7 @@ struct WindowManagerModuleTests {
         let window = window(of: kitty.pid)
         watcher.apps = [kitty]
         let module = module()
-        module.apply(["frame": .string("full")])
+        module.apply(["windows": .table(["frame": .string("full")])])
         try await module.start()
         #expect(window.frame == CGRect(x: 0, y: 0, width: 1512, height: 982))
     }
@@ -104,7 +104,7 @@ struct WindowManagerModuleTests {
         watcher.apps = [kitty]
         let module = module()
         try await module.start()
-        module.apply(["frame": .string("full")])
+        module.apply(["windows": .table(["frame": .string("full")])])
         #expect(window.frame == CGRect(x: 0, y: 0, width: 1512, height: 982))
     }
 
@@ -334,7 +334,7 @@ extension WindowManagerModuleTests {
 
     @Test func splitRightMovesTheBorderBySplitStep() async throws {
         let (module, windows) = try await kittyInFront()
-        module.apply(["split_step": .integer(10)])
+        module.apply(["windows": .table(["split_step_percent": .integer(10)])])
         module.perform(.module("split_right"))
         #expect(windows.first?.frame?.width == (visibleArea.width * 0.6).rounded(.down))
     }

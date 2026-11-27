@@ -61,11 +61,6 @@ extension MessageText {
         "\(path): a package name can't start with -"
     }
 
-    /// The domain at `path`, written dotted, starts with `-`, which `defaults` would take as an option.
-    static func notDomain(_ path: String) -> MessageText {
-        "\(path): a preferences domain can't start with -"
-    }
-
     /// The hosts entry at `path`, written dotted, has an empty name or address or one with spaces.
     static func notHostsEntry(_ path: String) -> MessageText {
         "\(path): a host name and its address can't be empty or hold spaces"
@@ -91,9 +86,9 @@ extension MessageText {
         "\(path): \(name) isn't a key name"
     }
 
-    /// The table of shortcuts `table` names its modifiers in another order, and is written `spelling`.
-    static func modifierOrder(_ table: String, _ spelling: String) -> MessageText {
-        "\(table) should be written \(spelling)"
+    /// The shortcut at `path`, written dotted, isn't modifiers and a key name joined by `+`.
+    static func notShortcut(_ path: String) -> MessageText {
+        "\(path): a shortcut is modifiers and a key name joined by +, such as \"hyper+b\" or \"ctrl+cmd+h\""
     }
 
     /// The remap at `path`, written dotted, remaps `name`, which is the hyper key.
@@ -184,24 +179,8 @@ extension MessageText {
     /// What a key in `keyboard.toml` has to be.
     static var keyName: MessageText { "a key name, such as \"caps_lock\"" }
 
-    /// What `hyper_key` has to be.
-    static var hyperKeyName: MessageText {
-        "one of \(Key.hyperKeys.map { Escaping.quoted($0.name, controls: .all) }.joined(separator: ", "))"
-    }
-
     /// What a shortcut in `keyboard.toml` does.
     static var keyAction: MessageText { "an app's bundle ID or a module's action, such as \"launcher\"" }
-
-    /// What a window manager's `frame` should be.
-    static var screenFrame: MessageText {
-        MessageText(ScreenFrame.allCases.map { "\"\($0.rawValue)\"" }.joined(separator: " or "))
-    }
-
-    /// What a window manager's `split_step` should be.
-    static var splitStep: MessageText {
-        let steps = WindowManagerConfig.splitSteps
-        return "a whole number from \(steps.lowerBound) to \(steps.upperBound)"
-    }
 
     /// What a float rule's `title` should be.
     static var titlePattern: MessageText { "a pattern for the window's title, such as \"^Picture-in-Picture$\"" }

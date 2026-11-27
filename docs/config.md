@@ -4,7 +4,7 @@
 
 Every setting `malum.toml` takes, by module. Each module's settings go in a table named after the module, such as `[system_config]`. A module is off until its table sets `enabled = true`. A setting that's left out takes its default, when it has one.
 
-A module's settings can go in a file of their own in dots instead, next to `malum.toml` and named after the module, such as `system_config.toml`. That file holds the same settings under a `[settings]` heading, while a list of tables such as `[[float]]` keeps its own. `enabled` always stays in `malum.toml`, and a module's settings go in one of the two places, never both.
+A module's settings can go in a file of their own in dots instead, next to `malum.toml` and named after the module, such as `system_config.toml`. That file holds the same settings under a `[settings]` heading, while a list of tables such as `[[server]]` keeps its own. `enabled` always stays in `malum.toml`, and a module's settings go in one of the two places, never both.
 
 ## `clipboard`
 
@@ -134,14 +134,7 @@ The picture every screen shows, by its file name in the `wallpapers` folder in d
 
 ## `window_manager`
 
-Run or raise apps, windows filling the screen, and floating windows. See [window manager](window-manager.md).
-
-### `window_manager.block_hide_minimize`
-
-Swallows cmd+H, cmd+M and cmd+option+M, which would hide an app or minimise a window.
-
-- Value: true or false
-- Default: `true`
+Run or raise apps, windows filling the screen, and floating windows. Its settings go in `window_manager.toml`: see [window manager](window-manager.md).
 
 ### `window_manager.enabled`
 
@@ -149,23 +142,3 @@ Switches the module on. The module stays off until this is set to true.
 
 - Value: true or false
 - Default: `false`
-
-### `window_manager.float`
-
-Apps whose windows are left alone, each with `app` (a bundle ID) and an optional `title`, a pattern that only matching windows float by.
-
-- Value: a list of tables
-
-### `window_manager.frame`
-
-The part of the screen windows fill: "visible" (below the menu bar and outside the Dock) or "full" (the whole screen).
-
-- Value: text in quotes
-- Default: `"visible"`
-
-### `window_manager.split_step`
-
-How far `split_left`, `split_right`, `split_taller` and `split_shorter` move a border, in percent of the area: a whole number from 1 to 25.
-
-- Value: a whole number
-- Default: `5`

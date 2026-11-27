@@ -1,4 +1,4 @@
-/// The key mapping Malum hands to `hidutil`: the hyper key typing as F18, then every `[remap]`.
+/// The key mapping Malum hands to `hidutil`: the hyper key typing as F18, then every `[remaps]` entry.
 ///
 /// The event tap tells the hyper key apart because it arrives as F18, a key Mac keyboards lack.
 struct KeyMapping: Equatable, Sendable {

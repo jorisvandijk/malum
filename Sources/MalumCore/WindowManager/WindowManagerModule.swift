@@ -35,12 +35,12 @@ final class WindowManagerModule: Module {
     static let stackActions: [(name: String, offset: Int)] = [
         (WindowManagerConfig.stackNextAction, 1), (WindowManagerConfig.stackPreviousAction, -1),
     ]
-    /// Turns `split_step`, in percent, into a share of the area.
+    /// Turns `split_step_percent`, in percent, into a share of the area.
     private static let percent: CGFloat = 100
     /// The action of the keys it swallows, which isn't offered to `keyboard.toml`.
     private static let blockAction = "block"
-    /// cmd+H, cmd+M and cmd+option+M, which hide the app or minimise windows, for
-    /// `block_hide_minimize`. Hidden apps and minimised windows would leave a gap in the layout.
+    /// cmd+H, cmd+M and cmd+option+M, which hide the app or minimise windows, swallowed while
+    /// `allow_hide_minimize` is off. Hidden apps and minimised windows would leave a gap in the layout.
     private static let blockedKeys: [Hotkey: String] = Dictionary(
         uniqueKeysWithValues: [("h", [Modifier.cmd]), ("m", [.cmd]), ("m", [.cmd, .option])].compactMap {
             name, modifiers in
@@ -54,7 +54,7 @@ final class WindowManagerModule: Module {
     /// Its settings.
     var schema: ConfigSchema { WindowManagerConfig.schema }
     /// It opens the apps the shortcuts in `keyboard.toml` name, swallows the keys that hide and
-    /// minimise when `block_hide_minimize` is on, and takes hyper drags, which move the borders.
+    /// minimise unless `allow_hide_minimize` is on, and takes hyper drags, which move the borders.
     var hotkeys: HotkeyOffer {
         HotkeyOffer(
             actions: Set(

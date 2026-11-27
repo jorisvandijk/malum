@@ -19,8 +19,8 @@ colors = ["#ff3b30", "#ff9500", "#ffcc00", "#34c759", "#007aff", "#ffffff", "#00
 The module needs Screen Recording. Its action is `screenshot`, which you bind to a key in `keyboard.toml`:
 
 ```toml
-[hyper]
-s = "screenshot"
+[shortcuts]
+"hyper+s" = "screenshot"
 ```
 
 `malum screenshot` in a terminal does the same while the app runs.

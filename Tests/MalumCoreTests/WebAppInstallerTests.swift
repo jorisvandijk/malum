@@ -9,7 +9,7 @@ struct WebAppInstallerTests {
     private let dots = "/Users/test/dots"
     private let bundle = "/Users/test/Applications/Frigate.app"
     private let executable = Paths.webAppExecutable(in: "/Users/test/Git/malum/build/Malum.app")
-    private let list = "[Frigate]\nurl = \"http://192.168.1.5:5000\"\nicon = \"icons/frigate.png\"\n"
+    private let list = "[apps.Frigate]\nurl = \"http://192.168.1.5:5000\"\nicon = \"icons/frigate.png\"\n"
     private let runner = FakeRunner(answer: Self.answer)
 
     /// Finds the certificate, and runs every other command fine.

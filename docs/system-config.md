@@ -498,8 +498,6 @@ A setting that isn't in the reference isn't one Malum manages yet: it's added to
 
 Malum owns each setting it sets, as with [app preferences](#app-preferences): one you change in System Settings is set back on the next run, and one you take out of the file is removed, so macOS goes back to its own default. Settings the file doesn't name are left alone. When `macos.toml` is missing or has an error, no setting is touched. Malum keeps the names of the preferences it set in `installed.json`, under `macos`.
 
-`[preferences]` and `[current_host]`, which took each preference by the name macOS stores it under, still work for this release. Each key in them gets a warning that names the setting to use instead, and they stop working in the next release. A raw key and a setting that write the same preference to different values are an error.
-
 After a change, Malum tells running apps about it, and restarts Finder, the Dock, the menu bar or Control Center when their settings changed:
 
 ```
@@ -535,7 +533,7 @@ These work like app config files: a file that was already there, or that was cha
 
 ### Power settings
 
-`[power]` in `macos.toml` sets the power settings, with one table for each power source: `battery` and `charger`. Each takes the same settings, such as `dim_screen` and `sleep_min`, all listed in the [macOS settings reference](macos-settings.md#powerbattery-and-powercharger). The names `pmset` gives them, such as `lessbright`, still work for this release, with a warning.
+`[power]` in `macos.toml` sets the power settings, with one table for each power source: `battery` and `charger`. Each takes the same settings, such as `dim_screen` and `sleep_minutes`, all listed in the [macOS settings reference](macos-settings.md#powerbattery).
 
 ```toml
 [power.battery]
@@ -619,11 +617,11 @@ It changes nothing when the screen already shows that size, and is skipped while
 
 ### Screen lock
 
-`delay` in `[screen_lock]` sets how soon the Mac asks for your password once the screen goes black, such as when it dims, sleeps or shows the screensaver. It's in seconds, and `0` asks right away. macOS ignores `askForPassword` in `com.apple.screensaver` for this, so Malum sets it with `sysadminctl -screenLock`.
+`delay_seconds` in `[screen_lock]` sets how soon the Mac asks for your password once the screen goes black, such as when it dims, sleeps or shows the screensaver. It's in seconds, and `0` asks right away. macOS ignores `askForPassword` in `com.apple.screensaver` for this, so Malum sets it with `sysadminctl -screenLock`.
 
 ```toml
 [screen_lock]
-delay = 0
+delay_seconds = 0
 ```
 
 It changes nothing when the Mac already asks after that delay. Changing it takes your own password, which `sysadminctl` asks for on the terminal, so it needs `malum run` in a terminal. Taking the key out leaves the setting as it is.
@@ -633,7 +631,6 @@ It changes nothing when the Mac already asks after that delay. Changing it takes
 [info] the screen asks for your password as soon as it goes black now, from macos.toml
 ```
 
-<<<<<<< HEAD
 ### Startup apps
 
 `apps` in `[startup]` lists apps, by bundle ID, that the menu bar app opens each time it starts, for apps that don't start at login by themselves. An app that already runs is left alone. Malum itself isn't a login item: its login agent starts it.
@@ -656,13 +653,14 @@ show = ["Documents", "Downloads", "Git", "Pictures"]
 
 ```
 [info] hid ~/Movies in Finder, from macos.toml
-=======
+```
+
 ## Web apps
 
-`webapps.toml`, at the top of your dots folder, turns sites into apps of their own. Each table is one web app, named by the app:
+`webapps.toml`, at the top of your dots folder, turns sites into apps of their own. Each table in `[apps]` is one web app, named by the app:
 
 ```toml
-[Frigate]
+[apps.Frigate]
 url = "http://192.168.1.5:5000"
 icon = "icons/frigate.png"
 ```
@@ -670,13 +668,14 @@ icon = "icons/frigate.png"
 - `url`: the site, `http` or `https`.
 - `icon`: optional, a square `.png` or an `.icns` file, as a path inside dots. Left out, the app gets the plain app icon.
 
+The [webapps.toml reference](web-apps-settings.md) lists them too.
+
 `malum run` makes `~/Applications/Frigate.app`, signed with Malum's certificate. It opens the site in one window of its own, shows in cmd+tab and the [launcher](launcher.md), and keeps its own cookies, so you stay logged in. Closing the window quits it. Links to other sites open in your browser. A site on the local network asks for Local Network access the first time.
 
 An app is built again when its site or icon changes, or after Malum is updated. Taking a table out removes its app. An app in `~/Applications` that isn't one of Malum's web apps is never touched: a web app whose name is taken by another app is an error, and the other app stays.
 
 ```
 [info] made the web app Frigate
->>>>>>> 20e7ee1 (Make the web apps in malum run)
 ```
 
 ## Status

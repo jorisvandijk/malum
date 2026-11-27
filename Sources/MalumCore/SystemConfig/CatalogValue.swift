@@ -28,8 +28,6 @@ enum CatalogValue: Equatable, Sendable {
     case number(NumberUnit, ClosedRange<Double>, decimal: Bool)
     /// A whole percentage, written as a fraction from 0 to 1.
     case percent
-    /// A folder's full path.
-    case folder
     /// A path, `$HOME/` for one in the home folder, written with the home folder filled in and
     /// `then` after it, such as newsboat's `/%n` for a folder per feed.
     case path(then: String = "")
@@ -185,8 +183,6 @@ enum CatalogValue: Equatable, Sendable {
     /// a value of this kind.
     private func textual(_ given: ConfigValue, home: String) -> ConfigValue? {
         switch (self, given) {
-        case (.folder, .string(let path)) where path.hasPrefix("/"):
-            given
         case (.path(let then), .string(let path)):
             Self.path(path, home: home).map { ConfigValue.string($0 + then) }
         case (.app(let before, let after), .string(let bundleID)) where AppBundle.isBundleID(bundleID):
@@ -297,7 +293,7 @@ enum CatalogValue: Equatable, Sendable {
             Self.wholeNumbers(in: range)
         case .percent:
             Self.percentRange.count
-        case .number, .folder, .path, .app, .text, .color, .colorPair, .colorPairKeys, .shortcut, .shortcutKeys,
+        case .number, .path, .app, .text, .color, .colorPair, .colorPairKeys, .shortcut, .shortcutKeys,
             .list, .parts, .partList:
             nil
         }

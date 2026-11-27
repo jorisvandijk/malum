@@ -4,9 +4,9 @@
 @MainActor
 public struct StartupApps {
     /// The table of startup apps.
-    static let table = "startup"
+    nonisolated static let table = "startup"
     /// The key in `[startup]` that lists them.
-    private static let appsKey = "apps"
+    nonisolated static let appsKey = "apps"
 
     /// The disk, where dots is.
     private let files: any FileSystem
@@ -22,9 +22,9 @@ public struct StartupApps {
         self.apps = apps
     }
 
-    /// The bundle IDs in `[startup] apps`, adding a problem to `reader` when it's wrong.
-    static func read(_ reader: inout TableReader) -> [String] {
-        reader.onlyList(appsKey, of: table, check: AppBundle.isBundleID, problem: MessageText.notBundleID)
+    /// The bundle IDs in `[startup] apps`, from `own`, the tables the catalog read from `macos.toml`.
+    static func read(_ own: ConfigTable) -> [String] {
+        own.value(at: [table, appsKey]).flatMap(TableReader.texts) ?? []
     }
 
     /// Opens each listed app that isn't running. Does nothing when there's no dots or `macos.toml`.
@@ -34,7 +34,8 @@ public struct StartupApps {
             guard let dots = try DotsPointer(files: files, paths: paths).read() else { return }
             guard let text = try files.text(ifFileAt: paths.macOSTOML(in: dots)) else { return }
             var reader = try TableReader(text, file: Paths.macOSTOMLName)
-            bundleIDs = Self.read(&reader)
+            let catalog = Catalog(file: Paths.macOSTOMLName, tables: [MacOSCatalog.startup])
+            bundleIDs = Self.read(catalog.own(&reader, home: paths.home))
             reader.problemsByLine.map(\.message).forEach(report)
         } catch {
             report(.failed(.openStartupApps, error))

@@ -6,7 +6,7 @@ import Testing
 extension KeyboardModuleTests {
     @Test func secureInputIsLoggedWhenItStartsAndEnds() async throws {
         let keyboard = module()
-        keyboard.apply(settings("[settings]\nhyper_key = \"caps_lock\"\n"))
+        keyboard.apply(settings("[hyper]\nkey = \"caps_lock\"\n"))
         try await keyboard.start()
         keyboardState.secureInput = .on(app: "Terminal")
         keyboard.check()
@@ -20,7 +20,7 @@ extension KeyboardModuleTests {
 
     @Test func tapSwitchOffsAreLoggedOnceAtTheNextCheck() async throws {
         let keyboard = module()
-        keyboard.apply(settings("[settings]\nhyper_key = \"caps_lock\"\n"))
+        keyboard.apply(settings("[hyper]\nkey = \"caps_lock\"\n"))
         try await keyboard.start()
         let session = try #require(catcher.session)
         _ = session.decide(.switchedOff)

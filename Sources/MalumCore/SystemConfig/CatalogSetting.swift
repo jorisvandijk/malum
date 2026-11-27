@@ -66,6 +66,13 @@ extension CatalogSetting.Target {
         .preference(domain: Defaults.currentHost(domain), key: key)
     }
 
+    /// A value Malum acts on itself, by its path in the tables Malum's own code reads, such as the
+    /// power setting `["power", "battery", "lessbright"]`. It's a key in Malum's tables, the way
+    /// `file` is one in an app's.
+    static func own(_ path: String...) -> Self {
+        .file(path)
+    }
+
     /// The domain every app reads, which `defaults` also calls `-g`.
     static let globalDomain = "NSGlobalDomain"
 }

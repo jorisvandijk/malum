@@ -2,8 +2,6 @@
 /// the tables in a list. It runs in both places the settings can be: the module's table in
 /// `malum.toml` and its own file.
 public enum SettingsCheck: Equatable, Sendable {
-    /// The window manager's frame and float rules, read by `WindowManagerConfig`.
-    case windowManager
     /// The Samba servers, read by `SambaConfig`.
     case samba
     /// The screenshots folder and quick colors, read by `ScreenshotsConfig`.
@@ -15,8 +13,6 @@ public enum SettingsCheck: Equatable, Sendable {
             reader.add(.error, at: path + key, text(TableReader.dotted(path + key)))
         }
         switch self {
-        case .windowManager:
-            _ = WindowManagerConfig.read(table, report: report)
         case .samba:
             _ = SambaConfig.read(table, report: report)
         case .screenshots:

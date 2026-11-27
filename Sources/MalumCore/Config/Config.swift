@@ -107,8 +107,8 @@ public struct Config: Sendable {
         var checked: [ConfigProblem] = []
         var table = reader.document
         if let check = schema.fileCheck {
-            checked = check.problems(in: text)
-            Self.checkSwitch(in: table, at: [], of: module, in: &reader)
+            (table, checked) = check.read(text, document: table)
+            Self.checkSwitch(in: reader.document, at: [], of: module, in: &reader)
         } else {
             let parts = Self.parts(of: table, schema: schema, in: &reader)
             table = Self.check(parts, of: module, schema: schema, in: &reader)

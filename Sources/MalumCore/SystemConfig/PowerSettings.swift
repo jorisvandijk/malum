@@ -1,6 +1,5 @@
 /// Sets the power settings `[power]` in `macos.toml` lists, by the names in `PowerSetting.all`, as
-/// root through the run's one password prompt. The names `pmset` gives them still work for one
-/// release, with a warning.
+/// root through the run's one password prompt.
 ///
 /// Malum owns each setting it sets: one changed outside Malum is set back on the next run, and one
 /// `macos.toml` doesn't set anymore goes back to what it was before Malum first set it, unless it
@@ -8,7 +7,7 @@
 @MainActor
 struct PowerSettings {
     /// The table of power settings, one table inside it for each power source.
-    static let table = "power"
+    nonisolated static let table = "power"
 
     /// The settings `macos.toml` sets, by power source and name.
     typealias Wanted = [Pmset.Source: [String: Int]]
@@ -28,49 +27,18 @@ struct PowerSettings {
         self.state = state
     }
 
-    /// The settings in `[power]`, by the name `pmset` gives them, adding a problem to `reader` for
-    /// each one that's wrong.
-    static func read(_ reader: inout TableReader) -> Wanted {
-        let power = reader.table(reader.document, table, at: [])
-        reader.unknownKeys(power, at: [table], known: Pmset.Source.allCases.map(\.rawValue))
+    /// The settings in `[power]`, by the name `pmset` gives them, from `own`, the tables the
+    /// catalog read from `macos.toml`.
+    static func read(_ own: ConfigTable) -> Wanted {
         var wanted: Wanted = [:]
         for source in Pmset.Source.allCases {
-            // The key that set each pmset name first, so a second one that differs is an error.
-            var setBy: [String: [String]] = [:]
-            for (name, value) in reader.table(power, source.rawValue, at: [table]).sorted(by: { $0.key < $1.key }) {
-                let path = [table, source.rawValue, name]
-                guard let setting = pmset(name, value, at: path, &reader) else { continue }
-                if let earlier = setBy[setting.name], wanted[source]?[setting.name] != setting.number {
-                    reader.add(.error, at: path, .setTwice(TableReader.dotted(path), TableReader.dotted(earlier)))
-                    continue
-                }
-                setBy[setting.name] = path
-                wanted[source, default: [:]][setting.name] = setting.number
+            guard case .table(let settings)? = own.value(at: [table, source.rawValue]) else { continue }
+            for (name, value) in settings {
+                guard case .integer(let number) = value else { continue }
+                wanted[source, default: [:]][name] = number
             }
         }
         return wanted
-    }
-
-    /// The name `pmset` gives the setting `name` at `path` and the number it takes for `value`, or
-    /// nil and a problem in `reader` when the value is wrong. A name `pmset` gives a setting itself
-    /// still works, with a warning.
-    private static func pmset(
-        _ name: String, _ value: ConfigValue, at path: [String], _ reader: inout TableReader
-    ) -> (name: String, number: Int)? {
-        if let setting = PowerSetting.all.first(where: { $0.name == name }) {
-            guard let number = setting.pmsetValue(value) else {
-                reader.expect(path, setting.kind)
-                return nil
-            }
-            return (setting.pmset, number)
-        }
-        let replacement = PowerSetting.named(pmset: name).map { TableReader.dotted(Array(path.dropLast()) + [$0.name]) }
-        reader.add(.warn, at: path, .rawPowerSetting(TableReader.dotted(path), replacement))
-        guard case .integer(let number) = value else {
-            reader.expect(path, SettingKind.integer)
-            return nil
-        }
-        return (name, number)
     }
 
     /// Makes each setting in `wanted` hold its value, and puts back each one Malum set that isn't

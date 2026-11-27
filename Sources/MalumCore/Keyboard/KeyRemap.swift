@@ -1,4 +1,4 @@
-/// One key that types as another, from `[remap]` in `keyboard.toml`.
+/// One key that types as another, from `[remaps]` in `keyboard.toml`.
 struct KeyRemap: Equatable, Sendable {
     /// The key pressed.
     let from: Key

@@ -123,7 +123,7 @@ extension MacOSCatalog {
         name: "screen_capture", about: "Where macOS's own screenshots go. The Screenshot app's Options menu.",
         settings: [
             CatalogSetting(
-                "folder", "The folder screenshots are saved in, by its full path.", .folder,
+                "folder", "The folder screenshots are saved in.", .path(),
                 [.domain(Domain.screenCapture, "location")]),
             CatalogSetting(
                 "save_to", "Whether a screenshot is saved as a file, put on the clipboard, or opened in Preview.",

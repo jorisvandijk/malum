@@ -1,5 +1,5 @@
-/// The reference of every curated setting `macos.toml` takes, made from `MacOSCatalog` and
-/// `PowerSetting.all` so it always matches what Malum reads.
+/// The reference of every curated setting `macos.toml` takes, made from `MacOSCatalog` so it always
+/// matches what Malum reads.
 @MainActor
 public enum MacOSDocs {
     /// Where the page goes, from the top of the repository.
@@ -12,9 +12,10 @@ public enum MacOSDocs {
         # macOS settings reference
 
         Every macOS setting `\(Paths.macOSTOMLName)` takes, by table. Each one has a name you can \
-        read, and \(Project.name) writes the preferences macOS keeps it in, which it lists under \
-        "Writes" for when you want to check one with `defaults read`. A setting that isn't here \
-        isn't one \(Project.name) manages yet: it's added to the catalog, not set by its raw name.
+        read. For one macOS keeps as a preference, \(Project.name) writes the preferences and lists \
+        them under "Writes", for when you want to check one with `defaults read`; a power setting \
+        lists the name `pmset` gives it. A setting that isn't here isn't one \(Project.name) \
+        manages yet: it's added to the catalog, not set by its raw name.
 
         A setting you leave out is left as it is. One \(Project.name) set before and you take out \
         goes back to macOS's own. A name a table doesn't take gets a warning.
@@ -22,28 +23,18 @@ public enum MacOSDocs {
         \(Project.name) always turns macOS's own window tiling off, since its window manager tiles: \
         dragging a window to an edge or the top of the screen, or holding Option, doesn't tile it.
 
-        `[\(MacOSSettings.preferencesTable)]` and `[\(MacOSSettings.currentHostTable)]`, which took \
-        preferences by the names macOS stores them under, still work for one release, with a \
-        warning that names the setting to use instead.
-
         """
 
     /// The page.
     public static func page() -> String {
-        header + CatalogDocs.sections(of: MacOSCatalog.catalog, place: CatalogDocs.preference) + power
+        header + CatalogDocs.sections(of: MacOSCatalog.catalog, place: place)
     }
 
-    /// The part of the page about the power settings.
-    private static var power: String {
-        let sources = Pmset.Source.allCases.map { "`[\(PowerSettings.table).\($0.rawValue)]`" }
-        let settings = PowerSetting.all.map { setting in
-            let writes = "- Writes: `pmset` `\(setting.pmset)`\n"
-            return CatalogDocs.entry(setting.name, setting.about, value: setting.kind.description) + writes
-        }
-        let about = """
-            The power settings, with one table for each power source. Each table takes the same \
-            settings. System Settings, Battery, Options.
-            """
-        return "\n## " + sources.joined(separator: " and ") + "\n\n\(about)\n" + settings.joined()
+    /// What a setting writes, as the page names it: a preference by its domain and key, a power
+    /// setting by the name `pmset` gives it, and nothing for the rest, which Malum acts on itself.
+    private static func place(_ target: CatalogSetting.Target) -> String {
+        guard case .file(let path) = target else { return CatalogDocs.preference(target) }
+        guard path.first == PowerSettings.table, let name = path.last else { return "" }
+        return "`pmset` `\(name)`"
     }
 }

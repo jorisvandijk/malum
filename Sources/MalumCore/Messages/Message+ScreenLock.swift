@@ -2,8 +2,6 @@
 extension MessageText {
     /// Changing how soon the password is asked once the screen goes black.
     static let changeScreenLock: MessageText = "change when the screen asks for your password"
-    /// What `[screen_lock] delay` should be.
-    static let lockDelay: MessageText = "a whole number of seconds, 0 for right away"
 }
 
 extension Message {

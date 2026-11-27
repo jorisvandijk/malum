@@ -16,14 +16,11 @@ struct DisplaySettings {
         self.display = display
     }
 
-    /// The size in `[display]`, or nil when it sets none, adding a problem to `reader` when it's wrong.
-    static func read(_ reader: inout TableReader) -> DisplayResolution? {
-        guard let value = reader.onlyKey(resolutionKey, of: table) else { return nil }
+    /// The size in `[display]`, from `own`, the tables the catalog read from `macos.toml`, or nil when it sets none, adding a
+    /// problem to `reader` when it's wrong.
+    static func read(_ own: ConfigTable, _ reader: inout TableReader) -> DisplayResolution? {
         let path = [table, resolutionKey]
-        guard case .string(let text) = value else {
-            reader.expect(path, SettingKind.string)
-            return nil
-        }
+        guard case .string(let text)? = own.value(at: path) else { return nil }
         guard let resolution = DisplayResolution(text) else {
             reader.add(.error, at: path, .notResolution(TableReader.dotted(path)))
             return nil

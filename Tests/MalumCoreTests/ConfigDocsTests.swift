@@ -15,7 +15,7 @@ struct ConfigDocsTests {
 
         A module's settings can go in a file of their own in dots instead, next to `malum.toml` and \
         named after the module, such as `system_config.toml`. That file holds the same settings under a \
-        `[settings]` heading, while a list of tables such as `[[float]]` keeps its own. `enabled` always stays in `malum.toml`, and a module's settings go in one \
+        `[settings]` heading, while a list of tables such as `[[server]]` keeps its own. `enabled` always stays in `malum.toml`, and a module's settings go in one \
         of the two places, never both.
 
         """

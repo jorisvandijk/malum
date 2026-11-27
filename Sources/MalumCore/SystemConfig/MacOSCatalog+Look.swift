@@ -52,15 +52,17 @@ extension MacOSCatalog {
 
     /// `[menu_bar]`.
     static let menuBar = CatalogTable(
-        name: "menu_bar", about: "When the menu bar hides and which items it shows. System Settings, Menu Bar.",
+        name: "menu_bar", about: "When the menu bar shows and which items it shows. System Settings, Menu Bar.",
         settings: [
             CatalogSetting(
-                "hide", "When the menu bar hides until the pointer reaches the top of the screen.",
+                "show",
+                "When the menu bar shows; the rest of the time it hides until the pointer reaches the top "
+                    + "of the screen.",
                 .choice([
-                    CatalogChoice("never", [.set(.boolean(false)), .set(.boolean(true))]),
-                    CatalogChoice("in_full_screen", [.set(.boolean(false)), .set(.boolean(false))]),
-                    CatalogChoice("on_desktop", [.set(.boolean(true)), .set(.boolean(true))]),
-                    CatalogChoice("always", [.set(.boolean(true)), .set(.boolean(false))]),
+                    CatalogChoice("always", [.set(.boolean(false)), .set(.boolean(true))]),
+                    CatalogChoice("outside_full_screen", [.set(.boolean(false)), .set(.boolean(false))]),
+                    CatalogChoice("in_full_screen", [.set(.boolean(true)), .set(.boolean(true))]),
+                    CatalogChoice("never", [.set(.boolean(true)), .set(.boolean(false))]),
                 ]),
                 [.global("_HIHideMenuBar"), .global("AppleMenuBarVisibleInFullscreen")]),
             CatalogSetting(
@@ -92,7 +94,7 @@ extension MacOSCatalog {
         name: "sound", about: "Alert and interface sounds. System Settings, Sound.",
         settings: [
             CatalogSetting(
-                "alert_volume", "How loud the alert sound is, as a percentage of the output volume.", .percent,
+                "alert_volume_percent", "How loud the alert sound is, as a percentage of the output volume.", .percent,
                 [.global("com.apple.sound.beep.volume")]),
             CatalogSetting(
                 "ui_sounds", "Plays sounds for actions such as emptying the Trash.", .flag,

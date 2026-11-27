@@ -22,13 +22,13 @@ struct PowerSetting: Sendable {
             name: "dim_before_sleep", pmset: "halfdim", kind: flag,
             about: "Dims the screen before it turns off."),
         PowerSetting(
-            name: "screen_off_min", pmset: "displaysleep", kind: minutes,
+            name: "screen_off_minutes", pmset: "displaysleep", kind: minutes,
             about: "Minutes without use before the screen turns off, 0 for never."),
         PowerSetting(
-            name: "sleep_min", pmset: "sleep", kind: minutes,
+            name: "sleep_minutes", pmset: "sleep", kind: minutes,
             about: "Minutes without use before the Mac sleeps, 0 for never."),
         PowerSetting(
-            name: "disk_sleep_min", pmset: "disksleep", kind: minutes,
+            name: "disk_sleep_minutes", pmset: "disksleep", kind: minutes,
             about: "Minutes without use before the disks sleep, 0 for never."),
         PowerSetting(
             name: "wake_for_network", pmset: "womp", kind: flag,
@@ -40,14 +40,6 @@ struct PowerSetting: Sendable {
             name: "low_power_mode", pmset: "lowpowermode", kind: flag,
             about: "Uses less energy, at the cost of speed."),
     ]
-
-    /// The number `pmset` takes for `value`, or nil when it isn't a value of this setting.
-    func pmsetValue(_ value: ConfigValue) -> Int? {
-        guard case .set(.integer(let number))? = kind.writes(for: value, targets: 1, home: "")?.first else {
-            return nil
-        }
-        return number
-    }
 
     /// The setting `pmset` calls `name`, or nil when none of them is.
     static func named(pmset name: String) -> PowerSetting? {

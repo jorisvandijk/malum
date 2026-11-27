@@ -2,13 +2,11 @@
 
 # macOS settings reference
 
-Every macOS setting `macos.toml` takes, by table. Each one has a name you can read, and Malum writes the preferences macOS keeps it in, which it lists under "Writes" for when you want to check one with `defaults read`. A setting that isn't here isn't one Malum manages yet: it's added to the catalog, not set by its raw name.
+Every macOS setting `macos.toml` takes, by table. Each one has a name you can read. For one macOS keeps as a preference, Malum writes the preferences and lists them under "Writes", for when you want to check one with `defaults read`; a power setting lists the name `pmset` gives it. A setting that isn't here isn't one Malum manages yet: it's added to the catalog, not set by its raw name.
 
 A setting you leave out is left as it is. One Malum set before and you take out goes back to macOS's own. A name a table doesn't take gets a warning.
 
 Malum always turns macOS's own window tiling off, since its window manager tiles: dragging a window to an edge or the top of the screen, or holding Option, doesn't tile it.
-
-`[preferences]` and `[current_host]`, which took preferences by the names macOS stores them under, still work for one release, with a warning that names the setting to use instead.
 
 ## `[appearance]`
 
@@ -37,13 +35,13 @@ When scroll bars show.
 
 ## `[menu_bar]`
 
-When the menu bar hides and which items it shows. System Settings, Menu Bar.
+When the menu bar shows and which items it shows. System Settings, Menu Bar.
 
-### `hide`
+### `show`
 
-When the menu bar hides until the pointer reaches the top of the screen.
+When the menu bar shows; the rest of the time it hides until the pointer reaches the top of the screen.
 
-- Value: "never", "in_full_screen", "on_desktop" or "always"
+- Value: "always", "outside_full_screen", "in_full_screen" or "never"
 - Writes: `NSGlobalDomain` `_HIHideMenuBar`, `NSGlobalDomain` `AppleMenuBarVisibleInFullscreen`
 
 ### `show_spotlight`
@@ -96,7 +94,7 @@ Shows the day of the week.
 
 Alert and interface sounds. System Settings, Sound.
 
-### `alert_volume`
+### `alert_volume_percent`
 
 How loud the alert sound is, as a percentage of the output volume.
 
@@ -389,9 +387,9 @@ Where macOS's own screenshots go. The Screenshot app's Options menu.
 
 ### `folder`
 
-The folder screenshots are saved in, by its full path.
+The folder screenshots are saved in.
 
-- Value: a folder's full path, starting with /
+- Value: a path, starting with $HOME/ in your home folder or / outside it
 - Writes: `com.apple.screencapture` `location`
 
 ### `save_to`
@@ -437,9 +435,75 @@ Signs in to Game Center.
 - Value: true or false
 - Writes: `com.apple.gamed` `GKOptedOutOfGameCenter`
 
-## `[power.battery]` and `[power.charger]`
+## `[screen_lock]`
 
-The power settings, with one table for each power source. Each table takes the same settings. System Settings, Battery, Options.
+How soon a black screen asks for your password. System Settings, Lock Screen.
+
+### `delay_seconds`
+
+Seconds after the screen goes black, such as when it dims, sleeps or shows the screensaver, before the Mac asks for your password. 0 asks right away.
+
+- Value: a whole number of seconds, 0 or more
+
+## `[default_apps]`
+
+The apps that open links and files, by bundle ID.
+
+### `browser`
+
+The app that opens web links (`http`, `https`) and web pages.
+
+- Value: an app's bundle ID, such as "net.librewolf.librewolf"
+
+### `video`
+
+The app that opens video files.
+
+- Value: an app's bundle ID, such as "net.librewolf.librewolf"
+
+## `[sudo]`
+
+How `sudo` in the terminal asks who you are.
+
+### `touch_id`
+
+Lets `sudo` take Touch ID instead of the password.
+
+- Value: true or false
+
+## `[computer]`
+
+This Mac's name and the sound it makes when it starts up.
+
+### `hostname`
+
+All three of the Mac's names, the one people see, the shell's and the local network's: letters, digits and dashes, at most 63, not starting or ending with a dash.
+
+- Value: text that isn't empty
+
+### `boot_sound`
+
+Plays the sound when the Mac starts up.
+
+- Value: true or false
+
+## `[display]`
+
+The Mac's own screen. System Settings, Displays.
+
+### `resolution`
+
+The size the screen shows things at, as width and height in points, such as "1710x1112": one of the sizes System Settings offers, from "Larger Text" to "More Space".
+
+- Value: text that isn't empty
+
+## `[power]`
+
+The power settings, with one table for each power source. Each takes the same settings.
+
+## `[power.battery]`
+
+The power settings on the battery. System Settings, Battery, Options.
 
 ### `dim_screen`
 
@@ -455,21 +519,21 @@ Dims the screen before it turns off.
 - Value: true or false
 - Writes: `pmset` `halfdim`
 
-### `screen_off_min`
+### `screen_off_minutes`
 
 Minutes without use before the screen turns off, 0 for never.
 
 - Value: a whole number of minutes, 0 or more
 - Writes: `pmset` `displaysleep`
 
-### `sleep_min`
+### `sleep_minutes`
 
 Minutes without use before the Mac sleeps, 0 for never.
 
 - Value: a whole number of minutes, 0 or more
 - Writes: `pmset` `sleep`
 
-### `disk_sleep_min`
+### `disk_sleep_minutes`
 
 Minutes without use before the disks sleep, 0 for never.
 
@@ -496,3 +560,100 @@ Uses less energy, at the cost of speed.
 
 - Value: true or false
 - Writes: `pmset` `lowpowermode`
+
+## `[power.charger]`
+
+The power settings on the charger. System Settings, Battery, Options.
+
+### `dim_screen`
+
+Dims the screen a little.
+
+- Value: true or false
+- Writes: `pmset` `lessbright`
+
+### `dim_before_sleep`
+
+Dims the screen before it turns off.
+
+- Value: true or false
+- Writes: `pmset` `halfdim`
+
+### `screen_off_minutes`
+
+Minutes without use before the screen turns off, 0 for never.
+
+- Value: a whole number of minutes, 0 or more
+- Writes: `pmset` `displaysleep`
+
+### `sleep_minutes`
+
+Minutes without use before the Mac sleeps, 0 for never.
+
+- Value: a whole number of minutes, 0 or more
+- Writes: `pmset` `sleep`
+
+### `disk_sleep_minutes`
+
+Minutes without use before the disks sleep, 0 for never.
+
+- Value: a whole number of minutes, 0 or more
+- Writes: `pmset` `disksleep`
+
+### `wake_for_network`
+
+Wakes the Mac when someone reaches it over the network.
+
+- Value: true or false
+- Writes: `pmset` `womp`
+
+### `power_nap`
+
+Lets the Mac check for mail and updates while it sleeps.
+
+- Value: true or false
+- Writes: `pmset` `powernap`
+
+### `low_power_mode`
+
+Uses less energy, at the cost of speed.
+
+- Value: true or false
+- Writes: `pmset` `lowpowermode`
+
+## `[apple_apps]`
+
+The Apple apps to remove from `/Applications`.
+
+### `remove`
+
+The apps, by name without `.app`, such as "GarageBand". Only apps whose bundle ID starts with `com.apple.` are removed.
+
+- Value: a list of names, each not empty, not starting with a dot and without /, such as "Documents"
+
+## `[hosts]`
+
+The names this Mac looks up itself instead of asking DNS.
+
+- Keys: a host name, such as "ha.example.com"
+- Values: its address, such as "10.0.0.110"
+
+## `[startup]`
+
+The apps the menu bar app opens each time it starts.
+
+### `apps`
+
+The apps, by bundle ID. One that already runs is left alone.
+
+- Value: a list of apps' bundle IDs, such as "net.librewolf.librewolf"
+
+## `[home_folders]`
+
+The folders in your home folder that Finder shows.
+
+### `show`
+
+The folders Finder shows, by name, matched without regard to case. Every other one is hidden; ones whose name starts with a dot stay as they are.
+
+- Value: a list of names, each not empty, not starting with a dot and without /, such as "Documents"
