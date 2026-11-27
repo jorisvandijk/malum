@@ -42,8 +42,10 @@ extension CatalogValue: CustomStringConvertible {
             "\(Self.shortcut), or a list of them"
         case .list(let list):
             list.description
-        case .parts(let parts, _):
-            "a list of at least one of " + Self.oneOf(parts.map(\.word))
+        case .parts(let parts, _, let none):
+            (none == nil ? "a list of at least one of " : "a list of any of ") + Self.oneOf(parts.map(\.word))
+        case .partList(let parts):
+            "a list of at least one of " + Self.oneOf(parts.map(\.word)) + ", each as often as you like"
         }
     }
 

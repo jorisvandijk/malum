@@ -64,9 +64,12 @@ enum AppConfigs {
                     "\(libreWolf)/Profiles/default/compatibility.ini", .fixed(libreWolfCompatibility),
                     onlyWhenMissing: true),
                 AppConfigFile(
-                    "\(libreWolf)/Profiles/default/user.js", .calls(table: "settings", function: "user_pref")),
-                AppConfigFile("\(libreWolf)/Profiles/default/chrome/userChrome.css", .css(table: "user_chrome")),
-            ]),
+                    "\(libreWolf)/Profiles/default/user.js",
+                    .calls(table: LibreWolfPolicies.settingsTable, function: "user_pref")),
+                AppConfigFile(
+                    "\(libreWolf)/Profiles/default/chrome/userChrome.css", .css(table: LibreWolfPolicies.cssTable)),
+            ],
+            catalog: AppCatalogs.libreWolf),
         AppConfig(
             name: "markedit",
             domain: AppCatalogs.Domain.markEdit,

@@ -20,17 +20,24 @@ struct Catalog: Sendable {
     /// The problem for the key at a path, written dotted, that asks for another value where Malum
     /// always writes one.
     let alwaysConflict: @Sendable (String) -> MessageText
+    /// Turns the tables the settings wrote into the ones the app's files read, for an app that keeps
+    /// what one setting asks for in a form of its own, such as LibreWolf's policies, adding each
+    /// problem it finds to the reader. Nil when the tables are right as they are.
+    let arrange: (@Sendable (ConfigTable, inout TableReader) -> ConfigTable)?
 
     /// Creates the catalog of `file`, with its `tables`, which always writes `always`; a key that
-    /// asks for something else there gets `alwaysConflict`.
+    /// asks for something else there gets `alwaysConflict`. What the settings write is put in the
+    /// app's form by `arrange` when that's set.
     init(
         file: String, tables: [CatalogTable], always: [Always] = [],
-        alwaysConflict: @escaping @Sendable (String) -> MessageText = MessageText.alwaysSet
+        alwaysConflict: @escaping @Sendable (String) -> MessageText = MessageText.alwaysSet,
+        arrange: (@Sendable (ConfigTable, inout TableReader) -> ConfigTable)? = nil
     ) {
         self.file = file
         self.tables = tables
         self.always = always
         self.alwaysConflict = alwaysConflict
+        self.arrange = arrange
     }
 
     /// The names of the tables at the top of the file, without the parts inside them.

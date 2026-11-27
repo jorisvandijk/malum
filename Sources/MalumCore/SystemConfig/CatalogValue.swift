@@ -56,8 +56,12 @@ enum CatalogValue: Equatable, Sendable {
     /// A list of items, each written as the target keeps it.
     case list(CatalogList)
     /// A list of at least one of the words of `parts`, each written as its text and joined by
-    /// `join`, such as the columns of a list or kitty's layouts.
-    case parts([Part], join: String)
+    /// `join`, such as the columns of a list or kitty's layouts. With `none`, the list may be empty,
+    /// which writes `none`.
+    case parts([Part], join: String, none: String? = nil)
+    /// A list of at least one of the words of `parts`, each written as its text, as a list, such as
+    /// the buttons of a toolbar. A word may come more than once.
+    case partList([Part])
 
     /// One word a `.parts` setting takes, and the text it writes.
     struct Part: Equatable, Sendable {
@@ -131,6 +135,17 @@ enum CatalogValue: Equatable, Sendable {
             number(given)
         case (.number(_, let range, let decimal), _):
             Self.measure(given, in: range, decimal: decimal)
+        case (.shortcutKeys, _), (.list, _), (.parts, _), (.partList, _):
+            listed(given)
+        default:
+            textual(given, home: home)
+        }
+    }
+
+    /// The value the list `given` writes, for the kinds that take a list, or nil when it isn't a
+    /// list of this kind.
+    private func listed(_ given: ConfigValue) -> ConfigValue? {
+        switch (self, given) {
         case (.shortcutKeys(let style), .string(let text)):
             Shortcut(text).flatMap(style.value).map { ConfigValue.array([$0]) }
         case (.shortcutKeys(let style), _):
@@ -140,10 +155,12 @@ enum CatalogValue: Equatable, Sendable {
         case (.list(let list), _):
             TableReader.texts(given).flatMap { $0.count >= list.minimum ? $0.map(list.item).allPresent() : nil }
                 .map(ConfigValue.array)
-        case (.parts(let parts, let join), _):
-            Self.joined(given, parts, join: join).map { ConfigValue.string($0) }
+        case (.parts(let parts, let join, let none), _):
+            Self.joined(given, parts, join: join, none: none).map { ConfigValue.string($0) }
+        case (.partList(let parts), _):
+            Self.texts(given, parts).map { ConfigValue.array($0.map(ConfigValue.string)) }
         default:
-            textual(given, home: home)
+            nil
         }
     }
 
@@ -229,11 +246,17 @@ enum CatalogValue: Equatable, Sendable {
     }
 
     /// The words in the list `given` as `parts` writes them, joined by `join`, or nil when it isn't
-    /// a list of at least one of them.
-    private static func joined(_ given: ConfigValue, _ parts: [Part], join: String) -> String? {
+    /// a list of at least one of them. An empty list writes `none`, and is wrong when that's nil.
+    private static func joined(_ given: ConfigValue, _ parts: [Part], join: String, none: String?) -> String? {
+        if let none, TableReader.texts(given)?.isEmpty == true { return none }
+        return texts(given, parts)?.joined(separator: join)
+    }
+
+    /// The words in the list `given` as `parts` writes them, or nil when it isn't a list of at least
+    /// one of them.
+    private static func texts(_ given: ConfigValue, _ parts: [Part]) -> [String]? {
         guard let words = TableReader.texts(given), !words.isEmpty else { return nil }
-        let texts = words.map { word in parts.first { $0.word == word }?.text }.allPresent()
-        return texts?.joined(separator: join)
+        return words.map { word in parts.first { $0.word == word }?.text }.allPresent()
     }
 
     /// The colour pair `pair` as text, its colours joined by `join`, or nil when it isn't one. A
@@ -275,7 +298,7 @@ enum CatalogValue: Equatable, Sendable {
         case .percent:
             Self.percentRange.count
         case .number, .folder, .path, .app, .text, .color, .colorPair, .colorPairKeys, .shortcut, .shortcutKeys,
-            .list, .parts:
+            .list, .parts, .partList:
             nil
         }
     }
