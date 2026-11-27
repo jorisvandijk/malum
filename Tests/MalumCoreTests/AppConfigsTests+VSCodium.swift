@@ -47,6 +47,18 @@ extension AppConfigsTests {
             ])
     }
 
+    @Test func vscodiumWritesTheAssistantOnboardingSetting() throws {
+        let config = try #require(AppConfigs.app(named: "vscodium"))
+        var reader = try TableReader("[assistant]\nhide_onboarding = true\n", file: "apps/vscodium.toml")
+        let read = config.read(&reader, home: "/Users/test")
+        #expect(reader.problems.isEmpty)
+        #expect(
+            read.files.first
+                == AppFile(
+                    "Library/Application Support/VSCodium/User/settings.json",
+                    "{\n    \"claudeCode.hideOnboarding\": true\n}\n"))
+    }
+
     @Test func vscodiumTakesNoRawSettings() throws {
         let config = try #require(AppConfigs.app(named: "vscodium"))
         var reader = try TableReader(

@@ -5,6 +5,9 @@ name: attribution
 # included, because it takes seconds. This file is the only path it skips, since it has to
 # spell out the words it looks for. The pull request text is read from the API, not the event,
 # and checked again for up to two minutes, so a footer removed right after opening does not fail.
+# ALLOWED names the few vendor keys and bundle IDs that hold one of the words but are real
+# settings, not attribution. A changed line is checked with those exact strings taken out, so
+# the same line with the word anywhere else still fails. Nothing else uses the list.
 on:
   pull_request:
     types: [opened, edited, reopened, synchronize]
@@ -25,6 +28,7 @@ jobs:
     timeout-minutes: 5
     env:
       WORDS: "claude|anthropic"
+      ALLOWED: 'claudeCode\.hideOnboarding|com\.anthropic\.claudefordesktop'
       GENERATED: "generated with"
       AUTHOR: "Joris van Dijk <joris@jorisvandijk.com>"
       SELF: ".github/workflows/attribution.yml"
@@ -107,6 +111,7 @@ jobs:
           printf '%s\n' "$paths" | has_word && fail "a file path names an AI tool: $(printf '%s\n' "$paths" | grep -iE "$WORDS" | head -n 5 | tr '\n' ' ')"
 
           lines="$(git diff --unified=0 "$base" "$head" -- . ":(exclude)$SELF" | grep -E '^\+' | grep -vE '^\+\+\+ ' || true)"
+          lines="$(printf '%s\n' "$lines" | sed -E "s/$ALLOWED//g")"
           printf '%s\n' "$lines" | has_word && fail "a changed line names an AI tool"
 
           if [ "$problems" -gt 0 ]; then
