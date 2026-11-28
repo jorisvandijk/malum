@@ -381,6 +381,38 @@ The folders kept in the Dock, by their full paths. An empty list keeps none.
 - Value: a list of folders' full paths, such as "/Users/you/Downloads"
 - Writes: `com.apple.dock` `persistent-others`
 
+## `[hot_corners]`
+
+What happens when the pointer reaches a corner of the screen. System Settings, Desktop & Dock, Hot Corners.
+
+### `top_left`
+
+What happens when the pointer reaches the top left corner, or nothing with "none". "keep_awake" keeps the screen saver from starting while the pointer stays there.
+
+- Value: "none", "mission_control", "app_windows", "desktop", "start_screen_saver", "keep_awake", "display_sleep", "launchpad", "notification_center", "lock_screen" or "quick_note"
+- Writes: `com.apple.dock` `wvous-tl-corner`, `com.apple.dock` `wvous-tl-modifier`
+
+### `top_right`
+
+What happens when the pointer reaches the top right corner, or nothing with "none". "keep_awake" keeps the screen saver from starting while the pointer stays there.
+
+- Value: "none", "mission_control", "app_windows", "desktop", "start_screen_saver", "keep_awake", "display_sleep", "launchpad", "notification_center", "lock_screen" or "quick_note"
+- Writes: `com.apple.dock` `wvous-tr-corner`, `com.apple.dock` `wvous-tr-modifier`
+
+### `bottom_left`
+
+What happens when the pointer reaches the bottom left corner, or nothing with "none". "keep_awake" keeps the screen saver from starting while the pointer stays there.
+
+- Value: "none", "mission_control", "app_windows", "desktop", "start_screen_saver", "keep_awake", "display_sleep", "launchpad", "notification_center", "lock_screen" or "quick_note"
+- Writes: `com.apple.dock` `wvous-bl-corner`, `com.apple.dock` `wvous-bl-modifier`
+
+### `bottom_right`
+
+What happens when the pointer reaches the bottom right corner, or nothing with "none". "keep_awake" keeps the screen saver from starting while the pointer stays there.
+
+- Value: "none", "mission_control", "app_windows", "desktop", "start_screen_saver", "keep_awake", "display_sleep", "launchpad", "notification_center", "lock_screen" or "quick_note"
+- Writes: `com.apple.dock` `wvous-br-corner`, `com.apple.dock` `wvous-br-modifier`
+
 ## `[screen_capture]`
 
 Where macOS's own screenshots go. The Screenshot app's Options menu.

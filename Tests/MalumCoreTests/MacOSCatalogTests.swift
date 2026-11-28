@@ -98,6 +98,24 @@ struct MacOSCatalogTests {
             ])
     }
 
+    @Test func hotCornersWriteTheirActionWithoutModifierKeys() {
+        let (preferences, problems) = read("[hot_corners]\nbottom_right = \"none\"\ntop_left = \"lock_screen\"\n")
+        #expect(problems.isEmpty)
+        #expect(
+            preferences == [
+                "com.apple.dock wvous-tl-corner = <integer>13</integer>",
+                "com.apple.dock wvous-tl-modifier = <integer>0</integer>",
+                "com.apple.dock wvous-br-corner = <integer>1</integer>",
+                "com.apple.dock wvous-br-modifier = <integer>0</integer>",
+            ])
+    }
+
+    @Test func aHotCornerTakesOnlyItsWords() {
+        let (preferences, problems) = read("[hot_corners]\nbottom_right = \"notepad\"\n")
+        #expect(preferences.isEmpty)
+        #expect(problems.count == 1)
+    }
+
     @Test func autoModeLeavesTheStyleToMacOS() {
         let (preferences, problems) = read("[appearance]\nmode = \"auto\"\n")
         #expect(problems.isEmpty)
