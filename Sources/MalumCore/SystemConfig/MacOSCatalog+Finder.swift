@@ -1,7 +1,7 @@
 // swiftlint:disable no_magic_numbers
 // Lookup tables: each row names the values macOS stores a choice as.
 
-/// The tables about Finder, the desktop, the Dock and screenshots.
+/// The tables about Finder, the desktop, the Dock, hot corners and screenshots.
 extension MacOSCatalog {
     /// The domains these tables write to, besides the global one.
     private enum Domain {
@@ -117,6 +117,36 @@ extension MacOSCatalog {
                 "pinned_folders", "The folders kept in the Dock, by their full paths. An empty list keeps none.",
                 .list(.dockFolders), [.domain(Domain.dock, "persistent-others")]),
         ])
+
+    /// `[hot_corners]`.
+    static let hotCorners = CatalogTable(
+        name: "hot_corners",
+        about: "What happens when the pointer reaches a corner of the screen. System Settings, Desktop & Dock, "
+            + "Hot Corners.",
+        settings: [
+            hotCorner("top_left", "tl", "top left"), hotCorner("top_right", "tr", "top right"),
+            hotCorner("bottom_left", "bl", "bottom left"), hotCorner("bottom_right", "br", "bottom right"),
+        ])
+
+    /// The setting `name` for the corner the Dock calls `code`, such as `br` for the bottom right,
+    /// which the docs call `corner`. Every word also clears the corner's modifier keys, so the action
+    /// starts without holding a key.
+    private static func hotCorner(_ name: String, _ code: String, _ corner: String) -> CatalogSetting {
+        let action = { (word: String, value: Int) in
+            CatalogChoice(word, [.set(.integer(value)), .set(.integer(0))])
+        }
+        return CatalogSetting(
+            name,
+            "What happens when the pointer reaches the \(corner) corner, or nothing with \"none\". \"keep_awake\" "
+                + "keeps the screen saver from starting while the pointer stays there.",
+            .choice([
+                action("none", 1), action("mission_control", 2), action("app_windows", 3), action("desktop", 4),
+                action("start_screen_saver", 5), action("keep_awake", 6), action("display_sleep", 10),
+                action("launchpad", 11), action("notification_center", 12), action("lock_screen", 13),
+                action("quick_note", 14),
+            ]),
+            [.domain(Domain.dock, "wvous-\(code)-corner"), .domain(Domain.dock, "wvous-\(code)-modifier")])
+    }
 
     /// `[screen_capture]`.
     static let screenCapture = CatalogTable(

@@ -9,8 +9,8 @@ enum MacOSCatalog {
     /// Every curated table, in the order the docs show them.
     static let tables: [CatalogTable] =
         [
-            appearance, menuBar, clock, sound, pointer, trackpad, keyboard, text, finder, desktop, dock, screenCapture,
-            siri, gameCenter,
+            appearance, menuBar, clock, sound, pointer, trackpad, keyboard, text, finder, desktop, dock, hotCorners,
+            screenCapture, siri, gameCenter,
         ] + systemTables
 
     /// The preferences Malum always sets, whatever `macos.toml` says: macOS's own window tiling is
